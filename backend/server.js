@@ -69,7 +69,7 @@ app.use(express.urlencoded({ extended: true }));
 // CORS: allow no-origin (Postman) plus configured origins
 app.use(cors({
   origin: (origin, callback) => {
-    console.log("🌐 Incoming Origin:", origin); // <== DEBUG LOG
+    // console.log("🌐 Incoming Origin:", origin); // <== DEBUG LOG
     if (!origin) return callback(null, true);
     if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
     console.warn(`🚨 Blocked by CORS: ${origin}`);
