@@ -14,7 +14,7 @@ import { toast } from '@/hooks/use-toast';
 import { getAdminDashboard } from '@/services/adminService';
 import { approvePlayer, rejectPlayer } from '@/services/playerVerificationService';
 
-import NewsManagement from '@/pages/Admin/NewsManagement';
+import NewsManagement from '@/pages/admin/NewsManagement';
 import GalleryManagement from '@/pages/admin/GalleryManagement';
 import SponsorManagement from '@/pages/admin/SponsorManagement';
 import TeamManagement from '@/pages/admin/TeamManagement';
