@@ -238,7 +238,7 @@ const Navbar = () => {
         <div className="flex justify-between items-center h-16 border-b border-gray-100">
           <Link to="/" className="flex items-center space-x-2">
             <img
-              src="/lg-removebg-preview.png"
+              src="/images/lg-removebg-preview.png"
               alt="UPPL Logo"
               className="h-14 sm:h-16 md:h-20 w-auto object-contain"
             />
