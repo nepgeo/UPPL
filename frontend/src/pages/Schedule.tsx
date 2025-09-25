@@ -93,7 +93,7 @@ const Schedule = () => {
   }, []);
 
   function getProfileImageUrl(path?: string | null) {
-    if (!path) return `${BASE_URL}/uploads/default-avatar.png`;
+    if (!path) return `${BASE_URL}/favicon.png`;
     if (path.startsWith("http")) return path;
 
     let cleanPath = path

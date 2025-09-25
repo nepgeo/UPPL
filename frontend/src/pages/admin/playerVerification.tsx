@@ -20,7 +20,7 @@ import { API_BASE, BASE_URL } from '@/config';
  * Handles backslashes, duplicate slashes and missing leading slash.
  */
 function getProfileImageUrl(path?: string | null) {
-  if (!path) return `${BASE_URL}/uploads/default-avatar.png`;
+  if (!path) return `${BASE_URL}/favicon.png`;
 
   if (path.startsWith("http")) return path;
 
@@ -253,7 +253,7 @@ const PlayerVerification = () => {
                       className="h-9 w-9 rounded-full object-cover border-2 border-blue-100"
                       src={getProfileImageUrl(player.profilePicture)}
                       alt={player.name}
-                      onError={(e) => ((e.currentTarget as HTMLImageElement).src = "/uploads/default-avatar.png")}
+                      onError={(e) => ((e.currentTarget as HTMLImageElement).src = "/favicon.png")}
                     />
                   </div>
                   <div className="ml-3">
@@ -336,7 +336,7 @@ const PlayerVerification = () => {
               className="h-10 w-10 rounded-full object-cover border"
               src={getProfileImageUrl(player.profilePicture)}
               alt={player.name}
-              onError={(e) => ((e.currentTarget as HTMLImageElement).src = "/uploads/default-avatar.png")}
+              onError={(e) => ((e.currentTarget as HTMLImageElement).src = "/favicon.png")}
             />
             <div>
               <p
@@ -448,7 +448,7 @@ const PlayerVerification = () => {
                                 setZoomedImage(getProfileImageUrl(selectedPlayer.profilePicture))
                               }
                               onError={(e) =>
-                                (e.currentTarget.src = "/uploads/default-avatar.png")
+                                (e.currentTarget.src = "/favicon.png")
                               }
                             />
                             {/* <div className="absolute -bottom-2 -right-2 bg-green-500 text-white p-1.5 rounded-full shadow">

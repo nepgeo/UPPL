@@ -203,7 +203,7 @@ const Navbar = () => {
 
   const getProfileImageUrl = (path: string | null) => {
     if (!path) {
-      return `${BASE_URL}/uploads/default-avatar.png`;
+      return `${BASE_URL}/favicon.png`;
     }
 
     // Allow cloud URLs
