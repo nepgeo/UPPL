@@ -4,27 +4,27 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 
 export default defineConfig(({ mode }) => ({
+  base: "/", // ✅ IMPORTANT for Vercel deploy
   server: {
     host: "::",
     port: 8080,
     proxy: {
-      // ✅ Proxy for uploads (already there)
-      '/uploads': {
-        target: 'http://localhost:5000',
+      // ✅ Proxy for local dev only
+      "/uploads": {
+        target: "http://localhost:5000",
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/uploads/, '/uploads'),
+        rewrite: (path) => path.replace(/^\/uploads/, "/uploads"),
       },
-      // ✅ NEW: Proxy for API routes
-      '/api': {
-        target: 'http://localhost:5000',
+      "/api": {
+        target: "http://localhost:5000",
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '/api'),
+        rewrite: (path) => path.replace(/^\/api/, "/api"),
       },
     },
   },
   plugins: [
     react(),
-    mode === 'development' && componentTagger(),
+    mode === "development" && componentTagger(),
   ].filter(Boolean),
   resolve: {
     alias: {
