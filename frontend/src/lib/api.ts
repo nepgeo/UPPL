@@ -1,9 +1,9 @@
 // frontend/src/lib/api.ts
 import axios from 'axios';
-import { API_BASE, BASE_URL } from '@/config';
+import { API_BASE as CONFIG_API_BASE, BASE_URL as CONFIG_BASE_URL } from '@/config';
 
-const API_BASE = (import.meta.env.VITE_API_URL as string) || API_BASE;
-const BASE_URL = (import.meta.env.VITE_BASE_URL as string) || BASE_URL;
+const API_BASE = (import.meta.env.VITE_API_URL as string) || CONFIG_API_BASE;
+const BASE_URL = (import.meta.env.VITE_BASE_URL as string) || CONFIG_BASE_URL;
 
 const api = axios.create({
   baseURL: API_BASE,
