@@ -164,17 +164,17 @@ app.use('/api/sponsors', sponsorRoutes);
 app.use('/api/points-table', pointsTableRoutes);
 
 // Serve uploads with safe CORS headers to allow accessing images from frontend
-app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
-  setHeaders: function (res, req) {
-    const origin = req.headers.origin;
-    if (ALLOWED_ORIGINS.includes(origin)) {
-      res.setHeader('Access-Control-Allow-Origin', origin);
-    }
-    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+app.use('/uploads', (req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
   }
-}));
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  next();
+}, express.static(path.join(__dirname, 'uploads')));
+
 
 // --- Helper: show registered routes (useful in dev)
 app._showRoutes = () => {
