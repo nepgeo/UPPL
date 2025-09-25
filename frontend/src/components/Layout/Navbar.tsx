@@ -202,8 +202,6 @@ const Navbar = () => {
 
 
   const getProfileImageUrl = (path: string | null) => {
-    const BASE_URL = BASE_URL;
-
     if (!path) {
       return `${BASE_URL}/uploads/default-avatar.png`;
     }

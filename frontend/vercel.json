@@ -1,12 +1,7 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": { "distDir": "dist" }
-    }
-  ],
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
   "routes": [
     { "src": "/api/(.*)", "dest": "https://uppl-ajwn.onrender.com/api/$1" },
     { "src": "/uploads/(.*)", "dest": "https://uppl-ajwn.onrender.com/uploads/$1" },
@@ -15,3 +10,4 @@
     { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
+

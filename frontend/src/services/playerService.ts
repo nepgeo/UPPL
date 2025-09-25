@@ -1,6 +1,5 @@
 import { API_BASE, BASE_URL } from '@/config';
 // src/services/playerService.ts
-const BASE_URL = BASE_URL; // adjust if backend runs elsewhere
 
 export async function getAllPlayers() {
   try {

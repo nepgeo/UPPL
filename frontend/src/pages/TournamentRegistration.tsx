@@ -70,8 +70,7 @@ const TournamentRegistration: React.FC = () => {
         const token = localStorage.getItem('pplt20_token');
         if (!token) return;
 
-        const API_URL = import.meta.env.VITE_API_URL || BASE_URL;
-        const response = await axios.get(`${API_URL}/seasons/current`, {
+        const response = await axios.get(`${API_BASE}/seasons/current`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setSeasonId(response.data._id);
@@ -93,11 +92,10 @@ const TournamentRegistration: React.FC = () => {
   // If editing player code, validate it
   if (field === "code" && value.trim()) {
     try {
-      const API_URL = import.meta.env.VITE_API_URL || BASE_URL;
       const token = localStorage.getItem("pplt20_token");
 
       const res = await axios.post(
-        `${API_URL}/player/check-code`,
+        `${API_BASE}/player/check-code`,
         { code: value.trim(),seasonNumber: seasonId},
         { headers: { Authorization: `Bearer ${token}` } }
       );

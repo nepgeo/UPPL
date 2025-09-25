@@ -19,7 +19,7 @@ import { Switch } from '@/components/ui/switch';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { toast } from '@/hooks/use-toast';
 import * as galleryService from '@/services/galleryService';
-import { BASE_URL } from "@/lib/api";
+import { BASE_URL } from "@/config";
 
 const GalleryManagement = () => {
   const [albums, setAlbums] = useState([]);

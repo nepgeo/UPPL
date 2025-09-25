@@ -3,7 +3,7 @@ import axios from 'axios';
 import SponsorForm from '@/components/SponsorForm';
 import PaymentQRForm from "@/components/PaymentQRForm";
 import { Users } from 'lucide-react';
-import {api,BASE_URL} from '@/lib/api';
+import api from '@/lib/api';
 import { API_BASE, BASE_URL } from '@/config';
 
 const SponsorManagement = () => {
@@ -128,7 +128,6 @@ const itemsPerPage = 5; // adjust as needed
   };
 
   const getProfileImageUrl = (path: string | null) => {
-  const BASE_URL = BASE_URL;
 
   if (!path) {
     return `${BASE_URL}/uploads/teamMembers/default-avatar.png`;

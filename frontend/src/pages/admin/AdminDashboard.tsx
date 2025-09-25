@@ -61,7 +61,6 @@ const AdminDashboard = () => {
   const [expandedPlayerId, setExpandedPlayerId] = useState<string | null>(null);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
 
-  const BASE_URL = BASE_URL;
   const location = useLocation();
   const query = new URLSearchParams(location.search);
   const tabFromUrl = query.get("tab") || "overview";

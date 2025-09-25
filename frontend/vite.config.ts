@@ -4,7 +4,7 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 
 export default defineConfig(({ mode }) => ({
-  base: "/", // ✅ IMPORTANT for Vercel deploy
+  base: "/", // ✅ Required for Vercel deployment
   server: {
     host: "::",
     port: 8080,
@@ -13,12 +13,12 @@ export default defineConfig(({ mode }) => ({
       "/uploads": {
         target: "http://localhost:5000",
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/uploads/, "/uploads"),
+        rewrite: (p) => p.replace(/^\/uploads/, "/uploads"),
       },
       "/api": {
         target: "http://localhost:5000",
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, "/api"),
+        rewrite: (p) => p.replace(/^\/api/, "/api"),
       },
     },
   },
@@ -30,5 +30,12 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  build: {
+    // ✅ Helps debug "Cannot access 'CB' before initialization"
+    minify: false,
+    sourcemap: true,
+    outDir: "dist", // default but explicit for Vercel
+    emptyOutDir: true,
   },
 }));

@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Link } from 'react-router-dom'; 
-import {api,BASE_URL} from '@/lib/api';
+import api from '@/lib/api';
+import { BASE_URL } from '@/config';
 
 const Gallery = () => {
   const [images, setImages] = useState([]);

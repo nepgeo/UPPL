@@ -15,8 +15,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { API_BASE, BASE_URL } from '@/config';
 
 
-const BASE_URL = BASE_URL;
-
 /**
  * Normalize file path into a full URL served by backend static /uploads route.
  * Handles backslashes, duplicate slashes and missing leading slash.

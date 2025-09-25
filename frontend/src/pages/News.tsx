@@ -6,7 +6,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { API_BASE, BASE_URL } from '@/config';
 import {
   Select,
   SelectContent,
@@ -15,8 +14,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import api from '@/lib/api';
+import { API_BASE, BASE_URL } from '@/config';
+console.log("DEBUG: API_BASE from config =", API_BASE);
+console.log("DEBUG: BASE_URL from config =", BASE_URL);
 
-const BASE_URL = BASE_URL; // make sure this matches your API base
+
 
 function getProfileImageUrl(path?: string | null) {
   if (!path) return `${BASE_URL}/uploads/default-avatar.png`;

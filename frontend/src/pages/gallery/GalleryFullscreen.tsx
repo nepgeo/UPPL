@@ -8,7 +8,7 @@ import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import { X } from 'lucide-react';
 import { useScrollLock } from '@/hooks/useScrollLock';
-import { BASE_URL } from "@/lib/api";
+import { BASE_URL } from"@/config";
 
 interface Image {
   _id: string;

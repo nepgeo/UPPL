@@ -34,7 +34,6 @@ interface AuthContextType {
 
   // ✅ Added functions
   forgotPassword: (email: string) => Promise<boolean>;
-  googleLogin: () => Promise<void>;
 }
 
 // Create Context
@@ -132,17 +131,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // ✅ Google Login (redirects to backend OAuth route)
-  const googleLogin = async (): Promise<void> => {
-    try {
-      window.location.href = `${import.meta.env.VITE_API_URL}/auth/google`;
-    } catch (error) {
-      console.error("Google login failed:", error);
-    }
-  };
+  // const googleLogin = async (): Promise<void> => {
+  //   try {
+  //     window.location.href = `${import.meta.env.VITE_API_URL}/auth/google`;
+  //   } catch (error) {
+  //     console.error("Google login failed:", error);
+  //   }
+  // };
 
   return (
     <AuthContext.Provider
-      value={{ user, setUser, login, logout, register, loading, forgotPassword, googleLogin }}
+      value={{ user, setUser, login, logout, register, loading, forgotPassword,  }}
     >
       {children}
     </AuthContext.Provider>

@@ -7,7 +7,6 @@ import BatIcon from "@/assets/icons/bat.png";
 import BallIcon from "@/assets/icons/ball.png";
 import { API_BASE, BASE_URL } from '@/config';
 
-const BASE_URL = BASE_URL;
 
 // ✅ Utility to format profile image
 function getProfileImageUrl(path?: string | null) {

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
-import { BASE_URL,api } from "@/lib/api";
+import { BASE_URL} from "@/config";
+import api from "@/lib/api";
 
 const Sponsors = () => {
   const [organizationSponsors, setOrganizationSponsors] = useState<any[]>([]);

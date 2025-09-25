@@ -25,6 +25,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import api from '@/lib/api';
+import { BASE_URL } from "@/config";
 
 import { motion } from "framer-motion";
 interface Team {
@@ -84,7 +85,6 @@ const Schedule = () => {
 
   const [teamPlayers, setTeamPlayers] = useState<{ [teamId: string]: any[] }>({});
   const [loadingTeamId, setLoadingTeamId] = useState<string | null>(null);
-  const BASE_URL = "http://localhost:8080"; 
 
   useEffect(() => {
     fetchMatches();

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { BASE_URL } from "@/lib/api";
+import { BASE_URL } from "@/config";
 
 const ConfirmTeam = () => {
   const navigate = useNavigate();

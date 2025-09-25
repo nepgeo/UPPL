@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { API_BASE, BASE_URL } from '@/config';
 
-const BASE_URL = import.meta.env.VITE_BASE_URL || BASE_URL;
+
+
 
 /**
  * A small map of known teams — used only for aesthetics (short name + color).

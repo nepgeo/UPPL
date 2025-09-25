@@ -47,7 +47,6 @@ import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import axios from 'axios';
 
-const BASE_URL = BASE_URL;
 
 const UsersManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -231,7 +230,6 @@ const UsersManagement = () => {
   };
 
   const getProfileImageUrl = (path: string | null) => {
-    const BASE_URL = BASE_URL;
     if (!path) {
       return `${BASE_URL}/uploads/default-avatar.png`;
     }

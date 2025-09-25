@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import axios from 'axios';
 import api from '@/lib/api';
-import { BASE_URL } from '@/lib/api';
+import { BASE_URL } from "@/config";
 
 const NewsArticle = () => {
   const { articleId } = useParams();

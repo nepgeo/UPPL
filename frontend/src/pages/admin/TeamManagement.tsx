@@ -3,7 +3,8 @@ import axios from 'axios';
 
 import { Label } from '@/components/ui/label';
 // import  from '@/lib/api';
-import { BASE_URL ,api} from "@/lib/api";
+import { BASE_URL} from "@/config";
+import api from '@/lib/api';
 
 import {
   Dialog,

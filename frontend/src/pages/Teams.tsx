@@ -15,7 +15,7 @@ import AllRounderIcon from "@/assets/icons/all.png";
 import GlovesIcon from "@/assets/icons/gloves.png";
 import CapIcon from "@/assets/icons/cap.png"; 
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
-import { BASE_URL } from "@/lib/api";
+import { BASE_URL } from "@/config";
 
 // Gradients: cycle per team
 const gradients = [

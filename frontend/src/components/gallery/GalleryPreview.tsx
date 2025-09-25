@@ -4,7 +4,7 @@ import { fetchPublicImages } from "@/services/galleryService";
 import { FiChevronLeft, FiChevronRight, FiMaximize2, FiX } from "react-icons/fi";
 import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import { useInView } from "react-intersection-observer";
-import { BASE_URL } from "@/lib/api";
+import { BASE_URL } from "@/config";
 
 interface Album {
   _id: string;

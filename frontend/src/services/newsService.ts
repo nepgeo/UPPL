@@ -1,5 +1,5 @@
 // frontend/src/lib/newsApi.ts
-import api from './api'; // use the axios instance from api.ts
+import api from '@/lib/api';
 
 const NEWS_ENDPOINT = '/news'; // relative to API_BASE
 
