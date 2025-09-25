@@ -176,21 +176,29 @@ exports.login = async (req, res) => {
     // ✅ Generate token
     const token = generateToken(user);
 
-    // ✅ Always return profileImage (null if not uploaded)
+    // ✅ Set cookie (important for cross-site: Vercel → Render)
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // true on Render
+      sameSite: "none", // allow from Vercel frontend
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
+    });
+
+    // ✅ Always return profileImage, documents, etc.
     res.json({
       message: "Login successful",
-      token,
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
         verified: user.verified,
-        profileImage: user.profileImage || null, // 👈 added
-        documents: user.documents || [],         // 👈 optional (if you want docs too)
-        playerCode: user.playerCode || null,     // 👈 added playerCode
+        profileImage: user.profileImage || null,
+        documents: user.documents || [],
+        playerCode: user.playerCode || null,
       },
     });
+
   } catch (err) {
     console.error("Login error:", err.message);
     res.status(500).json({ message: "Error logging in", error: err.message });
