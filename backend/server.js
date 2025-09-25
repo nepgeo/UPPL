@@ -47,8 +47,11 @@ try {
 }
 
 // Environment-driven configuration
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173' || "http://localhost:4173";
-const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || FRONTEND_URL).split(',').map(s => s.trim()).filter(Boolean);
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173' || 'http://localhost:4173';
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || FRONTEND_URL)
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
 
 
 
