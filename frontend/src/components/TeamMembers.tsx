@@ -1,11 +1,10 @@
+// frontend/src/components/TeamMembers.tsx
 import React, { useEffect, useState } from "react";
-import axios from "axios";
-import api from '@/lib/api';
-import { BASE_URL } from "@/lib/api";
-import { API_BASE, BASE_URL } from '@/config';
+import api from "@/lib/api";
+import { BASE_URL } from "@/config";
 
+// ✅ Helper to build profile image URL
 const getProfileImageUrl = (path: string | null) => {
-  const BASE_URL = BASE_URL;
   if (!path) return `${BASE_URL}/uploads/teamMembers/default-avatar.png`;
   if (path.startsWith("http")) return path;
 
@@ -30,12 +29,12 @@ const TeamMembers: React.FC = () => {
     fetchTeam();
   }, []);
 
-  // ✅ Define the fixed member
+  // ✅ Fixed member
   const fixedMember = {
     _id: "fixed-member",
     name: "Madhur Bist",
     position: "Developer",
-    avatar: "${BASE_URL}/uploads/photo.jpg",
+    avatar: `${BASE_URL}/uploads/photo.jpg`,
   };
 
   // ✅ Append fixed member to fetched team

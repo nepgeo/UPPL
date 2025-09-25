@@ -47,8 +47,11 @@ try {
 }
 
 // Environment-driven configuration
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173' || "http://localhost:4173";
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || FRONTEND_URL).split(',').map(s => s.trim()).filter(Boolean);
+
+
+
 
 const app = express();
 app.set('trust proxy', true);
@@ -162,9 +165,11 @@ app.use('/api/points-table', pointsTableRoutes);
 
 // Serve uploads with safe CORS headers to allow accessing images from frontend
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
-  setHeaders: function (res /*, filePath */) {
-    const originToSet = process.env.FRONTEND_URL || FRONTEND_URL;
-    res.setHeader('Access-Control-Allow-Origin', originToSet);
+  setHeaders: function (res, req) {
+    const origin = req.headers.origin;
+    if (ALLOWED_ORIGINS.includes(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    }
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
