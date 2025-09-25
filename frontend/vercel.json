@@ -10,6 +10,11 @@
   "routes": [
     { "src": "/api/(.*)",     "dest": "https://uppl-ajwn.onrender.com/api/$1" },
     { "src": "/uploads/(.*)", "dest": "https://uppl-ajwn.onrender.com/uploads/$1" },
-    { "src": "/(.*)",         "dest": "/index.html" }
+
+    // ✅ Let Vercel serve static assets correctly
+    { "src": "/assets/(.*)", "dest": "/assets/$1" },
+
+    // ✅ Catch-all for React Router (must be last)
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
