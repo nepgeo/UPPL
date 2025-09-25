@@ -4,19 +4,12 @@
     {
       "src": "package.json",
       "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
+      "config": { "distDir": "dist" }
     }
   ],
   "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "https://your-backend.example.com/api/$1"
-    },
-    {
-      "src": "/uploads/(.*)",
-      "dest": "https://your-backend.example.com/uploads/$1"
-    }
+    { "src": "/api/(.*)",     "dest": "https://uppl-ajwn.onrender.com/api/$1" },
+    { "src": "/uploads/(.*)", "dest": "https://uppl-ajwn.onrender.com/uploads/$1" },
+    { "src": "/(.*)",         "dest": "/index.html" }
   ]
 }
