@@ -8,14 +8,10 @@
     }
   ],
   "routes": [
-    { "src": "/api/(.*)",     "dest": "https://uppl-ajwn.onrender.com/api/$1" },
+    { "src": "/api/(.*)", "dest": "https://uppl-ajwn.onrender.com/api/$1" },
     { "src": "/uploads/(.*)", "dest": "https://uppl-ajwn.onrender.com/uploads/$1" },
-
-    // ✅ Let Vercel serve static assets
-    { "src": "/assets/(.*)",  "dest": "/assets/$1" },
-    { "src": "/favicon.ico",  "dest": "/favicon.ico" },
-
-    // ✅ React Router fallback (must be last)
+    { "src": "/assets/(.*)", "dest": "/assets/$1" },
+    { "src": "/favicon.ico", "dest": "/favicon.ico" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
