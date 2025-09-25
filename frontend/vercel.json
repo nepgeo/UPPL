@@ -11,10 +11,11 @@
     { "src": "/api/(.*)",     "dest": "https://uppl-ajwn.onrender.com/api/$1" },
     { "src": "/uploads/(.*)", "dest": "https://uppl-ajwn.onrender.com/uploads/$1" },
 
-    // ✅ Let Vercel serve static assets correctly
-    { "src": "/assets/(.*)", "dest": "/assets/$1" },
+    // ✅ Let Vercel serve static assets
+    { "src": "/assets/(.*)",  "dest": "/assets/$1" },
+    { "src": "/favicon.ico",  "dest": "/favicon.ico" },
 
-    // ✅ Catch-all for React Router (must be last)
+    // ✅ React Router fallback (must be last)
     { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
