@@ -1,105 +1,67 @@
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+// backend/middleware/upload.js
+const multer = require("multer");
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const cloudinary = require("../config/cloudinary");
 
-const UPLOADS_DIR = path.join(__dirname, '..', 'uploads'); // base uploads folder
-
-// ✅ Ensure upload folders exist
-const folders = [
-  'profile',
-  'documents',
-  'gallery',
-  'sponsors',
-  'teamLogos',
-  'other',
-  'receipts',
-  'payment-qr',
-  'teamMembers',
-];
-
-folders.forEach(folder => {
-  const fullPath = path.join(UPLOADS_DIR, folder);
-  if (!fs.existsSync(fullPath)) {
-    fs.mkdirSync(fullPath, { recursive: true });
-  }
-});
-
-// ✅ Storage configuration based on field name
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    let subfolder = 'other';
+// ✅ Define Cloudinary storage
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: async (req, file) => {
+    let folder = "other";
 
     switch (file.fieldname) {
-      case 'profileImage':
-        subfolder = 'profile';
+      case "profileImage":
+        folder = "users/profile";
         break;
-      case 'documents':
-        subfolder = 'documents';
+      case "documents":
+        folder = "users/documents";
         break;
-      case 'image':
-      case 'images':
-        subfolder = 'gallery';
+      case "image":
+      case "images":
+        folder = "gallery";
         break;
-      case 'logo':
-      case 'avatar':
-        subfolder = 'sponsors';
+      case "logo":
+      case "avatar":
+        folder = "sponsors";
         break;
-      case 'teamLogo':
-        subfolder = 'teamLogos';
+      case "teamLogo":
+        folder = "teams/logos";
         break;
-      case 'paymentReceipt':
-        subfolder = 'receipts';
+      case "paymentReceipt":
+        folder = "payments/receipts";
         break;
-      case 'qrImage':
-        subfolder = 'payment-qr';
+      case "qrImage":
+        folder = "payments/qr";
         break;
-      case 'teamMember':
-        subfolder = 'teamMembers';
+      case "teamMember":
+        folder = "teams/members";
         break;
       default:
-        subfolder = 'other';
+        folder = "other";
     }
 
-    cb(null, path.join(UPLOADS_DIR, subfolder));
-  },
-
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    const base = path
-      .basename(file.originalname, ext)
-      .replace(/\s+/g, '-');
-    const unique = `${base}-${Date.now()}-${Math.round(
-      Math.random() * 1e9
-    )}${ext}`;
-    cb(null, unique);
+    return {
+      folder,
+      public_id: `${file.fieldname}-${Date.now()}`,
+      resource_type:
+        file.mimetype === "application/pdf" ? "raw" : "image", // ✅ handle PDFs
+    };
   },
 });
 
-// ✅ File filter (allow images and PDFs only)
-const fileFilter = (req, file, cb) => {
-  const allowed = ['.jpg', '.jpeg', '.png', '.webp', '.pdf'];
-  const ext = path.extname(file.originalname).toLowerCase();
-  if (allowed.includes(ext)) {
-    cb(null, true);
-  } else {
-    cb(new Error('Only images and PDFs are allowed'), false);
-  }
-};
+// ✅ Multer instance with Cloudinary storage
+const upload = multer({ storage });
 
-// ✅ Main multer upload instance
-const upload = multer({ storage, fileFilter });
-
-// ✅ Specific middleware for team file uploads
+// ✅ Field-based middleware
 const uploadTeamFiles = () =>
   upload.fields([
-    { name: 'teamLogo', maxCount: 1 },
-    { name: 'teamMember', maxCount: 1 },
-    { name: 'paymentReceipt', maxCount: 1 },
+    { name: "teamLogo", maxCount: 1 },
+    { name: "teamMember", maxCount: 1 },
+    { name: "paymentReceipt", maxCount: 1 },
   ]);
 
-// ✅ Middleware for payment QR uploads
 const uploadPaymentQR = () =>
-  upload.fields([{ name: 'qrImage', maxCount: 1 }]);
+  upload.fields([{ name: "qrImage", maxCount: 1 }]);
 
 module.exports = {
   upload,
