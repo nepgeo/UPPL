@@ -1,84 +1,95 @@
 // backend/controllers/paymentQRController.js
-const path = require("path");
-const fs = require("fs-extra");
+const cloudinary = require("../config/cloudinary");
 
-const uploadDir = path.join(__dirname, "..", "uploads", "payment-qr");
-fs.ensureDirSync(uploadDir);
-
-// GET all QR images (returns array of { filename })
-// GET all QR images (returns array of full URLs)
+// ✅ GET all QR codes (list from DB or cache if you store them there)
+// For now, we’ll assume you just query DB instead of filesystem
 async function getAllQRs(req, res) {
   try {
-    const files = await fs.readdir(uploadDir);
-    const baseUrl = `${req.protocol}://${req.get("host")}/uploads/payment-qr`;
+    // If you’re storing QR codes in MongoDB:
+    // const qrs = await QRModel.find();
+    // return res.json(qrs);
 
-    // Send full URLs instead of just filenames
-    const list = files.map((filename) => `${baseUrl}/${filename}`);
+    // OR if you don’t store in DB and only want to return all from Cloudinary folder:
+    const result = await cloudinary.api.resources({
+      type: "upload",
+      prefix: "payment-qr/", // folder name in Cloudinary
+      resource_type: "image",
+    });
+
+    const list = result.resources.map((file) => ({
+      url: file.secure_url,
+      public_id: file.public_id,
+    }));
+
     return res.json(list);
   } catch (err) {
-    console.error("❌ Error reading QR folder:", err);
+    console.error("❌ Error fetching QR codes:", err);
     return res.status(500).json({ message: "Failed to fetch QR images" });
   }
 }
 
-// CREATE — expects multer single('qrImage') to populate req.file
+// ✅ CREATE — upload a new QR image
 async function createQR(req, res) {
   try {
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded" });
     }
 
-    // multer already saved the file in uploadDir
-    return res.status(201).json({ filename: req.file.filename });
+    const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+      folder: "payment-qr",
+    });
+
+    return res.status(201).json({
+      message: "QR uploaded successfully",
+      url: uploadResult.secure_url,
+      public_id: uploadResult.public_id,
+    });
   } catch (err) {
     console.error("❌ createQR error:", err);
-    return res.status(500).json({ message: "Failed to create QR" });
+    return res.status(500).json({ message: "Failed to upload QR" });
   }
 }
 
-// UPDATE — replace an existing file (/:filename) with a new uploaded file
-// (This deletes the old file from disk and returns the new filename)
+// ✅ UPDATE — replace existing QR with new one
 async function updateQR(req, res) {
   try {
-    const { filename: oldFilename } = req.params;
-    if (!oldFilename) {
-      return res.status(400).json({ message: "Filename parameter is required" });
-    }
+    const { public_id } = req.params; // pass old QR's public_id in route
     if (!req.file) {
       return res.status(400).json({ message: "No replacement file uploaded" });
     }
 
-    const oldPath = path.join(uploadDir, oldFilename);
-    if (await fs.pathExists(oldPath)) {
-      await fs.remove(oldPath);
+    // Delete old QR from Cloudinary
+    if (public_id) {
+      await cloudinary.uploader.destroy(public_id);
     }
 
-    // new file already saved by multer as req.file.filename
-    return res.json({ oldFilename, filename: req.file.filename });
+    // Upload new one
+    const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+      folder: "payment-qr",
+    });
+
+    return res.json({
+      message: "QR updated successfully",
+      url: uploadResult.secure_url,
+      public_id: uploadResult.public_id,
+    });
   } catch (err) {
     console.error("❌ updateQR error:", err);
     return res.status(500).json({ message: "Failed to update QR" });
   }
 }
 
-// DELETE by filename
+// ✅ DELETE QR by public_id
 async function deleteQR(req, res) {
   try {
-    const { filename } = req.params;
-    if (!filename) {
-      return res.status(400).json({ message: "Filename is required" });
+    const { public_id } = req.params;
+    if (!public_id) {
+      return res.status(400).json({ message: "public_id is required" });
     }
 
-    const filePath = path.join(uploadDir, filename);
+    await cloudinary.uploader.destroy(public_id);
 
-    if (!(await fs.pathExists(filePath))) {
-      return res.status(404).json({ message: "File not found" });
-    }
-
-    await fs.remove(filePath);
-
-    // Optional: if you keep any in-memory or metadata, update here.
-    return res.json({ message: "QR deleted successfully", filename });
+    return res.json({ message: "QR deleted successfully", public_id });
   } catch (err) {
     console.error("❌ deleteQR error:", err);
     return res.status(500).json({ message: "Failed to delete QR" });

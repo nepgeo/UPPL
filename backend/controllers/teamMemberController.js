@@ -1,6 +1,5 @@
 const TeamMember = require('../models/teamMember');
-const fs = require('fs');
-const path = require('path');
+const cloudinary = require('../config/cloudinary'); // ✅ use shared Cloudinary config
 
 // Get all team members
 const getAllTeam = async (req, res) => {
@@ -8,6 +7,7 @@ const getAllTeam = async (req, res) => {
     const members = await TeamMember.find();
     res.json(members);
   } catch (err) {
+    console.error("Get all team error:", err.message);
     res.status(500).json({ message: 'Failed to fetch team members' });
   }
 };
@@ -17,10 +17,18 @@ const createTeamMember = async (req, res) => {
   try {
     const { name, position } = req.body;
 
-    // ✅ Save avatar into teamMembers folder
-    const avatar = req.file ? `/uploads/teamMembers/${req.file.filename}` : null;
+    let avatar = null;
+    let avatarPublicId = null;
 
-    const member = new TeamMember({ name, position, avatar });
+    if (req.file) {
+      const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+        folder: "teamMembers",
+      });
+      avatar = uploadResult.secure_url;
+      avatarPublicId = uploadResult.public_id;
+    }
+
+    const member = new TeamMember({ name, position, avatar, avatarPublicId });
     await member.save();
 
     res.status(201).json(member);
@@ -36,16 +44,28 @@ const updateTeamMember = async (req, res) => {
     const { id } = req.params;
     const { name, position } = req.body;
 
-    const updatedFields = { name, position };
+    const member = await TeamMember.findById(id);
+    if (!member) return res.status(404).json({ message: 'Team member not found' });
+
+    // Update fields
+    if (name) member.name = name;
+    if (position) member.position = position;
 
     if (req.file) {
-      updatedFields.avatar = `/uploads/teamMembers/${req.file.filename}`;
+      // ✅ Delete old avatar from Cloudinary if exists
+      if (member.avatarPublicId) {
+        await cloudinary.uploader.destroy(member.avatarPublicId);
+      }
+
+      // ✅ Upload new avatar
+      const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+        folder: "teamMembers",
+      });
+      member.avatar = uploadResult.secure_url;
+      member.avatarPublicId = uploadResult.public_id;
     }
 
-    const updated = await TeamMember.findByIdAndUpdate(id, updatedFields, { new: true });
-
-    if (!updated) return res.status(404).json({ message: 'Team member not found' });
-
+    const updated = await member.save();
     res.json(updated);
   } catch (err) {
     console.error('Update error:', err.message);
@@ -61,19 +81,12 @@ const deleteTeamMember = async (req, res) => {
 
     if (!member) return res.status(404).json({ message: 'Team member not found' });
 
-    // ✅ Delete avatar file if exists
-    if (member.avatar) {
-      const avatarPath = path.join(__dirname, '..', member.avatar);
-
-      fs.unlink(avatarPath, (err) => {
-        if (err) {
-          console.warn('Failed to delete avatar:', err.message);
-        }
-      });
+    // ✅ Delete avatar from Cloudinary if exists
+    if (member.avatarPublicId) {
+      await cloudinary.uploader.destroy(member.avatarPublicId);
     }
 
     await member.deleteOne();
-
     res.json({ message: 'Team member deleted' });
   } catch (err) {
     console.error('Delete error:', err.message);

@@ -1,8 +1,7 @@
 const mongoose = require('mongoose');
-const fs = require('fs');
-const path = require('path');
 const Album = require('../models/Album');
 const GalleryImage = require('../models/galleryImage');
+const cloudinary = require('../config/cloudinary'); // ✅ cloudinary config
 
 // ========== ALBUM HANDLERS ==========
 
@@ -41,15 +40,16 @@ exports.deleteAlbum = async (req, res) => {
   try {
     const images = await GalleryImage.find({ album: req.params.id });
 
+    // ✅ Delete images from Cloudinary
     for (const image of images) {
-      const imagePath = path.join(__dirname, '..', image.url);
-      if (fs.existsSync(imagePath)) {
-        fs.unlinkSync(imagePath);
+      if (image.public_id) {
+        await cloudinary.uploader.destroy(image.public_id);
       }
     }
 
     await GalleryImage.deleteMany({ album: req.params.id });
     await Album.findByIdAndDelete(req.params.id);
+
     res.json({ message: 'Album and its images deleted.' });
   } catch (err) {
     console.error('Delete album failed:', err);
@@ -64,17 +64,26 @@ exports.uploadImages = async (req, res) => {
     const { title, albumId, tags } = req.body;
     const files = req.files;
 
+    if (!albumId) {
+      return res.status(400).json({ message: 'Album ID is required' });
+    }
+
     const tagArray = tags ? tags.split(',').map(tag => tag.trim()) : [];
 
     const savedImages = await Promise.all(
-      files.map((file) => {
-        const image = new GalleryImage({
+      files.map(async (file) => {
+        // ✅ Upload each file to Cloudinary
+        const result = await cloudinary.uploader.upload(file.path, {
+          folder: "gallery",
+        });
+
+        return new GalleryImage({
           title,
           album: new mongoose.Types.ObjectId(albumId),
           tags: tagArray,
-          url: file.path.replace(/\\/g, '/'),
-        });
-        return image.save();
+          url: result.secure_url,
+          public_id: result.public_id,
+        }).save();
       })
     );
 
@@ -132,12 +141,13 @@ exports.deleteImage = async (req, res) => {
       return res.status(404).json({ message: 'Image not found' });
     }
 
-    const imagePath = path.join(__dirname, '..', image.url);
-    if (fs.existsSync(imagePath)) {
-      fs.unlinkSync(imagePath);
+    // ✅ Delete from Cloudinary
+    if (image.public_id) {
+      await cloudinary.uploader.destroy(image.public_id);
     }
 
     await GalleryImage.findByIdAndDelete(req.params.id);
+
     res.json({ message: 'Image deleted.' });
   } catch (error) {
     console.error('Error deleting image:', error);
@@ -154,8 +164,8 @@ exports.downloadImage = async (req, res) => {
       return res.status(404).json({ message: 'Image not found' });
     }
 
-    const filePath = path.join(__dirname, '..', image.url);
-    res.download(filePath);
+    // ✅ Instead of local file, redirect/download Cloudinary URL
+    res.redirect(image.url);
   } catch (err) {
     console.error('Download image failed:', err);
     res.status(500).json({ message: 'Failed to download image' });
