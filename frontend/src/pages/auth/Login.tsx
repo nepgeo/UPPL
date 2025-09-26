@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import axios from "axios";
 import { motion } from "framer-motion";
+import api from "@/lib/api";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -84,8 +85,8 @@ const [forgotEmailError, setForgotEmailError] = useState('');
   setForgotLoading(true);
 
   try {
-    // Use axios directly so you can inspect status
-    const res = await axios.post("/api/auth/forgot-password", { email: forgotEmail });
+    // Use directly so you can inspect status
+    const res = await api.post("/api/auth/forgot-password", { email: forgotEmail });
 
     // Check backend response (example: { success: true/false, message })
     if (res.data?.success) {
@@ -131,7 +132,7 @@ const [forgotEmailError, setForgotEmailError] = useState('');
   try {
     console.log("📤 Sending OTP verify request:", { email: forgotEmail, otp });
 
-    const response = await axios.post("/api/auth/forgot-password/verify", {
+    const response = await api.post("/api/auth/forgot-password/verify", {
       email: forgotEmail,
       otp,
     });
@@ -161,7 +162,7 @@ const [forgotEmailError, setForgotEmailError] = useState('');
 
   const handleResendOtp = async () => {
     try {
-      await axios.post("/api/auth/forgot-password/resend", { email: forgotEmail });
+      await api.post("/api/auth/forgot-password/resend", { email: forgotEmail });
       toast({ title: "OTP Resent", description: "Check your email again." });
     } catch (error: any) {
       toast({
@@ -183,7 +184,7 @@ const [forgotEmailError, setForgotEmailError] = useState('');
     }
     setResetLoading(true);
     try {
-      await axios.post("/api/auth/reset-password", {
+      await api.post("/api/auth/reset-password", {
         email: forgotEmail,
         otp,
         newPassword,

@@ -16,6 +16,7 @@ import GlovesIcon from "@/assets/icons/gloves.png";
 import CapIcon from "@/assets/icons/cap.png"; 
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { BASE_URL } from "@/config";
+import api from "@/lib/api";
 
 // Gradients: cycle per team
 const gradients = [
@@ -72,13 +73,13 @@ const Teams = () => {
     const fetchTeams = async () => {
       try {
         const token = localStorage.getItem("pplt20_token");
-        const seasonRes = await axios.get("/api/seasons/current", {
+        const seasonRes = await api.get("/api/seasons/current", {
           headers: { Authorization: `Bearer ${token}` },
         });
         const currentSeason = seasonRes.data;
         setSeasonNumber(currentSeason.seasonNumber);
 
-        const teamsRes = await axios.get(
+        const teamsRes = await api.get(
           `/api/teams?seasonId=${currentSeason._id}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );

@@ -28,12 +28,12 @@ const itemsPerPage = 5; // adjust as needed
 
     try {
       const [orgRes, indRes] = await Promise.all([
-        axios.get('/api/sponsors/organizations', config),
-        axios.get('/api/sponsors/individuals', config),
+        api.get('/api/sponsors/organizations', config),
+        api.get('/api/sponsors/individuals', config),
       ]);
 
-      console.log('✅ Organizations Data:', orgRes.data);
-      console.log('✅ Individuals Data:', indRes.data);
+      // console.log('✅ Organizations Data:', orgRes.data);
+      // console.log('✅ Individuals Data:', indRes.data);
 
       setOrgs(orgRes.data);
       setPeople(indRes.data);
@@ -47,7 +47,7 @@ const itemsPerPage = 5; // adjust as needed
     const token = localStorage.getItem('pplt20_token');
 
     try {
-      await axios.delete(endpoint, {
+      await api.delete(endpoint, {
         headers: { Authorization: `Bearer ${token}` },
       });
       fetchData();
@@ -65,7 +65,7 @@ const itemsPerPage = 5; // adjust as needed
     const token = localStorage.getItem('pplt20_token');
     try {
       setLoadingTeam(true);
-      const res = await axios.get('/api/team-members', {
+      const res = await api.get('/api/team-members', {
         headers: { Authorization: `Bearer ${token}` },
       });
       setTeam(res.data);
@@ -84,7 +84,7 @@ const itemsPerPage = 5; // adjust as needed
   const handleDeleteMember = async (id: string) => {
     const token = localStorage.getItem('pplt20_token');
     try {
-      await axios.delete(`/api/team-members/${id}`, {
+      await api.delete(`/api/team-members/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       fetchTeam();
@@ -101,11 +101,11 @@ const itemsPerPage = 5; // adjust as needed
 
     try {
       if (editMember._id) {
-        await axios.put(`/api/team-members/${editMember._id}`, formData, {
+        await api.put(`/api/team-members/${editMember._id}`, formData, {
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" },
         });
       } else {
-        await axios.post(`/api/team-members`, formData, {
+        await api.post(`/api/team-members`, formData, {
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" },
         });
       }

@@ -46,6 +46,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import axios from 'axios';
+import api from "@/lib/api";
 
 
 const UsersManagement = () => {
@@ -76,7 +77,7 @@ const UsersManagement = () => {
     const fetchUsers = async () => {
       try {
         const token = localStorage.getItem('pplt20_token');
-        const res = await axios.get(`${BASE_URL}/api/admin/users?limit=9999`, {
+        const res = await api.get(`${BASE_URL}/api/admin/users?limit=9999`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -115,7 +116,7 @@ const UsersManagement = () => {
   const handleDeleteUser = async (userId: string) => {
     try {
       const token = localStorage.getItem('pplt20_token');
-      await axios.delete(`${BASE_URL}/api/admin/delete-user/${userId}`, {
+      await api.delete(`${BASE_URL}/api/admin/delete-user/${userId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUsers(users.filter((user) => user.id !== userId));
@@ -139,7 +140,7 @@ const UsersManagement = () => {
         endpoint = `${BASE_URL}/api/admin/verify-player/${userId}`;
       }
 
-      await axios.patch(endpoint, {}, {
+      await api.patch(endpoint, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -205,14 +206,14 @@ const UsersManagement = () => {
       };
 
       if (editingUser?.id) {
-        await axios.patch(
+        await api.patch(
           `${BASE_URL}/api/admin/users/${editingUser.id}`,
           formData,
           config
         );
         toast({ title: 'User Updated' });
       } else {
-        await axios.post(`${BASE_URL}/api/admin/users`, formData, config);
+        await api.post(`${BASE_URL}/api/admin/users`, formData, config);
         toast({ title: 'User Created' });
       }
 

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import api from "@/lib/api";
+
 
 interface SponsorFormProps {
   type: 'organization' | 'individual';
@@ -61,9 +63,9 @@ const SponsorForm: React.FC<SponsorFormProps> = ({ type, initialData, onSuccess 
 
     try {
       if (isEditing) {
-        await axios.put(`${endpoint}/${initialData._id}`, payload, config);
+        await api.put(`${endpoint}/${initialData._id}`, payload, config);
       } else {
-        await axios.post(endpoint, payload, config);
+        await api.post(endpoint, payload, config);
       }
       onSuccess();
     } catch (err) {

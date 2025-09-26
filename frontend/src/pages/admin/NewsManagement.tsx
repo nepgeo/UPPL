@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, X, Plus } from 'lucide-react';
+import api from "@/lib/api";
 
 interface NewsItem {
   _id?: string;
@@ -28,7 +29,7 @@ const NewsManagement: React.FC = () => {
   const fetchNews = async () => {
     try {
       setLoading(true);
-      const res = await axios.get('/api/news');
+      const res = await api.get('/api/news');
       const newsArray = Array.isArray(res.data) ? res.data : res.data.news ?? [];
       setNews(newsArray);
     } catch (err) {
@@ -79,10 +80,10 @@ const NewsManagement: React.FC = () => {
             };
 
             if (editItem) {
-            await axios.put(`/api/news/${editItem._id}`, form, config);
+            await api.put(`/api/news/${editItem._id}`, form, config);
             toast.success('News updated');
             } else {
-            await axios.post('/api/news', form, config);
+            await api.post('/api/news', form, config);
             toast.success('News created');
             }
 
@@ -104,18 +105,20 @@ const NewsManagement: React.FC = () => {
   const handleDelete = async (id: string) => {
     const token = localStorage.getItem("pplt20_token");
     if (!window.confirm('Are you sure you want to delete this news item?')) return;
+
     try {
-      await axios.delete(`http://localhost:8080/api/news/${id}`, {
+      await api.delete(`/news/${id}`, {
         headers: {
-            Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
-        });
+      });
       toast.success('News deleted');
       fetchNews();
     } catch (err) {
       toast.error('Delete failed');
     }
   };
+
 
   const openForm = (item?: NewsItem) => {
     if (item) {
