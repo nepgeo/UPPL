@@ -14,7 +14,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 
-import Logo from "@/images/lg-removebg-preview.png"; 
+import Logo from "@/assets/images/lg-removebg-preview.png";
+
 import api from "@/lib/api"; 
 
 interface FormDataType {
