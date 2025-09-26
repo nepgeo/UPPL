@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 
 import Logo from "@/images/lg-removebg-preview.png"; 
+import api from "@/lib/api"; 
 
 interface FormDataType {
   id?: string;
@@ -25,6 +26,7 @@ interface FormDataType {
   documents: File[];
   playerCode?: string; // Optional player code field
 }
+
 
 
 
@@ -99,106 +101,71 @@ const Navbar = () => {
   const isActive = (path: string) => location.pathname === path;
 
   const handleSave = async () => {
-  if (!user) return;
+    if (!user) return;
 
-  try {
-    const fd = new FormData();
-    fd.append("name", formData.name);
-    fd.append("email", formData.email);
+    try {
+      const fd = new FormData();
+      fd.append("name", formData.name);
+      fd.append("email", formData.email);
 
-    // ✅ Only append profile image if selected
-    if (formData.profileImage) {
-      fd.append("profileImage", formData.profileImage);
+      if (formData.profileImage) {
+        fd.append("profileImage", formData.profileImage);
+      }
+
+      if (role === "player" && formData.documents.length > 0) {
+        formData.documents.forEach((doc) => fd.append("documents", doc));
+      }
+
+      let endpoint = `/user/users/${user.id}`;
+      if (role === "admin" || role === "super-admin") {
+        endpoint = `/admin/users/${user.id}`;
+      }
+
+      const res = await api.patch(endpoint, fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      if (typeof setUser === "function") setUser(res.data.user);
+      localStorage.setItem("pplt20_user", JSON.stringify(res.data.user));
+
+      setIsProfileOpen(false);
+      setEditMode(false);
+      console.log("Profile updated successfully");
+    } catch (err: any) {
+      console.error("Error updating profile:", err.message || err);
+      alert("Error updating profile: " + (err.message || err));
     }
+  };
 
-    // ✅ Append documents only for player
-    if ((role === "player") && formData.documents && formData.documents.length > 0) {
-      formData.documents.forEach((doc) => fd.append("documents", doc));
-    }
-
-    const API_BASE = "http://localhost:8080/api";
-    let apiUrl = `${API_BASE}/user/users/${user.id }`; // normal user
-
-    if (role === "admin" || role === "super-admin") {
-      apiUrl = `${API_BASE}/admin/users/${user.id}`; // admin user
-    }
-
-    // ❌ Do NOT set Content-Type for FormData
-    const res = await fetch(apiUrl, {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${token || localStorage.getItem("pplt20_token")}`,
-      },
-      body: fd,
-    });
-
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.message || "Failed to update profile");
-    }
-
-    const data = await res.json();
-
-    // ✅ Update user in context
-    if (typeof setUser === "function") setUser(data.user);
-
-    // ✅ Persist in localStorage
-    localStorage.setItem("pplt20_user", JSON.stringify(data.user));
-
-    setIsProfileOpen(false);
-    setEditMode(false);
-
-    console.log("Profile updated successfully");
-  } catch (err: any) {
-    console.error("Error updating profile:", err.message || err);
-    alert("Error updating profile: " + (err.message || err));
-  }
-};
 
 
 
 
   const handleChangePassword = async () => {
-  // Make sure new + confirm match
-  if (passwordData.newPassword !== passwordData.confirmPassword) {
-    alert("New passwords do not match");
-    return;
-  }
-
-  if (!user?.id) {
-    alert("User not found");
-    return;
-  }
-
-  try {
-    const API_BASE = "http://localhost:8080/api"; // match backend base
-    const url = `${API_BASE}/user/${user.id}/change-password`;
-
-    const res = await fetch(url, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token || localStorage.getItem("pplt20_token")}`,
-      },
-      body: JSON.stringify({
-        oldPassword: passwordData.oldPassword,
-        newPassword: passwordData.newPassword,
-      }),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data.message || "Failed to change password");
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      alert("New passwords do not match");
+      return;
     }
 
-    alert("Password updated successfully ✅");
-    setChangePasswordOpen(false);
-    setPasswordData({ oldPassword: "", newPassword: "", confirmPassword: "" });
-  } catch (err: any) {
-    alert("Error updating password: " + (err.message || err));
-  }
-};
+    if (!user?.id) {
+      alert("User not found");
+      return;
+    }
+
+    try {
+      const res = await api.patch(`/user/${user.id}/change-password`, {
+        oldPassword: passwordData.oldPassword,
+        newPassword: passwordData.newPassword,
+      });
+
+      alert("Password updated successfully ✅");
+      setChangePasswordOpen(false);
+      setPasswordData({ oldPassword: "", newPassword: "", confirmPassword: "" });
+    } catch (err: any) {
+      alert("Error updating password: " + (err.message || err));
+    }
+  };
+
 
 
 

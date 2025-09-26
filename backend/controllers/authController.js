@@ -187,6 +187,7 @@ exports.login = async (req, res) => {
     // ✅ Always return profileImage, documents, etc.
     res.json({
       message: "Login successful",
+      token,
       user: {
         id: user._id,
         name: user.name,
