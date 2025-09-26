@@ -45,7 +45,9 @@ exports.register = async (req, res) => {
 
     // ❌ Prevent super-admin registration
     if (role === "super-admin") {
-      return res.status(403).json({ message: "Cannot create super-admin accounts" });
+      return res
+        .status(403)
+        .json({ message: "Cannot create super-admin accounts" });
     }
 
     // ✅ Check duplicate email
@@ -57,11 +59,12 @@ exports.register = async (req, res) => {
     // ✅ Upload profile image to Cloudinary
     let profileImage = null;
     if (req.files?.profileImage?.[0]) {
-      const uploadRes = await cloudinary.uploader.upload(
-        req.files.profileImage[0].path,
-        { folder: "users/profile" }
-      );
+      const filePath = req.files.profileImage[0].path;
+      const uploadRes = await cloudinary.uploader.upload(filePath, {
+        folder: "users/profile",
+      });
       profileImage = { url: uploadRes.secure_url, public_id: uploadRes.public_id };
+      fs.unlinkSync(filePath); // cleanup local file
     }
 
     // ✅ Upload documents to Cloudinary
@@ -72,6 +75,7 @@ exports.register = async (req, res) => {
           folder: "users/documents",
         });
         documents.push({ url: uploadRes.secure_url, public_id: uploadRes.public_id });
+        fs.unlinkSync(file.path); // cleanup each local file
       }
     }
 
@@ -98,7 +102,9 @@ exports.register = async (req, res) => {
         newUser.playerCode = await generatePlayerCode();
       } catch (err) {
         console.error("❌ Failed to generate player code:", err.message);
-        return res.status(500).json({ message: "Error generating player code" });
+        return res
+          .status(500)
+          .json({ message: "Error generating player code" });
       }
     }
 
