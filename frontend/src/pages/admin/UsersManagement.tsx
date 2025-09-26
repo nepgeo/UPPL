@@ -116,7 +116,9 @@ const UsersManagement = () => {
   const handleDeleteUser = async (userId: string) => {
     try {
       const token = localStorage.getItem('pplt20_token');
-      await api.delete(`/api/admin/users/${userId}`);
+      await api.delete(`${BASE_URL}/api/admin/users/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setUsers(users.filter((user) => user.id !== userId));
       toast({ title: 'User Deleted' });
     } catch (err) {
