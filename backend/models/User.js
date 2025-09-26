@@ -1,88 +1,76 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-const UserSchema = new mongoose.Schema({
-  playerCode: {
-    type: String,
-    unique: true,
-    sparse: true, // allows nulls for non-verified users
-  },
-  name: {
-    type: String,
-    required: true,
-  },
+const UserSchema = new mongoose.Schema(
+  {
+    playerCode: {
+      type: String,
+      unique: true,
+      sparse: true, // allows nulls for non-verified users
+    },
 
-  email: {
-    type: String,
-    unique: true,
-    required: true,
-    unique: true,
-  },
+    name: {
+      type: String,
+      required: true,
+    },
 
-  password: {
-    type: String,
-    required: true,
-  },
+    email: {
+      type: String,
+      unique: true,
+      required: true,
+    },
 
-  role: {
-    type: String,
-    enum: ['super-admin', 'admin', 'player', 'user'],
-    default: 'user',
-  },
+    password: {
+      type: String,
+      required: true,
+    },
 
-  verified: {
-    type: Boolean,
-    default: false,
-  },
-  team: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Team',
-    default: null,
-  },
+    role: {
+      type: String,
+      enum: ['super-admin', 'admin', 'player', 'user'],
+      default: 'user',
+    },
 
-  // ✅ Player-specific fields (optional for non-players)
-  phone: {
-    type: String,
-    default: 'N/A',
-  },
-  bio: {
-    type: String,
-    default: '',
-  },
-  dateOfBirth: {
-    type: String,
-    default: '',
-  },
-  position: {
-    type: String,
-    default: '',
-  },
-  battingStyle: {
-    type: String,
-    default: '',
-  },
-  bowlingStyle: {
-    type: String,
-    default: '',
-  },
+    verified: {
+      type: Boolean,
+      default: false,
+    },
 
-  // ✅ Media & documents
-  profileImage: {
-    type: String,
-    default: '',
-  },
-  documents: {
-    type: [String],
-    default: [],
-  },
-  resetOtp: { type: String },
-  resetOtpExpires: { type: Date },
-  resetOtpAttempts: { type: Number, default: 0 },
-  resetOtpLockedUntil: { type: Date }
+    team: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Team',
+      default: null,
+    },
 
-}, {
-  timestamps: true,
-});
+    // ✅ Player-specific fields
+    phone: { type: String, default: 'N/A' },
+    bio: { type: String, default: '' },
+    dateOfBirth: { type: String, default: '' },
+    position: { type: String, default: '' },
+    battingStyle: { type: String, default: '' },
+    bowlingStyle: { type: String, default: '' },
+
+    // ✅ Cloudinary media
+    profileImage: {
+      url: { type: String, default: '' },
+      public_id: { type: String, default: '' },
+    },
+
+    documents: [
+      {
+        url: { type: String, required: true },
+        public_id: { type: String, required: true },
+      },
+    ],
+
+    // ✅ Password reset OTP flow
+    resetOtp: { type: String },
+    resetOtpExpires: { type: Date },
+    resetOtpAttempts: { type: Number, default: 0 },
+    resetOtpLockedUntil: { type: Date },
+  },
+  { timestamps: true }
+);
 
 // ✅ Hash password before saving
 UserSchema.pre('save', async function (next) {
@@ -93,5 +81,3 @@ UserSchema.pre('save', async function (next) {
 });
 
 module.exports = mongoose.model('User', UserSchema);
-
-

@@ -4,44 +4,75 @@ const playerSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: false
+    required: false,
   },
   status: {
     type: String,
     enum: ['verified', 'pending', 'not_registered'],
-    default: 'not_registered'
+    default: 'not_registered',
   },
   position: {
     type: String,
-    default: ''
+    default: '',
   },
   jerseyNumber: {
     type: Number,
-    default: null
+    default: null,
   },
-  code: { type: String },         // 🆕 add this if not already
-  name: { type: String }, 
+  code: { type: String }, // 🆕 add this if not already
+  name: { type: String },
 });
 
+const teamSchema = new mongoose.Schema(
+  {
+    teamName: { type: String, required: true },
 
-const teamSchema = new mongoose.Schema({
-  teamName: { type: String, required: true },
-  teamLogo: { type: String },
-  captainName: { type: String, required: true },
-  coachName: { type: String, default: '' },
-  managerName: { type: String, default: '' },
-  contactNumber: { type: String },
-  seasonNumber: { type: mongoose.Schema.Types.ObjectId, ref: 'Season', required: true },
-  groupName: { type: String, enum: ['A','B','C','D','E','F','G','H','I','J','K'], default: undefined },
-  players: [playerSchema],
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  paymentReceipt: { type: String, required: true },
-  status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
-  teamCode: {
-    type: String,
-    unique: true,
-    required: true,
-  }
-}, { timestamps: true });
+    // ✅ Cloudinary logo
+    teamLogo: {
+      url: { type: String, default: '' },
+      public_id: { type: String, default: '' },
+    },
+
+    captainName: { type: String, required: true },
+    coachName: { type: String, default: '' },
+    managerName: { type: String, default: '' },
+    contactNumber: { type: String },
+
+    seasonNumber: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Season',
+      required: true,
+    },
+
+    groupName: {
+      type: String,
+      enum: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K'],
+      default: undefined,
+    },
+
+    players: [playerSchema],
+
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+
+    // ✅ Cloudinary receipt
+    paymentReceipt: {
+      url: { type: String, required: true },
+      public_id: { type: String, required: true },
+    },
+
+    status: {
+      type: String,
+      enum: ['pending', 'approved', 'rejected'],
+      default: 'pending',
+    },
+
+    teamCode: {
+      type: String,
+      unique: true,
+      required: true,
+    },
+  },
+  { timestamps: true }
+);
 
 module.exports = mongoose.model('Team', teamSchema);

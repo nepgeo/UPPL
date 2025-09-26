@@ -1,66 +1,46 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-// Schema for organization sponsors
-const organizationSponsorSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: [true, 'Organization name is required'],
-    trim: true
+// =========================
+// Organization Sponsor
+// =========================
+const organizationSponsorSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true },
+    bio: { type: String },
+    donationAmount: { type: Number, default: 0 },
+    logo: {
+      url: { type: String },       // Cloudinary secure URL
+      public_id: { type: String }, // Cloudinary public_id
+    },
+    isActive: { type: Boolean, default: true },
   },
-  logo: {
-    type: String, // Image filename (stored in /uploads/sponsors)
-    default: ''
-  },
-  bio: {
-    type: String,
-    trim: true
-  },
-  donationAmount: {
-    type: Number,
-    default: 0,
-    min: [0, 'Donation must be non-negative']
-  },
-  isActive: {
-    type: Boolean,
-    default: true
-  }
-}, { timestamps: true });
+  { timestamps: true }
+);
 
+// =========================
+// Individual Sponsor
+// =========================
+const individualSponsorSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true },
+    bio: { type: String },
+    donationAmount: { type: Number, default: 0 },
+    avatar: {
+      url: { type: String },       // Cloudinary secure URL
+      public_id: { type: String }, // Cloudinary public_id
+    },
+    isActive: { type: Boolean, default: true },
+  },
+  { timestamps: true }
+);
 
-// Schema for individual sponsors
-const individualSponsorSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: [true, 'Individual name is required'],
-    trim: true
-  },
-  avatar: {
-    type: String, // Image filename (stored in /uploads/sponsors)
-    default: ''
-  },
-  title: {
-    type: String,
-    trim: true
-  },
-  bio: {
-    type: String,
-    trim: true
-  },
-  donationAmount: {
-    type: Number,
-    default: 0,
-    min: [0, 'Donation must be non-negative']
-  },
-  isActive: {
-    type: Boolean,
-    default: true
-  }
-}, { timestamps: true });
+const OrganizationSponsor = mongoose.model(
+  "OrganizationSponsor",
+  organizationSponsorSchema
+);
+const IndividualSponsor = mongoose.model(
+  "IndividualSponsor",
+  individualSponsorSchema
+);
 
-const OrganizationSponsor = mongoose.model('OrganizationSponsor', organizationSponsorSchema);
-const IndividualSponsor = mongoose.model('IndividualSponsor', individualSponsorSchema);
-
-module.exports = {
-  OrganizationSponsor,
-  IndividualSponsor
-};
+module.exports = { OrganizationSponsor, IndividualSponsor };

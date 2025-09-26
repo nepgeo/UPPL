@@ -1,10 +1,15 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const teamMemberSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  position: { type: String, required: true },
-  avatar: { type: String }, // image path
-}, { timestamps: true });
+const teamMemberSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true },
+    position: { type: String, required: true },
+    avatar: {
+      url: { type: String },       // Cloudinary secure URL
+      public_id: { type: String }, // Cloudinary public_id
+    },
+  },
+  { timestamps: true }
+);
 
-const TeamMember = mongoose.model('TeamMember', teamMemberSchema);
-module.exports = TeamMember;
+module.exports = mongoose.model("TeamMember", teamMemberSchema);
