@@ -4,7 +4,7 @@ import { API_BASE } from "@/config";
 
 const api = axios.create({
   baseURL: API_BASE,
-  withCredentials: false, // ❌ disable unless using cookies
+  withCredentials: true, // ❌ disable unless using cookies
 });
 
 // Attach auth token to every request
