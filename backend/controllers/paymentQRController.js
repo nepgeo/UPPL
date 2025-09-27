@@ -18,22 +18,16 @@ async function getAllQRs(req, res) {
       .max_results(50)
       .execute();
 
-    console.log("📡 Cloudinary raw search result:", JSON.stringify(result, null, 2));
+    // Map only URLs
+    const urls = result.resources.map((file) => file.secure_url);
 
-    const list = result.resources.map((file) => ({
-      url: file.secure_url,
-      public_id: file.public_id,
-    }));
+    console.log("📦 Returning QR URLs:", urls);
 
-    console.log("📦 Mapped QR list:", list);
-
-    // 🔑 Always return array under `qr`
-    return res.json({ success: true, qr: list });
+    // ✅ Return array directly
+    return res.json(urls);
   } catch (err) {
     console.error("❌ Error fetching QR codes:", err);
-    return res
-      .status(500)
-      .json({ success: false, message: "Failed to fetch QR images" });
+    return res.status(500).json({ message: "Failed to fetch QR images" });
   }
 }
 

@@ -56,24 +56,19 @@ useEffect(() => {
     try {
       const res = await api.get("/payment-qr");
 
-      console.log("📡 Raw QR response:", res.data);
+      console.log("📡 Raw QR URLs:", res.data);
 
-      // Always read the qr array
-      const qrList = Array.isArray(res.data.qr) ? res.data.qr : [];
-
-      // Convert objects -> URL list
-      const urls = qrList.map((q: any) => q.url).filter(Boolean);
-
-      setQrImages(urls);
-
-      console.log("📦 Final QR URLs:", urls);
+      // ✅ res.data is now an array of URLs
+      setQrImages(Array.isArray(res.data) ? res.data : []);
     } catch (error: any) {
-      console.error("❌ Error fetching QR images", error.message);
+      console.error("❌ Error fetching QR images:", error.message);
     }
   };
 
   fetchQRImages();
 }, []);
+
+
 
 
 
