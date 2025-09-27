@@ -1,44 +1,41 @@
-// backend/utils/cloudinaryService.js
-const cloudinary = require('../config/cloudinary');
-const fs = require('fs');
+const cloudinary = require("../config/cloudinary");
 
-const uploadFile = (filePath, folder = 'uppl') => {
-  return new Promise((resolve, reject) => {
-    cloudinary.uploader.upload(filePath, { folder }, (error, result) => {
-      if (error) return reject(error);
-      resolve(result);
+/**
+ * Upload file to Cloudinary
+ * @param {string} filePath - Local file path
+ * @param {string} folder   - Target Cloudinary folder
+ */
+const uploadFileToCloudinary = async (filePath, folder = "uploads") => {
+  try {
+    const result = await cloudinary.uploader.upload(filePath, {
+      folder,
+      resource_type: "auto",
     });
-  });
+    return {
+      url: result.secure_url,
+      public_id: result.public_id,
+    };
+  } catch (err) {
+    console.error("❌ Cloudinary upload error:", err.message);
+    throw err;
+  }
 };
 
 /**
- * Upload multer-saved file, then delete local file.
- * file: multer file object with .path property
- * folder: Cloudinary folder name (e.g. 'uppl/news')
+ * Delete file from Cloudinary
+ * @param {string} publicId - Cloudinary public_id
  */
-const uploadAndRemoveLocal = async (file, folder = 'uppl') => {
-  const result = await uploadFile(file.path, folder);
+const destroyPublicId = async (publicId) => {
   try {
-    fs.unlinkSync(file.path);
+    if (!publicId) return;
+    await cloudinary.uploader.destroy(publicId);
   } catch (err) {
-    // non-fatal: log for debugging
-    // keep going even if local delete fails
-    console.warn('Could not delete local file:', file.path, err?.message || err);
+    console.error("❌ Cloudinary delete error:", err.message);
+    throw err;
   }
-  return result; // result.secure_url, result.public_id, etc.
-};
-
-const destroy = async (public_id) => {
-  return new Promise((resolve, reject) => {
-    cloudinary.uploader.destroy(public_id, (err, res) => {
-      if (err) return reject(err);
-      resolve(res);
-    });
-  });
 };
 
 module.exports = {
-  uploadFile,
-  uploadAndRemoveLocal,
-  destroy,
+  uploadFileToCloudinary,
+  destroyPublicId,
 };
