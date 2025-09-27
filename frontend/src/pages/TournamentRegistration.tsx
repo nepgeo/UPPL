@@ -51,19 +51,26 @@ const TournamentRegistration: React.FC = () => {
 
   // Fetch QR codes
   useEffect(() => {
-    const fetchQRImages = async () => {
-      try {
-        const res = await api.get("/payment-qr");
-        // assuming backend returns { success, qr: [ ... ] }
-        const qrList = res.data.qr || res.data || [];
-        setQrImages(qrList.map((q: any) => q.url).filter(Boolean));
-      } catch (error) {
-        console.error("Error fetching QR images", error);
-      }
-    };
+  const fetchQRImages = async () => {
+    try {
+      const res = await api.get("/payment-qr");
 
-    fetchQRImages();
-  }, []);
+      // 🔍 Debug logs
+      console.log("📡 Raw QR response:", res.data);
+
+      // ✅ Backend returns { success, qrs: [...] }
+      const qrList = res.data.qrs || res.data.qr || [];
+      console.log("📦 Parsed QR list:", qrList);
+
+      setQrImages(qrList.map((q: any) => q.url).filter(Boolean));
+    } catch (error) {
+      console.error("❌ Error fetching QR images", error);
+    }
+  };
+
+  fetchQRImages();
+}, []);
+
 
 
   // Fetch current season
