@@ -82,7 +82,7 @@ exports.register = async (req, res) => {
     const newUser = new User({
       name,
       email,
-      password: hashedPassword,
+      password,
       role: role || "user",
       position,
       battingStyle,
