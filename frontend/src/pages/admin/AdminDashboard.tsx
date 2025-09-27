@@ -30,6 +30,7 @@ import CapIcon from "@/assets/icons/cap.png";
 import { Phone, CalendarDays } from "lucide-react"; 
 import { useLocation } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getProfileImageUrl } from "@/utils/getProfileImageUrl"; // make sure it's global
 
 
 const roleIcon = (roleRaw?: string) => {
@@ -70,31 +71,34 @@ const AdminDashboard = () => {
     setActiveTab(tabFromUrl);
   }, [tabFromUrl]);
 
-  useEffect(() => {
-    getAdminDashboard()
-      .then((res) => {
-        const normalizedPlayers = (res.pendingPlayersList ?? []).map((p: any) => ({
-          id: p.id || p._id || p.userId,
-          name: p.name ?? 'Unknown',
-          email: p.email ?? 'No Email',
-          phone: p.phone ?? 'N/A',
-          position: p.position ?? 'Unknown',
-          battingStyle: p.battingStyle ?? 'N/A',
-          bowlingStyle: p.bowlingStyle ?? 'N/A',
-          profilePicture: p.profileImage ?? '',
-          citizenshipFront: p.citizenshipFront ?? '',
-          citizenshipBack: p.citizenshipBack ?? '',
-          submittedAt: p.submittedAt ?? 'N/A',
-          documents: p.documents ?? [],
-          role: p.role ?? 'player'
-        }));
-        console.log("Fetched players", normalizedPlayers);
-        setDashboardData({ ...res, pendingPlayersList: normalizedPlayers });
-      })
-      .catch((err) => {
-        console.error('Failed to fetch dashboard data', err);
-      });
-  }, []);
+  
+
+useEffect(() => {
+  getAdminDashboard()
+    .then((res) => {
+      const normalizedPlayers = (res.pendingPlayersList ?? []).map((p: any) => ({
+        id: p._id || p.id || (p.userId?._id ?? p.userId),
+        name: p.name ?? "Unknown",
+        email: p.email ?? "No Email",
+        phone: p.phone ?? "N/A",
+        position: p.position ?? "Unknown",
+        battingStyle: p.battingStyle ?? "N/A",
+        bowlingStyle: p.bowlingStyle ?? "N/A",
+        profilePicture: getProfileImageUrl(p.profileImage),
+        submittedAt: p.submittedAt ?? "N/A",
+        documents: (p.documents ?? []).map((doc: any) => ({
+          url: getProfileImageUrl(doc),
+          public_id: doc.public_id ?? null,
+        })),
+        role: p.role ?? "player",
+      }));
+      setDashboardData({ ...res, pendingPlayersList: normalizedPlayers });
+    })
+    .catch((err) => {
+      console.error("Failed to fetch dashboard data", err);
+    });
+}, []);
+
 
   const dashboardStats = [
     {

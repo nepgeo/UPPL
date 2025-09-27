@@ -117,6 +117,7 @@ const Navbar = () => {
         formData.documents.forEach((doc) => fd.append("documents", doc));
       }
 
+      
       let endpoint = `/user/users/${user.id}`;
       if (role === "admin" || role === "super-admin") {
         endpoint = `/admin/users/${user.id}`;
