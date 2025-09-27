@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
-const upload = require('../config/multerCloudinary');
+const { upload, uploadTeamFiles, uploadPaymentQR } = require("../middleware/upload");
+
 // Register route with image and document upload
 router.post(
   '/register',

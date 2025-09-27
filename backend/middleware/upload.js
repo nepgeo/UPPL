@@ -1,82 +1,42 @@
+// backend/middleware/upload.js
 const multer = require("multer");
-const { CloudinaryStorage } = require("multer-storage-cloudinary");
-const cloudinary = require("../config/cloudinary");
+const path = require("path");
+const os = require("os");
+const { v4: uuidv4 } = require("uuid");
 
-// ✅ Define Cloudinary storage
-const storage = new CloudinaryStorage({
-  cloudinary,
-  params: async (req, file) => {
-    let folder = "other";
+// temp folder for multer
+const tmpDir = path.join(os.tmpdir(), "uppl-uploads");
+const fs = require("fs");
+if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
 
-    switch (file.fieldname) {
-      case "profileImage":
-        folder = "users/profile";
-        break;
-      case "documents":
-        folder = "users/documents";
-        break;
-      case "image":
-      case "images":
-        folder = "gallery";
-        break;
-      case "logo":
-      case "avatar": // 👈 used in sponsors & teamMembers
-        folder = "sponsors";
-        break;
-      case "teamLogo":
-        folder = "teams/logos";
-        break;
-      case "paymentReceipt":
-        folder = "payments/receipts";
-        break;
-      case "qrImage":
-        folder = "payments/qr";
-        break;
-      case "teamMember":
-        folder = "teams/members";
-        break;
-      default:
-        folder = "other";
-    }
-
-    return {
-      folder,
-      public_id: `${file.fieldname}-${Date.now()}`,
-      resource_type:
-        file.mimetype === "application/pdf" ? "raw" : "image", // ✅ handle PDFs
-    };
-  },
+// disk storage (temporary)
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, tmpDir),
+  filename: (req, file, cb) =>
+    cb(null, `${uuidv4()}${path.extname(file.originalname)}`),
 });
 
-// ✅ File filter (allow only images + PDFs)
+// file filter for images and pdfs
 const fileFilter = (req, file, cb) => {
   if (file.mimetype.startsWith("image/") || file.mimetype === "application/pdf") {
     cb(null, true);
   } else {
-    cb(new Error("Only images and PDFs are allowed"), false);
+    cb(new Error("Only image and PDF files are allowed"), false);
   }
 };
 
-// ✅ Multer instance with Cloudinary storage
+// 20MB limit
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 20 * 1024 * 1024 }, // 🔥 20 MB max
+  limits: { fileSize: 20 * 1024 * 1024 },
 });
 
-// ✅ Field-based middleware
-const uploadTeamFiles = () =>
-  upload.fields([
-    { name: "teamLogo", maxCount: 1 },
-    { name: "avatar", maxCount: 1 }, // 👈 changed from "teamMember" for consistency
-    { name: "paymentReceipt", maxCount: 1 },
-  ]);
-
-const uploadPaymentQR = () =>
-  upload.fields([{ name: "qrImage", maxCount: 1 }]);
-
+// exported helpers to use in controllers
 module.exports = {
   upload,
-  uploadTeamFiles,
-  uploadPaymentQR,
+  // convenience middlewares for common combinations:
+  single: (fieldName) => upload.single(fieldName),
+  multiple: (fieldName, maxCount = 10) => upload.array(fieldName, maxCount),
+  fields: (fields) => upload.fields(fields),
 };

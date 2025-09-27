@@ -7,7 +7,7 @@ const mailer = require("../config/mailer");
 const generateOtp = require("../utils/generateOtp");
 const transporter = require("../config/mailer");
 const crypto = require("crypto");
-
+const { uploadFileToCloudinary, destroyPublicId } = require("../utils/cloudinaryService");
 /**
  * Helper: Generate JWT token
  */
@@ -56,19 +56,23 @@ exports.register = async (req, res) => {
     // ✅ Cloudinary: profileImage
     let profileImage = null;
     if (req.files?.profileImage?.[0]) {
-      profileImage = {
-        url: req.files.profileImage[0].path,        // Cloudinary URL
-        public_id: req.files.profileImage[0].filename, // Cloudinary public_id
-      };
+      const uploaded = await uploadFileToCloudinary(
+        req.files.profileImage[0].path,
+        "users/profile"
+      );
+      profileImage = { url: uploaded.url, public_id: uploaded.public_id };
     }
 
     // ✅ Cloudinary: documents
     let documents = [];
     if (req.files?.documents?.length > 0) {
-      documents = req.files.documents.map((file) => ({
-        url: file.path,
-        public_id: file.filename,
-      }));
+      for (const file of req.files.documents) {
+        const uploaded = await uploadFileToCloudinary(
+          file.path,
+          "users/documents"
+        );
+        documents.push({ url: uploaded.url, public_id: uploaded.public_id });
+      }
     }
 
     // ✅ Hash password
@@ -96,7 +100,9 @@ exports.register = async (req, res) => {
         newUser.playerCode = await generatePlayerCode();
       } catch (err) {
         console.error("❌ Failed to generate player code:", err.message);
-        return res.status(500).json({ message: "Error generating player code" });
+        return res
+          .status(500)
+          .json({ message: "Error generating player code" });
       }
     }
 
@@ -136,11 +142,17 @@ exports.login = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: "Invalid credentials" });
 
-    const isMatch = await bcrypt.compare((password || "").trim(), user.password);
-    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+    const isMatch = await bcrypt.compare(
+      (password || "").trim(),
+      user.password
+    );
+    if (!isMatch)
+      return res.status(400).json({ message: "Invalid credentials" });
 
     if (user.role === "player" && !user.verified) {
-      return res.status(403).json({ message: "Your account is pending admin verification." });
+      return res
+        .status(403)
+        .json({ message: "Your account is pending admin verification." });
     }
 
     const token = generateToken(user);
