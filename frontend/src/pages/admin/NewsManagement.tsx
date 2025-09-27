@@ -29,7 +29,7 @@ const NewsManagement: React.FC = () => {
   const fetchNews = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/api/news'),;
+      const res = await api.get('/news');
       const newsArray = Array.isArray(res.data) ? res.data : res.data.news ?? [];
       setNews(newsArray);
     } catch (err) {
@@ -80,10 +80,10 @@ const NewsManagement: React.FC = () => {
             };
 
             if (editItem) {
-            await api.put(`/api/news/${editItem._id}`, form, config);
+            await api.put(`/news/${editItem._id}`, form, config);
             toast.success('News updated');
             } else {
-            await api.post('/api/news', form, config);
+            await api.post('/news', form, config);
             toast.success('News created');
             }
 
@@ -107,11 +107,7 @@ const NewsManagement: React.FC = () => {
     if (!window.confirm('Are you sure you want to delete this news item?')) return;
 
     try {
-      await api.delete(`/news/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      await api.delete(`/news/${id}`);
       toast.success('News deleted');
       fetchNews();
     } catch (err) {

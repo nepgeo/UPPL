@@ -28,8 +28,8 @@ const itemsPerPage = 5; // adjust as needed
 
     try {
       const [orgRes, indRes] = await Promise.all([
-        api.get('/api/sponsors/organizations', config),
-        api.get('/api/sponsors/individuals', config),
+        api.get('/sponsors/organizations', config),
+        api.get('/sponsors/individuals', config),
       ]);
 
       // console.log('✅ Organizations Data:', orgRes.data);
@@ -65,7 +65,7 @@ const itemsPerPage = 5; // adjust as needed
     const token = localStorage.getItem('pplt20_token');
     try {
       setLoadingTeam(true);
-      const res = await api.get('/api/team-members', {
+      const res = await api.get('/team-members', {
         headers: { Authorization: `Bearer ${token}` },
       });
       setTeam(res.data);
@@ -84,7 +84,7 @@ const itemsPerPage = 5; // adjust as needed
   const handleDeleteMember = async (id: string) => {
     const token = localStorage.getItem('pplt20_token');
     try {
-      await api.delete(`/api/team-members/${id}`, {
+      await api.delete(`/team-members/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       fetchTeam();
@@ -101,7 +101,7 @@ const itemsPerPage = 5; // adjust as needed
 
     try {
       if (editMember._id) {
-        await api.put(`/api/team-members/${editMember._id}`, formData, {
+        await api.put(`/team-members/${editMember._id}`, formData, {
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" },
         });
       } else {
