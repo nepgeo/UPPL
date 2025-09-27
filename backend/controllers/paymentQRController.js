@@ -7,6 +7,9 @@ const {
 // ========================
 // GET all QR images
 // ========================
+// ========================
+// GET all QR images
+// ========================
 async function getAllQRs(req, res) {
   try {
     const result = await cloudinary.search
@@ -15,10 +18,14 @@ async function getAllQRs(req, res) {
       .max_results(50)
       .execute();
 
+    console.log("📡 Cloudinary raw search result:", JSON.stringify(result, null, 2));
+
     const list = result.resources.map((file) => ({
       url: file.secure_url,
       public_id: file.public_id,
     }));
+
+    console.log("📦 Mapped QR list:", list);
 
     // 🔑 Always return array under `qr`
     return res.json({ success: true, qr: list });
@@ -29,6 +36,7 @@ async function getAllQRs(req, res) {
       .json({ success: false, message: "Failed to fetch QR images" });
   }
 }
+
 
 // ========================
 // CREATE — expects multer.single('qrImage')

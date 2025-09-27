@@ -50,26 +50,37 @@ const TournamentRegistration: React.FC = () => {
 
 
   // Fetch QR codes
-  useEffect(() => {
+  // Fetch QR codes
+useEffect(() => {
   const fetchQRImages = async () => {
     try {
       const res = await api.get("/payment-qr");
 
-      // 🔍 Debug logs
       console.log("📡 Raw QR response:", res.data);
 
-      // ✅ Backend returns { success, qrs: [...] }
-      const qrList = res.data.qrs || res.data.qr || [];
-      console.log("📦 Parsed QR list:", qrList);
+      // Always read the qr array
+      const qrList = Array.isArray(res.data.qr) ? res.data.qr : [];
 
-      setQrImages(qrList.map((q: any) => q.url).filter(Boolean));
-    } catch (error) {
-      console.error("❌ Error fetching QR images", error);
+      // Convert objects -> URL list
+      const urls = qrList.map((q: any) => q.url).filter(Boolean);
+
+      setQrImages(urls);
+
+      console.log("📦 Final QR URLs:", urls);
+    } catch (error: any) {
+      console.error("❌ Error fetching QR images", error.message);
     }
   };
 
   fetchQRImages();
 }, []);
+
+
+
+
+
+
+
 
 
 
