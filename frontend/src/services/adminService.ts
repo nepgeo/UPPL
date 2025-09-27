@@ -31,3 +31,8 @@ export const getPendingPlayers = async () => {
     throw new Error(error.response?.data?.message || 'Failed to fetch pending players');
   }
 };
+
+export default {
+  getAdminDashboard,
+  getPendingPlayers,
+};
