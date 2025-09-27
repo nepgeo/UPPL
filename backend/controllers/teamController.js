@@ -22,6 +22,7 @@ const createTeam = async (req, res) => {
 
     const { seasonNumber } = req.body;
 
+    // ✅ Validate season ID
     if (!mongoose.Types.ObjectId.isValid(seasonNumber)) {
       return res.status(400).json({ message: "❌ Invalid season ID" });
     }
@@ -49,13 +50,24 @@ const createTeam = async (req, res) => {
       );
     }
 
+    // ✅ Ensure required uploads exist
+    if (!paymentReceipt?.url || !paymentReceipt?.public_id) {
+      return res.status(400).json({ message: "❌ Payment receipt is required" });
+    }
+
+    if (!teamLogo?.url || !teamLogo?.public_id) {
+      return res.status(400).json({ message: "❌ Team logo is required" });
+    }
+
     // ✅ Parse players
     let players = [];
     if (req.body.players) {
       try {
         players = JSON.parse(req.body.players);
       } catch (err) {
-        return res.status(400).json({ message: "❌ Invalid players data format" });
+        return res
+          .status(400)
+          .json({ message: "❌ Invalid players data format" });
       }
     }
 
@@ -97,16 +109,16 @@ const createTeam = async (req, res) => {
       paymentReceipt,
       teamLogo,
       players: preparedPlayers,
-      teamCode: "TEMP",
+      teamCode: "TEMP", // placeholder
     });
 
     await newTeam.save();
 
-    // Generate team code
+    // ✅ Generate team code after saving
     newTeam.teamCode = generateTeamCode(newTeam._id);
     await newTeam.save();
 
-    // Push into season groups
+    // ✅ Push into season groups
     let group = season.groups.find((g) => g.groupName === req.body.groupName);
     if (!group) {
       group = { groupName: req.body.groupName || "Ungrouped", teams: [] };
@@ -119,12 +131,22 @@ const createTeam = async (req, res) => {
     });
     await season.save();
 
-    res.status(201).json({ message: "✅ Team registered successfully", team: newTeam });
+    return res
+      .status(201)
+      .json({ message: "✅ Team registered successfully", team: newTeam });
   } catch (err) {
-    console.error("❌ Team creation failed:", err);
-    res.status(500).json({ message: "Internal server error", error: err.message });
+    console.error("❌ Team creation failed:", err.message);
+    if (err.errors) {
+      Object.keys(err.errors).forEach((field) => {
+        console.error(`- ${field}: ${err.errors[field].message}`);
+      });
+    }
+    return res
+      .status(500)
+      .json({ message: "Internal server error", error: err.message });
   }
 };
+
 
 // ✅ Get teams by season
 const getTeamsBySeason = async (req, res) => {
