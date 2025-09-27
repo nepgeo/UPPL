@@ -29,7 +29,7 @@ const NewsManagement: React.FC = () => {
   const fetchNews = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/api/news');
+      const res = await api.get('/api/news'),;
       const newsArray = Array.isArray(res.data) ? res.data : res.data.news ?? [];
       setNews(newsArray);
     } catch (err) {
