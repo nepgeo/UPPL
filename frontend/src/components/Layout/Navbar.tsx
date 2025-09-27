@@ -173,32 +173,36 @@ const Navbar = () => {
 
   const getProfileImageUrl = (profileImage: any) => {
   if (!profileImage) {
-    return `${BASE_URL}/favicon.png`;
+    return `${BASE_URL}/favicon.png`; // fallback
   }
 
-  // 🚀 Cloudinary object (new schema)
+  // If Cloudinary object
   if (typeof profileImage === "object" && profileImage.url) {
     return profileImage.url;
   }
 
-  // 🚀 Already a full URL (for future-proofing)
-  if (typeof profileImage === "string" && profileImage.startsWith("http")) {
-    return profileImage;
+  // If already a string (old uploads)
+  if (typeof profileImage === "string") {
+    if (profileImage.startsWith("http")) {
+      return profileImage;
+    }
+
+    let cleanPath = profileImage
+      .replace(/\\/g, "/")
+      .replace(/\/+/g, "/")
+      .replace(/^\/uploads\/uploads\//, "/uploads/")
+      .replace(/^uploads\//, "/uploads/");
+
+    if (!cleanPath.startsWith("/")) {
+      cleanPath = "/" + cleanPath;
+    }
+
+    return `${BASE_URL}${cleanPath}`;
   }
 
-  // 🚀 Fallback to backend uploads
-  let cleanPath = (typeof profileImage === "string" ? profileImage : "")
-    .replace(/\\/g, "/")
-    .replace(/\/+/g, "/")
-    .replace(/^\/uploads\/uploads\//, "/uploads/")
-    .replace(/^uploads\//, "/uploads/");
-
-  if (!cleanPath.startsWith("/")) {
-    cleanPath = "/" + cleanPath;
-  }
-
-  return `${BASE_URL}${cleanPath}`;
+  return `${BASE_URL}/favicon.png`;
 };
+
 
 
 
