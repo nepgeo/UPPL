@@ -20,6 +20,8 @@ import axios from "axios";
 import { motion } from "framer-motion";
 import api from "@/lib/api";
 
+import Mandir from "@/assets/images/Mandir.jpg";
+
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -217,7 +219,7 @@ const [forgotEmailError, setForgotEmailError] = useState('');
               Welcome Back,
             </h2>
           <img
-            src="/Mandir.jpg"
+            src={Mandir}
             alt="Login Illustration"
             className="rounded-xl shadow-lg mb-6"
           />
