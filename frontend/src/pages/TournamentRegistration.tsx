@@ -54,7 +54,9 @@ const TournamentRegistration: React.FC = () => {
     const fetchQRImages = async () => {
       try {
         const res = await api.get("/payment-qr");
-        setQrImages(res.data.filter((url: string) => url)); // Ensure no empty URLs
+        // assuming backend returns { success, qr: [ ... ] }
+        const qrList = res.data.qr || res.data || [];
+        setQrImages(qrList.map((q: any) => q.url).filter(Boolean));
       } catch (error) {
         console.error("Error fetching QR images", error);
       }
@@ -62,6 +64,7 @@ const TournamentRegistration: React.FC = () => {
 
     fetchQRImages();
   }, []);
+
 
   // Fetch current season
   useEffect(() => {
