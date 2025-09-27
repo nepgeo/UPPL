@@ -36,6 +36,7 @@ const createTeam = async (req, res) => {
     let paymentReceipt = null;
     let teamLogo = null;
 
+    // 🔑 Use req.files from upload.fields
     if (req.files?.paymentReceipt?.[0]) {
       paymentReceipt = await uploadFileToCloudinary(
         req.files.paymentReceipt[0].path,
@@ -71,6 +72,7 @@ const createTeam = async (req, res) => {
       }
     }
 
+    // ✅ Prepare players array
     const preparedPlayers = await Promise.all(
       players.map(async (p) => {
         const player = {
@@ -146,6 +148,7 @@ const createTeam = async (req, res) => {
       .json({ message: "Internal server error", error: err.message });
   }
 };
+
 
 
 // ✅ Get teams by season

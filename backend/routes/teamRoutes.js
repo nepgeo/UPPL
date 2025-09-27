@@ -10,16 +10,15 @@ const { upload, uploadTeamFiles } = require('../middleware/upload');
 
 // Team registration route (for regular users)
 router.post(
-  '/',
+  "/",
   protect,
-  upload.any(),
-
-  // upload.fields([
-  //   { name: 'teamLogo', maxCount: 1 },
-  //   { name: 'paymentReceipt', maxCount: 1 }
-  // ]),
+  upload.fields([
+    { name: "teamLogo", maxCount: 1 },
+    { name: "paymentReceipt", maxCount: 1 }
+  ]),
   teamController.createTeam
 );
+
 
 router.get("/with-players", teamController.getTeamsWithPlayers);
 
