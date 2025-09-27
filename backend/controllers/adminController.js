@@ -3,6 +3,7 @@ const Match = require('../models/matchModel');
 const User = require('../models/User');
 const mailer = require('../config/mailer'); 
 const generatePlayerCode = require('../utils/generatePlayerCode');
+const { uploadFileToCloudinary, destroyPublicId } = require("../utils/cloudinaryService");
 
 // ✅ Add Player
 exports.addPlayer = async (req, res) => {
@@ -34,18 +35,21 @@ exports.addPlayer = async (req, res) => {
 
     // ✅ Cloudinary profileImage
     if (req.files?.profileImage?.[0]) {
-      newUser.profileImage = {
-        url: req.files.profileImage[0].path,
-        public_id: req.files.profileImage[0].filename,
-      };
+      const uploaded = await uploadFileToCloudinary(
+        req.files.profileImage[0].path,
+        "users/profile"
+      );
+      newUser.profileImage = uploaded;
     }
 
     // ✅ Cloudinary documents
     if (req.files?.documents?.length > 0) {
-      newUser.documents = req.files.documents.map((doc) => ({
-        url: doc.path,
-        public_id: doc.filename,
-      }));
+      const docs = [];
+      for (const file of req.files.documents) {
+        const uploaded = await uploadFileToCloudinary(file.path, "users/documents");
+        docs.push(uploaded);
+      }
+      newUser.documents = docs;
     }
 
     await newUser.save();
@@ -206,17 +210,16 @@ exports.createUser = async (req, res) => {
     });
 
     if (req.files?.profileImage?.[0]) {
-      newUser.profileImage = {
-        url: req.files.profileImage[0].path,
-        public_id: req.files.profileImage[0].filename,
-      };
+      newUser.profileImage = await uploadFileToCloudinary(req.files.profileImage[0].path, "users/profile");
     }
 
     if (req.files?.documents?.length > 0) {
-      newUser.documents = req.files.documents.map((doc) => ({
-        url: doc.path,
-        public_id: doc.filename,
-      }));
+      const docs = [];
+      for (const file of req.files.documents) {
+        const uploaded = await uploadFileToCloudinary(file.path, "users/documents");
+        docs.push(uploaded);
+      }
+      newUser.documents = docs;
     }
 
     await newUser.save();
@@ -253,17 +256,23 @@ exports.updateUser = async (req, res) => {
     Object.assign(user, updates);
 
     if (req.files?.profileImage?.[0]) {
-      user.profileImage = {
-        url: req.files.profileImage[0].path,
-        public_id: req.files.profileImage[0].filename,
-      };
+      if (user.profileImage?.public_id) {
+        await destroyPublicId(user.profileImage.public_id);
+      }
+      user.profileImage = await uploadFileToCloudinary(req.files.profileImage[0].path, "users/profile");
     }
 
     if (req.files?.documents?.length > 0) {
-      user.documents = req.files.documents.map((doc) => ({
-        url: doc.path,
-        public_id: doc.filename,
-      }));
+      // optionally clear old docs or append
+      for (const doc of user.documents) {
+        if (doc.public_id) await destroyPublicId(doc.public_id);
+      }
+      const docs = [];
+      for (const file of req.files.documents) {
+        const uploaded = await uploadFileToCloudinary(file.path, "users/documents");
+        docs.push(uploaded);
+      }
+      user.documents = docs;
     }
 
     const updatedUser = await user.save();
@@ -282,8 +291,19 @@ exports.updateUser = async (req, res) => {
 exports.deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const user = await User.findByIdAndDelete(id);
+    const user = await User.findById(id);
     if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (user.profileImage?.public_id) {
+      await destroyPublicId(user.profileImage.public_id);
+    }
+    if (user.documents?.length > 0) {
+      for (const doc of user.documents) {
+        if (doc.public_id) await destroyPublicId(doc.public_id);
+      }
+    }
+
+    await user.deleteOne();
     res.status(200).json({ message: "User deleted successfully" });
   } catch (err) {
     console.error("Delete user error:", err);
@@ -330,7 +350,17 @@ exports.rejectPlayer = async (req, res) => {
     user.position = undefined;
     user.battingStyle = undefined;
     user.bowlingStyle = undefined;
+
+    if (user.profileImage?.public_id) {
+      await destroyPublicId(user.profileImage.public_id);
+    }
+    if (user.documents?.length > 0) {
+      for (const doc of user.documents) {
+        if (doc.public_id) await destroyPublicId(doc.public_id);
+      }
+    }
     user.documents = [];
+
     await user.save();
 
     await mailer.sendMail({

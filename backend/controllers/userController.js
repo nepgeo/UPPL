@@ -5,9 +5,7 @@ const Match = require('../models/matchModel');
 const User = require('../models/User');
 const mailer = require('../config/mailer'); // ✅ shared transporter
 const bcrypt = require("bcryptjs");
-const fs = require("fs");
-const path = require("path");
-const cloudinary = require("../config/cloudinary"); // ✅ Cloudinary config
+const { uploadFileToCloudinary, destroyPublicId } = require("../utils/cloudinaryService"); // ✅ Cloudinary utils
 
 // ===============================
 // Update User Controller
@@ -27,52 +25,36 @@ exports.updateUser = async (req, res) => {
     if (verified !== undefined) user.verified = verified;
     if (playerCode) user.playerCode = playerCode;
 
-    // ✅ Profile image upload
-    if (req.file) {
-      // remove old image if exists
+    // ✅ Profile image (multer.fields → req.files.profileImage[0])
+    if (req.files?.profileImage?.[0]) {
       if (user.profileImage?.public_id) {
-        await cloudinary.uploader.destroy(user.profileImage.public_id);
+        await destroyPublicId(user.profileImage.public_id);
       }
 
-      const uploadPath = path.join(__dirname, "..", req.file.path);
-      const uploadRes = await cloudinary.uploader.upload(uploadPath, {
-        folder: "users/profile",
-      });
+      const uploaded = await uploadFileToCloudinary(
+        req.files.profileImage[0].path,
+        "users/profile"
+      );
 
-      user.profileImage = {
-        url: uploadRes.secure_url,
-        public_id: uploadRes.public_id,
-      };
-
-      if (fs.existsSync(uploadPath)) fs.unlinkSync(uploadPath);
+      user.profileImage = uploaded;
     }
 
-    // ✅ Documents upload
-    if (req.files && req.files.length > 0) {
+    // ✅ Documents (multer.fields → req.files.documents[])
+    if (req.files?.documents?.length > 0) {
       // remove old documents
       if (user.documents?.length) {
         for (const doc of user.documents) {
           if (doc.public_id) {
-            await cloudinary.uploader.destroy(doc.public_id);
+            await destroyPublicId(doc.public_id);
           }
         }
       }
 
       const uploadedDocs = [];
-      for (const file of req.files) {
-        const uploadPath = path.join(__dirname, "..", file.path);
-        const uploadRes = await cloudinary.uploader.upload(uploadPath, {
-          folder: "users/documents",
-        });
-
-        uploadedDocs.push({
-          url: uploadRes.secure_url,
-          public_id: uploadRes.public_id,
-        });
-
-        if (fs.existsSync(uploadPath)) fs.unlinkSync(uploadPath);
+      for (const file of req.files.documents) {
+        const uploaded = await uploadFileToCloudinary(file.path, "users/documents");
+        uploadedDocs.push(uploaded);
       }
-
       user.documents = uploadedDocs;
     }
 

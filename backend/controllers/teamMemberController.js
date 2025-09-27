@@ -1,5 +1,5 @@
 const TeamMember = require('../models/teamMember');
-const cloudinary = require('../config/cloudinary'); // ✅ shared Cloudinary config
+const { uploadFileToCloudinary, destroyPublicId } = require("../utils/cloudinaryService"); // ✅ shared Cloudinary utils
 
 // ===============================
 // Get all team members
@@ -24,13 +24,8 @@ const createTeamMember = async (req, res) => {
     let avatar = null;
 
     if (req.file) {
-      const uploadResult = await cloudinary.uploader.upload(req.file.path, {
-        folder: "teamMembers",
-      });
-      avatar = {
-        url: uploadResult.secure_url,
-        public_id: uploadResult.public_id,
-      };
+      const uploaded = await uploadFileToCloudinary(req.file.path, "teamMembers");
+      avatar = uploaded;
     }
 
     const member = new TeamMember({ name, position, avatar });
@@ -61,15 +56,10 @@ const updateTeamMember = async (req, res) => {
     // ✅ Handle avatar replacement
     if (req.file) {
       if (member.avatar?.public_id) {
-        await cloudinary.uploader.destroy(member.avatar.public_id);
+        await destroyPublicId(member.avatar.public_id);
       }
-      const uploadResult = await cloudinary.uploader.upload(req.file.path, {
-        folder: "teamMembers",
-      });
-      member.avatar = {
-        url: uploadResult.secure_url,
-        public_id: uploadResult.public_id,
-      };
+      const uploaded = await uploadFileToCloudinary(req.file.path, "teamMembers");
+      member.avatar = uploaded;
     }
 
     const updated = await member.save();
@@ -92,7 +82,7 @@ const deleteTeamMember = async (req, res) => {
 
     // ✅ Delete avatar from Cloudinary if exists
     if (member.avatar?.public_id) {
-      await cloudinary.uploader.destroy(member.avatar.public_id);
+      await destroyPublicId(member.avatar.public_id);
     }
 
     await member.deleteOne();

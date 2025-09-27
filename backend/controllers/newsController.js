@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const News = require("../models/newsModel");
 const asyncHandler = require("express-async-handler");
-const cloudinary = require("../config/cloudinary"); // ✅ direct Cloudinary
+const { uploadFileToCloudinary, destroyPublicId } = require("../utils/cloudinaryService");
 
 // ========================
 // GET /api/news
@@ -55,11 +55,8 @@ const createNews = async (req, res) => {
     let images = [];
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
-        const uploadRes = await cloudinary.uploader.upload(file.path, {
-          folder: "news",
-          resource_type: "image",
-        });
-        images.push({ url: uploadRes.secure_url, public_id: uploadRes.public_id });
+        const uploaded = await uploadFileToCloudinary(file.path, "news");
+        images.push(uploaded);
       }
     }
 
@@ -103,11 +100,8 @@ const updateNews = asyncHandler(async (req, res) => {
   let newImages = [];
   if (req.files && req.files.length > 0) {
     for (const file of req.files) {
-      const uploadRes = await cloudinary.uploader.upload(file.path, {
-        folder: "news",
-        resource_type: "image",
-      });
-      newImages.push({ url: uploadRes.secure_url, public_id: uploadRes.public_id });
+      const uploaded = await uploadFileToCloudinary(file.path, "news");
+      newImages.push(uploaded);
     }
   }
 
@@ -119,9 +113,7 @@ const updateNews = asyncHandler(async (req, res) => {
 
   await news.save();
 
-  res
-    .status(200)
-    .json({ message: "✅ News updated successfully", news });
+  res.status(200).json({ message: "✅ News updated successfully", news });
 });
 
 // ========================
@@ -142,11 +134,7 @@ const deleteNews = asyncHandler(async (req, res) => {
   // ✅ Delete images from Cloudinary
   if (news.images && news.images.length > 0) {
     for (const img of news.images) {
-      try {
-        await cloudinary.uploader.destroy(img.public_id);
-      } catch (err) {
-        console.warn("⚠️ Failed to delete image from Cloudinary:", err.message);
-      }
+      await destroyPublicId(img.public_id);
     }
   }
 

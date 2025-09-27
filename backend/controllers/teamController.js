@@ -3,7 +3,7 @@ const Team = require('../models/teamModel');
 const Season = require('../models/seasonModel');
 const User = require('../models/User');
 const mongoose = require('mongoose');
-const cloudinary = require('../config/cloudinary');
+const { uploadFileToCloudinary, destroyPublicId } = require("../utils/cloudinaryService");
 
 // Utility to generate 4-character team code
 function generateTeamCode(teamId) {
@@ -36,17 +36,17 @@ const createTeam = async (req, res) => {
     let teamLogo = null;
 
     if (req.files?.paymentReceipt?.[0]) {
-      const uploadRes = await cloudinary.uploader.upload(req.files.paymentReceipt[0].path, {
-        folder: "teams/paymentReceipts",
-      });
-      paymentReceipt = { url: uploadRes.secure_url, public_id: uploadRes.public_id };
+      paymentReceipt = await uploadFileToCloudinary(
+        req.files.paymentReceipt[0].path,
+        "teams/paymentReceipts"
+      );
     }
 
     if (req.files?.teamLogo?.[0]) {
-      const uploadRes = await cloudinary.uploader.upload(req.files.teamLogo[0].path, {
-        folder: "teams/logos",
-      });
-      teamLogo = { url: uploadRes.secure_url, public_id: uploadRes.public_id };
+      teamLogo = await uploadFileToCloudinary(
+        req.files.teamLogo[0].path,
+        "teams/logos"
+      );
     }
 
     // ✅ Parse players
@@ -223,23 +223,23 @@ const updateTeam = async (req, res) => {
     // ✅ Update teamLogo
     if (req.files?.teamLogo?.[0]) {
       if (team.teamLogo?.public_id) {
-        await cloudinary.uploader.destroy(team.teamLogo.public_id);
+        await destroyPublicId(team.teamLogo.public_id);
       }
-      const uploadRes = await cloudinary.uploader.upload(req.files.teamLogo[0].path, {
-        folder: "teams/logos",
-      });
-      team.teamLogo = { url: uploadRes.secure_url, public_id: uploadRes.public_id };
+      team.teamLogo = await uploadFileToCloudinary(
+        req.files.teamLogo[0].path,
+        "teams/logos"
+      );
     }
 
     // ✅ Update paymentReceipt
     if (req.files?.paymentReceipt?.[0]) {
       if (team.paymentReceipt?.public_id) {
-        await cloudinary.uploader.destroy(team.paymentReceipt.public_id);
+        await destroyPublicId(team.paymentReceipt.public_id);
       }
-      const uploadRes = await cloudinary.uploader.upload(req.files.paymentReceipt[0].path, {
-        folder: "teams/paymentReceipts",
-      });
-      team.paymentReceipt = { url: uploadRes.secure_url, public_id: uploadRes.public_id };
+      team.paymentReceipt = await uploadFileToCloudinary(
+        req.files.paymentReceipt[0].path,
+        "teams/paymentReceipts"
+      );
     }
 
     await team.save();
@@ -257,10 +257,10 @@ const deleteTeam = async (req, res) => {
     if (!team) return res.status(404).json({ message: 'Team not found' });
 
     if (team.teamLogo?.public_id) {
-      await cloudinary.uploader.destroy(team.teamLogo.public_id);
+      await destroyPublicId(team.teamLogo.public_id);
     }
     if (team.paymentReceipt?.public_id) {
-      await cloudinary.uploader.destroy(team.paymentReceipt.public_id);
+      await destroyPublicId(team.paymentReceipt.public_id);
     }
 
     res.json({ message: '✅ Team deleted successfully' });
@@ -339,5 +339,4 @@ module.exports = {
   verifyTeam,
   rejectTeam,
   getTeamsWithPlayers,
-
 };

@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const Album = require("../models/Album");
 const GalleryImage = require("../models/galleryImage");
-const cloudinary = require("../config/cloudinary"); // ✅ use cloudinary API
+const { uploadFileToCloudinary, destroyPublicId } = require("../utils/cloudinaryService");
 
 // ========== ALBUM HANDLERS ==========
 
@@ -12,7 +12,7 @@ exports.createAlbum = async (req, res) => {
     await album.save();
     res.status(201).json(album);
   } catch (err) {
-    console.error("Create album failed:", err);
+    console.error("❌ Create album failed:", err);
     res.status(500).json({ message: "Failed to create album" });
   }
 };
@@ -23,7 +23,7 @@ exports.getAlbums = async (req, res) => {
     const albums = await Album.find();
     res.json(albums);
   } catch (err) {
-    console.error("Get albums failed:", err);
+    console.error("❌ Get albums failed:", err);
     res.status(500).json({ message: "Failed to fetch albums" });
   }
 };
@@ -36,7 +36,7 @@ exports.updateAlbum = async (req, res) => {
     });
     res.json(updated);
   } catch (err) {
-    console.error("Update album failed:", err);
+    console.error("❌ Update album failed:", err);
     res.status(500).json({ message: "Failed to update album" });
   }
 };
@@ -49,16 +49,16 @@ exports.deleteAlbum = async (req, res) => {
     // ✅ Delete images from Cloudinary
     for (const image of images) {
       if (image.public_id) {
-        await cloudinary.uploader.destroy(image.public_id);
+        await destroyPublicId(image.public_id);
       }
     }
 
     await GalleryImage.deleteMany({ album: req.params.id });
     await Album.findByIdAndDelete(req.params.id);
 
-    res.json({ message: "Album and its images deleted." });
+    res.json({ message: "🗑️ Album and its images deleted." });
   } catch (err) {
-    console.error("Delete album failed:", err);
+    console.error("❌ Delete album failed:", err);
     res.status(500).json({ message: "Failed to delete album" });
   }
 };
@@ -69,28 +69,30 @@ exports.deleteAlbum = async (req, res) => {
 exports.uploadImages = async (req, res) => {
   try {
     const { title, albumId, tags } = req.body;
-    const files = req.files;
+    const files = req.files || [];
     const tagArray = tags ? tags.split(",").map((t) => t.trim()) : [];
 
-    const savedImages = await Promise.all(
-      files.map((file) => {
-        const image = new GalleryImage({
-          title,
-          album: new mongoose.Types.ObjectId(albumId),
-          tags: tagArray,
-          url: file.path, // ✅ Cloudinary URL
-          public_id: file.filename, // ✅ Cloudinary public_id
-        });
-        return image.save();
-      })
-    );
+    const savedImages = [];
+
+    for (const file of files) {
+      const uploaded = await uploadFileToCloudinary(file.path, "gallery");
+      const image = new GalleryImage({
+        title,
+        album: new mongoose.Types.ObjectId(albumId),
+        tags: tagArray,
+        url: uploaded.url,
+        public_id: uploaded.public_id,
+      });
+      await image.save();
+      savedImages.push(image);
+    }
 
     res.status(201).json({
       message: `${savedImages.length} image(s) uploaded successfully`,
       images: savedImages,
     });
   } catch (err) {
-    console.error("Upload failed:", err);
+    console.error("❌ Upload failed:", err);
     res.status(500).json({ message: "Failed to upload images" });
   }
 };
@@ -125,7 +127,7 @@ exports.getImages = async (req, res) => {
     const filtered = images.filter((img) => img.album !== null);
     res.json(filtered);
   } catch (err) {
-    console.error("Fetch images error:", err);
+    console.error("❌ Fetch images error:", err);
     res.status(500).json({ message: "Failed to fetch images" });
   }
 };
@@ -140,7 +142,7 @@ exports.updateImage = async (req, res) => {
     );
     res.json(updated);
   } catch (err) {
-    console.error("Update image failed:", err);
+    console.error("❌ Update image failed:", err);
     res.status(500).json({ message: "Failed to update image" });
   }
 };
@@ -155,13 +157,13 @@ exports.deleteImage = async (req, res) => {
 
     // ✅ Delete from Cloudinary
     if (image.public_id) {
-      await cloudinary.uploader.destroy(image.public_id);
+      await destroyPublicId(image.public_id);
     }
 
     await GalleryImage.findByIdAndDelete(req.params.id);
-    res.json({ message: "Image deleted." });
+    res.json({ message: "🗑️ Image deleted." });
   } catch (error) {
-    console.error("Error deleting image:", error);
+    console.error("❌ Error deleting image:", error);
     res.status(500).json({ message: "Failed to delete image" });
   }
 };
@@ -176,10 +178,10 @@ exports.downloadImage = async (req, res) => {
       return res.status(404).json({ message: "Image not found" });
     }
 
-    // ✅ Cloudinary file — just redirect or send URL
+    // ✅ Cloudinary file — just return the URL
     res.json({ url: image.url });
   } catch (err) {
-    console.error("Download image failed:", err);
+    console.error("❌ Download image failed:", err);
     res.status(500).json({ message: "Failed to download image" });
   }
 };

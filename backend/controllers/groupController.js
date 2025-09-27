@@ -4,7 +4,7 @@ const Match = require("../models/matchModel");
 const GroupSchedule = require("../models/groupScheduleModel");
 const mongoose = require("mongoose");
 
-// Utility to shuffle an array
+// Utility: shuffle array randomly
 function shuffleArray(array) {
   return array
     .map((value) => ({ value, sort: Math.random() }))
@@ -20,28 +20,29 @@ const generateGroups = async (req, res) => {
     const { seasonId } = req.params;
 
     if (!seasonId || !mongoose.Types.ObjectId.isValid(seasonId)) {
-      return res.status(400).json({ message: "Invalid season ID" });
+      return res.status(400).json({ success: false, message: "Invalid season ID" });
     }
 
     const season = await Season.findById(seasonId);
     if (!season) {
-      return res.status(404).json({ message: "Season not found" });
+      return res.status(404).json({ success: false, message: "Season not found" });
     }
 
-    const teams = await Team.find({ seasonNumber: seasonId, status: "approved" })
+    const teams = await Team.find({ seasonNumber: seasonId, status: /^approved$/i })
       .select("_id teamName teamCode")
       .lean();
 
-    if (teams.length < 2) {
-      return res
-        .status(400)
-        .json({ message: "Not enough approved teams to form groups" });
+    if (!teams || teams.length < 2) {
+      return res.status(400).json({
+        success: false,
+        message: "Not enough approved teams to form groups",
+      });
     }
 
     const shuffled = shuffleArray(teams);
-
     const groups = [];
     let groupIndex = 0;
+
     for (let i = 0; i < shuffled.length; i += 4) {
       const chunk = shuffled.slice(i, i + 4);
       groups.push({
@@ -55,7 +56,7 @@ const generateGroups = async (req, res) => {
       groupIndex++;
     }
 
-    // Fix: if last group has only 1 team, move one from previous
+    // Fix: if last group has only 1 team, move one from a previous group
     if (groups.length > 1 && groups[groups.length - 1].teams.length === 1) {
       for (let i = 0; i < groups.length - 1; i++) {
         if (groups[i].teams.length > 2) {
@@ -66,7 +67,7 @@ const generateGroups = async (req, res) => {
       }
     }
 
-    // Clear any old group schedule
+    // Clear old group schedule
     await GroupSchedule.deleteMany({ seasonNumber: seasonId });
 
     const schedule = new GroupSchedule({
@@ -79,15 +80,18 @@ const generateGroups = async (req, res) => {
     await season.save();
 
     return res.json({
+      success: true,
       message: "✅ Groups generated successfully",
       schedule,
       season,
     });
   } catch (err) {
     console.error("❌ Group generation failed:", err);
-    return res
-      .status(500)
-      .json({ message: "Internal server error", error: err.message });
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: err.message,
+    });
   }
 };
 
@@ -97,18 +101,20 @@ const deleteGroupsBySeason = async (req, res) => {
     const { seasonId } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(seasonId)) {
-      return res.status(400).json({ message: "Invalid season ID" });
+      return res.status(400).json({ success: false, message: "Invalid season ID" });
     }
 
     await GroupSchedule.deleteMany({ seasonNumber: seasonId });
     await Season.findByIdAndUpdate(seasonId, { $unset: { groups: 1 } });
 
-    return res.json({ message: "✅ Groups deleted successfully" });
+    return res.json({ success: true, message: "✅ Groups deleted successfully" });
   } catch (err) {
     console.error("❌ Failed to delete groups:", err);
-    res
-      .status(500)
-      .json({ message: "Internal server error", error: err.message });
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: err.message,
+    });
   }
 };
 
@@ -121,20 +127,23 @@ const setScheduleTime = async (req, res) => {
     const { scheduleGenerationTime } = req.body;
 
     const season = await Season.findById(id);
-    if (!season) return res.status(404).json({ message: "Season not found" });
+    if (!season) return res.status(404).json({ success: false, message: "Season not found" });
 
     season.scheduleGenerationTime = new Date(scheduleGenerationTime);
     await season.save();
 
     return res.json({
+      success: true,
       message: "✅ Schedule time set successfully",
       season,
     });
   } catch (err) {
     console.error("❌ Failed to set schedule time:", err);
-    res
-      .status(500)
-      .json({ message: "Failed to update schedule time", error: err.message });
+    res.status(500).json({
+      success: false,
+      message: "Failed to update schedule time",
+      error: err.message,
+    });
   }
 };
 
@@ -150,13 +159,13 @@ const getSchedule = async (req, res) => {
       });
 
     if (!schedule) {
-      return res.status(404).json({ message: "No schedule found" });
+      return res.status(404).json({ success: false, message: "No schedule found" });
     }
 
-    res.json({ schedule });
+    res.json({ success: true, schedule });
   } catch (err) {
     console.error("❌ Failed to fetch schedule:", err);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
 
@@ -173,11 +182,11 @@ const generateLeagueMatches = async (req, res) => {
     } else if (!isNaN(seasonId)) {
       season = await Season.findOne({ seasonNumber: Number(seasonId) });
     } else {
-      return res.status(400).json({ message: "Invalid season identifier" });
+      return res.status(400).json({ success: false, message: "Invalid season identifier" });
     }
 
     if (!season) {
-      return res.status(404).json({ message: "Season not found" });
+      return res.status(404).json({ success: false, message: "Season not found" });
     }
 
     const schedule = await GroupSchedule.findOne({ seasonNumber: season._id })
@@ -187,7 +196,7 @@ const generateLeagueMatches = async (req, res) => {
         select: "_id teamName teamCode teamLogo status",
       });
 
-    // Delete all old league/playoff/final matches before regenerating
+    // Remove old matches for this season
     await Match.deleteMany({
       seasonNumber: season._id,
       stage: { $in: ["league", "playoff", "final"] },
@@ -199,11 +208,7 @@ const generateLeagueMatches = async (req, res) => {
     if (schedule && schedule.groups?.length > 0) {
       for (const group of schedule.groups) {
         const groupTeamIds = group.teams
-          .filter(
-            (t) =>
-              t?.team &&
-              (t.team.status || "").toLowerCase().trim() === "approved"
-          )
+          .filter((t) => t?.team && /^approved$/i.test(t.team.status || ""))
           .map((t) => t.team._id.toString());
 
         approvedTeams.push(...groupTeamIds);
@@ -225,7 +230,7 @@ const generateLeagueMatches = async (req, res) => {
       }
     } else {
       approvedTeams = await Team.find(
-        { seasonNumber: season._id, status: { $regex: /^approved$/i } },
+        { seasonNumber: season._id, status: /^approved$/i },
         "_id"
       ).then((teams) => teams.map((t) => t._id.toString()));
     }
@@ -242,24 +247,25 @@ const generateLeagueMatches = async (req, res) => {
       savedLeagueMatches.push(saved);
     }
 
-    // ❌ Removed auto-generation of playoff & final matches
-
+    // No auto playoff/final generation here
     season.teams = approvedTeams;
     season.matches = savedLeagueMatches.map((m) => m._id);
     await season.save();
 
     return res.json({
-      message:
-        "✅ League matches generated successfully (no playoff/final auto-created)",
+      success: true,
+      message: "✅ League matches generated successfully",
       leagueMatches: savedLeagueMatches.length,
       totalMatches: savedLeagueMatches.length,
       season,
     });
   } catch (err) {
     console.error("❌ Failed to generate league matches:", err);
-    res
-      .status(500)
-      .json({ message: "Internal server error", error: err.message });
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: err.message,
+    });
   }
 };
 
@@ -269,18 +275,20 @@ const deleteMatchesBySeason = async (req, res) => {
     const { seasonId } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(seasonId)) {
-      return res.status(400).json({ message: "Invalid season ID" });
+      return res.status(400).json({ success: false, message: "Invalid season ID" });
     }
 
     await Match.deleteMany({ seasonNumber: seasonId });
     await Season.findByIdAndUpdate(seasonId, { $unset: { matches: 1 } });
 
-    return res.json({ message: "✅ Matches deleted successfully" });
+    return res.json({ success: true, message: "✅ Matches deleted successfully" });
   } catch (err) {
     console.error("❌ Failed to delete matches:", err);
-    res
-      .status(500)
-      .json({ message: "Internal server error", error: err.message });
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: err.message,
+    });
   }
 };
 

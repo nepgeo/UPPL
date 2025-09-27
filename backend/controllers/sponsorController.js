@@ -1,6 +1,6 @@
 // controllers/sponsorController.js
 const { OrganizationSponsor, IndividualSponsor } = require('../models/sponsorModel');
-const cloudinary = require('../config/cloudinary'); // ✅ use Cloudinary
+const { uploadFileToCloudinary, destroyPublicId } = require("../utils/cloudinaryService");
 
 // ===============================
 // Organization Sponsor Controllers
@@ -22,11 +22,7 @@ const createOrganization = async (req, res) => {
 
     let logo = null;
     if (req.file) {
-      const uploadRes = await cloudinary.uploader.upload(req.file.path, {
-        folder: "sponsors/organizations",
-        public_id: `org-${Date.now()}`,
-      });
-      logo = { url: uploadRes.secure_url, public_id: uploadRes.public_id };
+      logo = await uploadFileToCloudinary(req.file.path, "sponsors/organizations");
     }
 
     const sponsor = new OrganizationSponsor({
@@ -59,14 +55,9 @@ const updateOrganization = async (req, res) => {
     if (req.file) {
       // Delete old logo if exists
       if (sponsor.logo?.public_id) {
-        await cloudinary.uploader.destroy(sponsor.logo.public_id);
+        await destroyPublicId(sponsor.logo.public_id);
       }
-      // Upload new
-      const uploadRes = await cloudinary.uploader.upload(req.file.path, {
-        folder: "sponsors/organizations",
-        public_id: `org-${Date.now()}`,
-      });
-      sponsor.logo = { url: uploadRes.secure_url, public_id: uploadRes.public_id };
+      sponsor.logo = await uploadFileToCloudinary(req.file.path, "sponsors/organizations");
     }
 
     await sponsor.save();
@@ -84,7 +75,7 @@ const deleteOrganization = async (req, res) => {
     if (!sponsor) return res.status(404).json({ message: "Sponsor not found" });
 
     if (sponsor.logo?.public_id) {
-      await cloudinary.uploader.destroy(sponsor.logo.public_id);
+      await destroyPublicId(sponsor.logo.public_id);
     }
 
     await sponsor.deleteOne();
@@ -115,11 +106,7 @@ const createIndividual = async (req, res) => {
 
     let avatar = null;
     if (req.file) {
-      const uploadRes = await cloudinary.uploader.upload(req.file.path, {
-        folder: "sponsors/individuals",
-        public_id: `ind-${Date.now()}`,
-      });
-      avatar = { url: uploadRes.secure_url, public_id: uploadRes.public_id };
+      avatar = await uploadFileToCloudinary(req.file.path, "sponsors/individuals");
     }
 
     const sponsor = new IndividualSponsor({
@@ -152,14 +139,9 @@ const updateIndividual = async (req, res) => {
     if (req.file) {
       // Delete old avatar if exists
       if (sponsor.avatar?.public_id) {
-        await cloudinary.uploader.destroy(sponsor.avatar.public_id);
+        await destroyPublicId(sponsor.avatar.public_id);
       }
-      // Upload new
-      const uploadRes = await cloudinary.uploader.upload(req.file.path, {
-        folder: "sponsors/individuals",
-        public_id: `ind-${Date.now()}`,
-      });
-      sponsor.avatar = { url: uploadRes.secure_url, public_id: uploadRes.public_id };
+      sponsor.avatar = await uploadFileToCloudinary(req.file.path, "sponsors/individuals");
     }
 
     await sponsor.save();
@@ -177,7 +159,7 @@ const deleteIndividual = async (req, res) => {
     if (!sponsor) return res.status(404).json({ message: "Sponsor not found" });
 
     if (sponsor.avatar?.public_id) {
-      await cloudinary.uploader.destroy(sponsor.avatar.public_id);
+      await destroyPublicId(sponsor.avatar.public_id);
     }
 
     await sponsor.deleteOne();
@@ -191,7 +173,6 @@ const deleteIndividual = async (req, res) => {
 // ===============================
 // Exports
 // ===============================
-
 module.exports = {
   getAllOrganizations,
   createOrganization,
