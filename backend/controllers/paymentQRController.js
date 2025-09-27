@@ -20,7 +20,8 @@ async function getAllQRs(req, res) {
       public_id: file.public_id,
     }));
 
-    return res.json({ success: true, qrs: list });
+    // 🔑 Always return array under `qr`
+    return res.json({ success: true, qr: list });
   } catch (err) {
     console.error("❌ Error fetching QR codes:", err);
     return res
@@ -45,7 +46,7 @@ async function createQR(req, res) {
     return res.status(201).json({
       success: true,
       message: "✅ QR uploaded successfully",
-      qr: uploaded,
+      qr: [uploaded], // 🔑 Wrap in array for consistency
     });
   } catch (err) {
     console.error("❌ createQR error:", err);
@@ -73,17 +74,15 @@ async function updateQR(req, res) {
         .json({ success: false, message: "No replacement file uploaded" });
     }
 
-    // Delete old QR from Cloudinary
     await destroyPublicId(public_id);
 
-    // Upload new QR
     const uploaded = await uploadFileToCloudinary(req.file.path, "payment-qr");
 
     return res.json({
       success: true,
       message: "✅ QR updated successfully",
       oldPublicId: public_id,
-      qr: uploaded,
+      qr: [uploaded], // 🔑 Keep consistency
     });
   } catch (err) {
     console.error("❌ updateQR error:", err);

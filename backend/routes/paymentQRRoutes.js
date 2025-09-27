@@ -18,20 +18,20 @@ router.post(
   paymentQRController.createQR
 );
 
-// Update (admin) - replace existing by filename
-// PUT /api/payment-qr/:filename  (body contains multipart file 'qrImage')
+// Update (admin) - replace existing by public_id
+// PUT /api/payment-qr/:public_id  (multipart file 'qrImage')
 router.put(
-  "/:filename",
+  "/:public_id",
   protect,
   requireAdminOrSuperAdmin,
   upload.single("qrImage"),
   paymentQRController.updateQR
 );
 
-// Delete (admin) by filename
-// DELETE /api/payment-qr/:filename
+// Delete (admin) by public_id
+// DELETE /api/payment-qr/:public_id
 router.delete(
-  "/:filename",
+  "/:public_id",
   protect,
   requireAdminOrSuperAdmin,
   paymentQRController.deleteQR
