@@ -1,6 +1,6 @@
-import { api } from '@/lib/api';
+import api  from '@/lib/api';
 
-// ✅ Get Admin Dashboard
+
 export const getAdminDashboard = async () => {
   const token = localStorage.getItem('pplt20_token'); // token from localStorage
 
@@ -16,7 +16,7 @@ export const getAdminDashboard = async () => {
   }
 };
 
-// ✅ Get Pending Players
+
 export const getPendingPlayers = async () => {
   const token = localStorage.getItem('pplt20_token');
 
