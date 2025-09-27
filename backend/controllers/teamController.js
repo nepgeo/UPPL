@@ -1,10 +1,9 @@
+// controllers/teamController.js
 const Team = require('../models/teamModel');
 const Season = require('../models/seasonModel');
 const User = require('../models/User');
 const mongoose = require('mongoose');
 const cloudinary = require('../config/cloudinary');
-const fs = require('fs');
-const path = require('path');
 
 // Utility to generate 4-character team code
 function generateTeamCode(teamId) {
@@ -14,26 +13,12 @@ function generateTeamCode(teamId) {
   return `${randomChar}${shortId.toUpperCase()}`;
 }
 
-// ✅ Upload file to Cloudinary + delete local
-const uploadToCloudinary = async (filePath, folder = "teams") => {
-  try {
-    const result = await cloudinary.uploader.upload(filePath, {
-      folder,
-      resource_type: "auto",
-    });
-    fs.unlinkSync(filePath); // delete local file
-    return result.secure_url;
-  } catch (err) {
-    console.error("❌ Cloudinary upload failed:", err);
-    throw err;
-  }
-};
-
 // ✅ Create Team
 const createTeam = async (req, res) => {
   try {
     console.log("📦 req.body:", req.body);
     console.log("📂 req.files:", req.files);
+    console.log("👤 req.user:", req.user);
 
     const { seasonNumber } = req.body;
 
@@ -46,25 +31,31 @@ const createTeam = async (req, res) => {
       return res.status(404).json({ message: "❌ Season not found" });
     }
 
-    // Files
-    const paymentReceiptFile = req.files?.find(f => f.fieldname === "paymentReceipt");
-    const teamLogoFile = req.files?.find(f => f.fieldname === "teamLogo");
+    // ✅ Handle file uploads
+    let paymentReceipt = null;
+    let teamLogo = null;
 
-    if (!paymentReceiptFile) {
-      return res.status(400).json({ message: "❌ Payment receipt file is required" });
+    if (req.files?.paymentReceipt?.[0]) {
+      const uploadRes = await cloudinary.uploader.upload(req.files.paymentReceipt[0].path, {
+        folder: "teams/paymentReceipts",
+      });
+      paymentReceipt = { url: uploadRes.secure_url, public_id: uploadRes.public_id };
     }
 
-    // Upload to Cloudinary
-    const paymentReceiptUrl = await uploadToCloudinary(paymentReceiptFile.path, "teams/paymentReceipts");
-    const teamLogoUrl = teamLogoFile ? await uploadToCloudinary(teamLogoFile.path, "teams/logos") : "";
+    if (req.files?.teamLogo?.[0]) {
+      const uploadRes = await cloudinary.uploader.upload(req.files.teamLogo[0].path, {
+        folder: "teams/logos",
+      });
+      teamLogo = { url: uploadRes.secure_url, public_id: uploadRes.public_id };
+    }
 
-    // Players
+    // ✅ Parse players
     let players = [];
     if (req.body.players) {
       try {
         players = JSON.parse(req.body.players);
-      } catch {
-        return res.status(400).json({ message: "❌ Invalid players JSON" });
+      } catch (err) {
+        return res.status(400).json({ message: "❌ Invalid players data format" });
       }
     }
 
@@ -80,7 +71,8 @@ const createTeam = async (req, res) => {
         };
 
         if (p.playerCode) {
-          const matchedUser = await User.findOne({ playerCode: p.playerCode.trim() });
+          const trimmedCode = p.playerCode.toString().trim();
+          const matchedUser = await User.findOne({ playerCode: trimmedCode });
           if (matchedUser) {
             player.user = matchedUser._id;
             player.status = matchedUser.verified ? "verified" : "pending";
@@ -92,7 +84,7 @@ const createTeam = async (req, res) => {
       })
     );
 
-    // Create Team
+    // ✅ Create team
     const newTeam = new Team({
       teamName: req.body.teamName,
       captainName: req.body.captainName,
@@ -102,20 +94,20 @@ const createTeam = async (req, res) => {
       seasonNumber: new mongoose.Types.ObjectId(seasonNumber),
       groupName: req.body.groupName || null,
       createdBy: req.user?.id,
-      paymentReceipt: paymentReceiptUrl,
-      teamLogo: teamLogoUrl,
+      paymentReceipt,
+      teamLogo,
       players: preparedPlayers,
       teamCode: "TEMP",
     });
 
     await newTeam.save();
 
-    // Generate final team code
+    // Generate team code
     newTeam.teamCode = generateTeamCode(newTeam._id);
     await newTeam.save();
 
-    // Update Season groups
-    let group = season.groups.find(g => g.groupName === req.body.groupName);
+    // Push into season groups
+    let group = season.groups.find((g) => g.groupName === req.body.groupName);
     if (!group) {
       group = { groupName: req.body.groupName || "Ungrouped", teams: [] };
       season.groups.push(group);
@@ -130,28 +122,28 @@ const createTeam = async (req, res) => {
     res.status(201).json({ message: "✅ Team registered successfully", team: newTeam });
   } catch (err) {
     console.error("❌ Team creation failed:", err);
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({ message: "Internal server error", error: err.message });
   }
 };
 
-// ✅ Get Teams by Season
+// ✅ Get teams by season
 const getTeamsBySeason = async (req, res) => {
   try {
     const { seasonId } = req.query;
     if (!mongoose.Types.ObjectId.isValid(seasonId)) {
-      return res.status(400).json({ message: "Invalid season ID" });
+      return res.status(400).json({ message: 'Invalid season ID' });
     }
 
     const teams = await Team.find({ seasonNumber: seasonId })
-      .populate("seasonNumber", "seasonNumber entryDeadline isCurrent")
-      .populate("createdBy", "name email role")
+      .populate('seasonNumber', 'seasonNumber entryDeadline isCurrent')
+      .populate('createdBy', 'name email role')
       .populate({
-        path: "players.user",
-        select: "name email phone profileImage documents playerCode role position dateOfBirth battingStyle bowlingStyle bio",
+        path: 'players.user',
+        select: 'name email phone profileImage documents playerCode role position dateOfBirth battingStyle bowlingStyle bio',
       })
       .lean();
 
-    const response = teams.map(team => ({
+    const response = teams.map((team) => ({
       ...team,
       season: {
         number: team.seasonNumber.seasonNumber,
@@ -161,12 +153,149 @@ const getTeamsBySeason = async (req, res) => {
     }));
 
     res.json(response);
-  } catch (err) {
-    res.status(500).json({ message: "❌ Failed to fetch teams", error: err.message });
+  } catch (error) {
+    console.error('❌ Failed to fetch teams:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };
 
-// ✅ Get Teams with Verified Players
+// ✅ Get team by ID
+const getTeamById = async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.id)
+      .populate('seasonNumber', 'number year')
+      .populate('createdBy', 'name email role')
+      .populate('players.user', 'name email playerCode role profileImage documents position battingStyle bowlingStyle phone verified')
+      .lean();
+
+    if (!team) return res.status(404).json({ message: 'Team not found' });
+    res.json(team);
+  } catch (err) {
+    console.error('Error fetching team:', err);
+    res.status(500).json({ message: 'Failed to fetch team', error: err.message });
+  }
+};
+
+// ✅ Update team
+const updateTeam = async (req, res) => {
+  try {
+    const teamId = req.params.id;
+    const team = await Team.findById(teamId);
+    if (!team) return res.status(404).json({ message: 'Team not found' });
+
+    const { teamName, captainName, coachName, managerName, contactNumber, players } = req.body;
+
+    if (teamName) team.teamName = teamName;
+    if (captainName) team.captainName = captainName;
+    if (coachName) team.coachName = coachName;
+    if (managerName) team.managerName = managerName;
+    if (contactNumber) team.contactNumber = contactNumber;
+
+    // ✅ Update players
+    if (players) {
+      let parsedPlayers = [];
+      if (typeof players === 'string') parsedPlayers = JSON.parse(players);
+      else if (Array.isArray(players)) parsedPlayers = players;
+
+      team.players = await Promise.all(parsedPlayers.map(async (p) => {
+        const player = {
+          name: p.name || '',
+          position: p.position || '',
+          jerseyNumber: p.jerseyNumber ? Number(p.jerseyNumber) : null,
+          code: p.playerCode || null,
+          user: null,
+          status: 'not_registered',
+        };
+
+        if (p.playerCode) {
+          const matchedUser = await User.findOne({ playerCode: p.playerCode.trim() });
+          if (matchedUser) {
+            player.user = matchedUser._id;
+            player.status = matchedUser.verified ? 'verified' : 'pending';
+            player.name = matchedUser.name;
+            player.code = matchedUser.playerCode;
+          }
+        }
+        return player;
+      }));
+    }
+
+    // ✅ Update teamLogo
+    if (req.files?.teamLogo?.[0]) {
+      if (team.teamLogo?.public_id) {
+        await cloudinary.uploader.destroy(team.teamLogo.public_id);
+      }
+      const uploadRes = await cloudinary.uploader.upload(req.files.teamLogo[0].path, {
+        folder: "teams/logos",
+      });
+      team.teamLogo = { url: uploadRes.secure_url, public_id: uploadRes.public_id };
+    }
+
+    // ✅ Update paymentReceipt
+    if (req.files?.paymentReceipt?.[0]) {
+      if (team.paymentReceipt?.public_id) {
+        await cloudinary.uploader.destroy(team.paymentReceipt.public_id);
+      }
+      const uploadRes = await cloudinary.uploader.upload(req.files.paymentReceipt[0].path, {
+        folder: "teams/paymentReceipts",
+      });
+      team.paymentReceipt = { url: uploadRes.secure_url, public_id: uploadRes.public_id };
+    }
+
+    await team.save();
+    res.json({ message: '✅ Team updated successfully', team });
+  } catch (err) {
+    console.error('❌ Error updating team:', err);
+    res.status(500).json({ message: 'Failed to update team', error: err.message });
+  }
+};
+
+// ✅ Delete team
+const deleteTeam = async (req, res) => {
+  try {
+    const team = await Team.findByIdAndDelete(req.params.id);
+    if (!team) return res.status(404).json({ message: 'Team not found' });
+
+    if (team.teamLogo?.public_id) {
+      await cloudinary.uploader.destroy(team.teamLogo.public_id);
+    }
+    if (team.paymentReceipt?.public_id) {
+      await cloudinary.uploader.destroy(team.paymentReceipt.public_id);
+    }
+
+    res.json({ message: '✅ Team deleted successfully' });
+  } catch (err) {
+    console.error('❌ Delete team error:', err);
+    res.status(500).json({ message: 'Failed to delete team', error: err.message });
+  }
+};
+
+// ✅ Verify / Reject
+const verifyTeam = async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ message: 'Team not found' });
+    team.status = 'approved';
+    await team.save();
+    res.json({ message: '✅ Team verified successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Verification failed' });
+  }
+};
+
+const rejectTeam = async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ message: 'Team not found' });
+    team.status = 'rejected';
+    await team.save({ validateBeforeSave: false });
+    res.json({ message: '❌ Team rejected' });
+  } catch (err) {
+    console.error('❌ Rejection error:', err);
+    res.status(500).json({ message: 'Rejection failed', error: err.message });
+  }
+};
+
 const getTeamsWithPlayers = async (req, res) => {
   try {
     const teams = await Team.find()
@@ -201,124 +330,6 @@ const getTeamsWithPlayers = async (req, res) => {
   }
 };
 
-// ✅ Get Team by ID
-const getTeamById = async (req, res) => {
-  try {
-    const team = await Team.findById(req.params.id)
-      .populate("seasonNumber", "number year")
-      .populate("createdBy", "name email role")
-      .populate("players.user", "name email playerCode role profileImage documents position battingStyle bowlingStyle phone verified")
-      .lean();
-
-    if (!team) return res.status(404).json({ message: "Team not found" });
-
-    res.json(team);
-  } catch (err) {
-    res.status(500).json({ message: "Failed to fetch team", error: err.message });
-  }
-};
-
-// ✅ Update Team (with Cloudinary)
-const updateTeam = async (req, res) => {
-  try {
-    const teamId = req.params.id;
-    const team = await Team.findById(teamId);
-    if (!team) return res.status(404).json({ message: "Team not found" });
-
-    const { teamName, captainName, coachName, managerName, contactNumber, players } = req.body;
-
-    if (teamName) team.teamName = teamName;
-    if (captainName) team.captainName = captainName;
-    if (coachName) team.coachName = coachName;
-    if (managerName) team.managerName = managerName;
-    if (contactNumber) team.contactNumber = contactNumber;
-
-    // Players update
-    if (players) {
-      let parsedPlayers = [];
-      if (typeof players === "string") {
-        parsedPlayers = JSON.parse(players);
-      } else if (Array.isArray(players)) {
-        parsedPlayers = players;
-      }
-
-      team.players = await Promise.all(parsedPlayers.map(async (p) => {
-        const player = {
-          name: p.name || "",
-          position: p.position || "",
-          jerseyNumber: p.jerseyNumber ? Number(p.jerseyNumber) : null,
-          code: p.playerCode || null,
-          user: null,
-          status: "not_registered",
-        };
-
-        if (p.playerCode) {
-          const matchedUser = await User.findOne({ playerCode: p.playerCode.trim() });
-          if (matchedUser) {
-            player.user = matchedUser._id;
-            player.status = matchedUser.verified ? "verified" : "pending";
-            player.name = matchedUser.name;
-            player.code = matchedUser.playerCode;
-          }
-        }
-        return player;
-      }));
-    }
-
-    // Files → Cloudinary
-    if (req.files?.teamLogo?.[0]) {
-      team.teamLogo = await uploadToCloudinary(req.files.teamLogo[0].path, "teams/logos");
-    }
-    if (req.files?.paymentReceipt?.[0]) {
-      team.paymentReceipt = await uploadToCloudinary(req.files.paymentReceipt[0].path, "teams/paymentReceipts");
-    }
-
-    await team.save();
-    res.json({ message: "✅ Team updated successfully", team });
-  } catch (err) {
-    res.status(500).json({ message: "Failed to update team", error: err.message });
-  }
-};
-
-// ✅ Delete Team (only DB refs, Cloudinary stays unless we add destroy API)
-const deleteTeam = async (req, res) => {
-  try {
-    const team = await Team.findByIdAndDelete(req.params.id);
-    if (!team) return res.status(404).json({ message: "Team not found" });
-
-    res.json({ message: "✅ Team deleted successfully" });
-  } catch (err) {
-    res.status(500).json({ message: "Failed to delete team", error: err.message });
-  }
-};
-
-// ✅ Verify / Reject
-const verifyTeam = async (req, res) => {
-  try {
-    const team = await Team.findById(req.params.id);
-    if (!team) return res.status(404).json({ message: "Team not found" });
-
-    team.status = "approved";
-    await team.save();
-    res.json({ message: "✅ Team verified successfully" });
-  } catch {
-    res.status(500).json({ message: "Verification failed" });
-  }
-};
-
-const rejectTeam = async (req, res) => {
-  try {
-    const team = await Team.findById(req.params.id);
-    if (!team) return res.status(404).json({ message: "Team not found" });
-
-    team.status = "rejected";
-    await team.save({ validateBeforeSave: false });
-    res.json({ message: "❌ Team rejected" });
-  } catch (err) {
-    res.status(500).json({ message: "Rejection failed", error: err.message });
-  }
-};
-
 module.exports = {
   createTeam,
   getTeamsBySeason,
@@ -328,4 +339,5 @@ module.exports = {
   verifyTeam,
   rejectTeam,
   getTeamsWithPlayers,
+
 };

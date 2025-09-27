@@ -1,10 +1,7 @@
-// backend/controllers/userController.js
-
 const Team = require('../models/teamModel');
 const Match = require('../models/matchModel');
 const User = require('../models/User');
-const mailer = require('../config/mailer'); // ✅ use shared transporter
-const cloudinary = require("../config/cloudinary");
+const mailer = require('../config/mailer'); 
 const generatePlayerCode = require('../utils/generatePlayerCode');
 
 // ✅ Add Player
@@ -33,33 +30,22 @@ exports.addPlayer = async (req, res) => {
       bio,
       dateOfBirth,
       role: "player",
-      verified: false,
     });
 
-    // ✅ Upload profile image
+    // ✅ Cloudinary profileImage
     if (req.files?.profileImage?.[0]) {
-      const uploadRes = await cloudinary.uploader.upload(
-        req.files.profileImage[0].path,
-        { folder: "users/profile" }
-      );
       newUser.profileImage = {
-        url: uploadRes.secure_url,
-        public_id: uploadRes.public_id,
+        url: req.files.profileImage[0].path,
+        public_id: req.files.profileImage[0].filename,
       };
     }
 
-    // ✅ Upload documents
+    // ✅ Cloudinary documents
     if (req.files?.documents?.length > 0) {
-      newUser.documents = [];
-      for (const doc of req.files.documents) {
-        const uploadRes = await cloudinary.uploader.upload(doc.path, {
-          folder: "users/documents",
-        });
-        newUser.documents.push({
-          url: uploadRes.secure_url,
-          public_id: uploadRes.public_id,
-        });
-      }
+      newUser.documents = req.files.documents.map((doc) => ({
+        url: doc.path,
+        public_id: doc.filename,
+      }));
     }
 
     await newUser.save();
@@ -96,7 +82,7 @@ exports.addMatch = async (req, res) => {
   }
 };
 
-// ✅ Get All Users (with pagination)
+// ✅ Get all users
 exports.getAllUsers = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -121,7 +107,8 @@ exports.getAllUsers = async (req, res) => {
       dateOfBirth: user.dateOfBirth
         ? new Date(user.dateOfBirth).toISOString().split("T")[0]
         : null,
-      profileImage: user.profileImage?.url || null, // ✅ Cloudinary
+      profileImage: user.profileImage?.url || null,
+      documents: user.documents || [],
       joinDate: user.createdAt
         ? new Date(user.createdAt).toISOString().split("T")[0]
         : "N/A",
@@ -134,7 +121,7 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
-// ✅ Admin Dashboard Stats
+// ✅ Dashboard stats
 exports.getAdminDashboardStats = async (req, res) => {
   try {
     const totalUsers = await User.countDocuments();
@@ -160,8 +147,8 @@ exports.getAdminDashboardStats = async (req, res) => {
       battingStyle: player.battingStyle || 'N/A',
       bowlingStyle: player.bowlingStyle || 'N/A',
       submittedAt: player.createdAt?.toISOString() || 'N/A',
-      profileImage: player.profileImage?.url || null, // ✅ Cloudinary
-      documents: (player.documents || []).map(doc => doc.url), // ✅ Cloudinary
+      profileImage: player.profileImage?.url || '',
+      documents: player.documents || [],
     }));
 
     res.set('Cache-Control', 'no-store');
@@ -180,7 +167,7 @@ exports.getAdminDashboardStats = async (req, res) => {
   }
 };
 
-// ✅ Create new user (manual admin add)
+// ✅ Create user
 exports.createUser = async (req, res) => {
   try {
     const {
@@ -218,6 +205,20 @@ exports.createUser = async (req, res) => {
       dateOfBirth,
     });
 
+    if (req.files?.profileImage?.[0]) {
+      newUser.profileImage = {
+        url: req.files.profileImage[0].path,
+        public_id: req.files.profileImage[0].filename,
+      };
+    }
+
+    if (req.files?.documents?.length > 0) {
+      newUser.documents = req.files.documents.map((doc) => ({
+        url: doc.path,
+        public_id: doc.filename,
+      }));
+    }
+
     await newUser.save();
 
     res.status(201).json({
@@ -240,59 +241,29 @@ exports.createUser = async (req, res) => {
 exports.updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const {
-      name,
-      email,
-      password,
-      role,
-      phone,
-      position,
-      battingStyle,
-      bowlingStyle,
-      bio,
-      dateOfBirth,
-    } = req.body;
+    const updates = req.body;
 
     const user = await User.findById(id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (role === 'admin' && req.user.role !== 'super-admin') {
+    if (updates.role === 'admin' && req.user.role !== 'super-admin') {
       return res.status(403).json({ message: 'Only super-admin can assign admin role' });
     }
 
-    if (name) user.name = name;
-    if (email) user.email = email;
-    if (password) user.password = password;
-    if (role) user.role = role;
-    if (phone) user.phone = phone;
-    if (position) user.position = position;
-    if (battingStyle) user.battingStyle = battingStyle;
-    if (bowlingStyle) user.bowlingStyle = bowlingStyle;
-    if (bio) user.bio = bio;
-    if (dateOfBirth) user.dateOfBirth = dateOfBirth;
+    Object.assign(user, updates);
 
-    // ✅ Handle Cloudinary uploads
     if (req.files?.profileImage?.[0]) {
-      if (user.profileImage?.public_id) {
-        await cloudinary.uploader.destroy(user.profileImage.public_id);
-      }
-      const uploadRes = await cloudinary.uploader.upload(req.files.profileImage[0].path, {
-        folder: "users/profile",
-      });
-      user.profileImage = { url: uploadRes.secure_url, public_id: uploadRes.public_id };
+      user.profileImage = {
+        url: req.files.profileImage[0].path,
+        public_id: req.files.profileImage[0].filename,
+      };
     }
 
     if (req.files?.documents?.length > 0) {
-      if (user.documents?.length) {
-        for (const doc of user.documents) {
-          if (doc.public_id) await cloudinary.uploader.destroy(doc.public_id);
-        }
-      }
-      user.documents = [];
-      for (const doc of req.files.documents) {
-        const uploadRes = await cloudinary.uploader.upload(doc.path, { folder: "users/documents" });
-        user.documents.push({ url: uploadRes.secure_url, public_id: uploadRes.public_id });
-      }
+      user.documents = req.files.documents.map((doc) => ({
+        url: doc.path,
+        public_id: doc.filename,
+      }));
     }
 
     const updatedUser = await user.save();
@@ -311,19 +282,8 @@ exports.updateUser = async (req, res) => {
 exports.deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
-
     const user = await User.findByIdAndDelete(id);
     if (!user) return res.status(404).json({ message: "User not found" });
-
-    if (user.profileImage?.public_id) {
-      await cloudinary.uploader.destroy(user.profileImage.public_id);
-    }
-    if (user.documents?.length) {
-      for (const doc of user.documents) {
-        if (doc.public_id) await cloudinary.uploader.destroy(doc.public_id);
-      }
-    }
-
     res.status(200).json({ message: "User deleted successfully" });
   } catch (err) {
     console.error("Delete user error:", err);
@@ -331,49 +291,37 @@ exports.deleteUser = async (req, res) => {
   }
 };
 
-// ✅ Verify Player
+// ✅ Verify player
 exports.verifyPlayer = async (req, res) => {
-  const { playerId } = req.params;
-
   try {
+    const { playerId } = req.params;
     const player = await User.findById(playerId);
     if (!player) return res.status(404).json({ message: "User not found" });
-    if (player.verified) return res.status(400).json({ message: "Player is already verified." });
+    if (player.verified) return res.status(400).json({ message: "Player already verified." });
 
     player.role = "player";
     player.verified = true;
     player.playerCode = await generatePlayerCode();
-
     await player.save();
 
-    const mailOptions = {
+    await mailer.sendMail({
       from: process.env.EMAIL_USER,
       to: player.email,
       subject: "Your Player Account Has Been Verified",
-      text: `Hi ${player.name},\n\nYour player account has been verified.\nYour 4-digit Player Code is: ${player.playerCode}\n\nUse this code to join a team.\n\nThank you!`,
-    };
-
-    try {
-      await mailer.sendMail(mailOptions);
-    } catch (err) {
-      console.error("❌ Email send error (verifyPlayer):", err);
-    }
-
-    res.json({
-      message: "Player verified, code generated, and email sent",
-      player,
+      text: `Hi ${player.name}, your account is verified. Your player code is: ${player.playerCode}`,
     });
-  } catch (error) {
-    console.error("Error verifying player:", error);
+
+    res.json({ message: "Player verified, code generated, and email sent", player });
+  } catch (err) {
+    console.error("Error verifying player:", err);
     res.status(500).json({ message: "Failed to verify player" });
   }
 };
 
-// ✅ Reject Player
+// ✅ Reject player
 exports.rejectPlayer = async (req, res) => {
-  const { playerId } = req.params;
-
   try {
+    const { playerId } = req.params;
     const user = await User.findById(playerId);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
@@ -382,37 +330,24 @@ exports.rejectPlayer = async (req, res) => {
     user.position = undefined;
     user.battingStyle = undefined;
     user.bowlingStyle = undefined;
-
-    if (user.documents?.length) {
-      for (const doc of user.documents) {
-        if (doc.public_id) await cloudinary.uploader.destroy(doc.public_id);
-      }
-    }
     user.documents = [];
-
     await user.save();
 
-    const mailOptions = {
+    await mailer.sendMail({
       from: process.env.EMAIL_USER,
       to: user.email,
-      subject: 'Your Player Verification Request Was Rejected',
-      text: `Hi ${user.name},\n\nWe regret to inform you that your player verification request has been rejected.\n\nYou can still access the platform as a regular user.\n\nThank you.`,
-    };
+      subject: "Your Player Verification Request Was Rejected",
+      text: `Hi ${user.name}, unfortunately your player verification request has been rejected.`,
+    });
 
-    try {
-      await mailer.sendMail(mailOptions);
-    } catch (err) {
-      console.error("❌ Email send error (rejectPlayer):", err);
-    }
-
-    res.json({ message: 'Player rejected, role downgraded, and email sent' });
-  } catch (error) {
-    console.error('Error rejecting player:', error);
+    res.json({ message: 'Player rejected and email sent' });
+  } catch (err) {
+    console.error('Error rejecting player:', err);
     res.status(500).json({ message: 'Failed to reject player' });
   }
 };
 
-// ✅ Get Pending Players
+// ✅ Pending players
 exports.getPendingPlayers = async (req, res) => {
   try {
     const pendingPlayers = await User.find({
@@ -420,7 +355,7 @@ exports.getPendingPlayers = async (req, res) => {
       $or: [{ verified: false }, { verified: { $exists: false } }]
     });
 
-    const formattedPlayers = pendingPlayers.map(player => ({
+    const formatted = pendingPlayers.map(player => ({
       id: player._id,
       name: player.name,
       email: player.email,
@@ -430,11 +365,11 @@ exports.getPendingPlayers = async (req, res) => {
       bowlingStyle: player.bowlingStyle || 'N/A',
       bio: player.bio || 'N/A',
       submittedAt: player.createdAt?.toISOString() || 'N/A',
-      profileImage: player.profileImage?.url || null, // ✅ Cloudinary
-      documents: (player.documents || []).map(doc => doc.url), // ✅ Cloudinary
+      profileImage: player.profileImage?.url || '',
+      documents: player.documents || [],
     }));
 
-    res.json({ pendingPlayers: formattedPlayers });
+    res.json({ pendingPlayers: formatted });
   } catch (err) {
     console.error('Error fetching pending players:', err);
     res.status(500).json({ error: 'Failed to fetch pending players' });

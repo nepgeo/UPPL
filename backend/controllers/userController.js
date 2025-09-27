@@ -3,7 +3,6 @@ const Vote = require('../models/Vote');
 const Team = require('../models/teamModel');
 const Match = require('../models/matchModel');
 const User = require('../models/User');
-const nodemailer = require("nodemailer");
 const mailer = require('../config/mailer'); // ✅ shared transporter
 const bcrypt = require("bcryptjs");
 const fs = require("fs");
@@ -31,8 +30,8 @@ exports.updateUser = async (req, res) => {
     // ✅ Profile image upload
     if (req.file) {
       // remove old image if exists
-      if (user.profileImageId) {
-        await cloudinary.uploader.destroy(user.profileImageId);
+      if (user.profileImage?.public_id) {
+        await cloudinary.uploader.destroy(user.profileImage.public_id);
       }
 
       const uploadPath = path.join(__dirname, "..", req.file.path);
@@ -40,16 +39,18 @@ exports.updateUser = async (req, res) => {
         folder: "users/profile",
       });
 
-      user.profileImage = uploadRes.secure_url;
-      user.profileImageId = uploadRes.public_id;
+      user.profileImage = {
+        url: uploadRes.secure_url,
+        public_id: uploadRes.public_id,
+      };
 
-      fs.unlinkSync(uploadPath);
+      if (fs.existsSync(uploadPath)) fs.unlinkSync(uploadPath);
     }
 
     // ✅ Documents upload
     if (req.files && req.files.length > 0) {
       // remove old documents
-      if (user.documents && user.documents.length > 0) {
+      if (user.documents?.length) {
         for (const doc of user.documents) {
           if (doc.public_id) {
             await cloudinary.uploader.destroy(doc.public_id);
@@ -69,7 +70,7 @@ exports.updateUser = async (req, res) => {
           public_id: uploadRes.public_id,
         });
 
-        fs.unlinkSync(uploadPath);
+        if (fs.existsSync(uploadPath)) fs.unlinkSync(uploadPath);
       }
 
       user.documents = uploadedDocs;
@@ -91,7 +92,7 @@ exports.updateUser = async (req, res) => {
       },
     });
   } catch (err) {
-    console.error("Update user error:", err.message);
+    console.error("❌ Update user error:", err.message);
     res.status(500).json({ message: "Error updating user", error: err.message });
   }
 };
@@ -169,7 +170,7 @@ exports.changePassword = async (req, res) => {
 
     res.json({ message: "Password updated successfully" });
   } catch (err) {
-    console.error("Change password error:", err);
-    res.status(500).json({ message: "Server error" });
+    console.error("❌ Change password error:", err.message);
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 };

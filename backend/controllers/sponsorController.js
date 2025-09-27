@@ -1,7 +1,6 @@
+// controllers/sponsorController.js
 const { OrganizationSponsor, IndividualSponsor } = require('../models/sponsorModel');
-const fs = require('fs');
-const path = require('path');
-const cloudinary = require('../config/cloudinary'); // ✅ Cloudinary config
+const cloudinary = require('../config/cloudinary'); // ✅ use Cloudinary
 
 // ===============================
 // Organization Sponsor Controllers
@@ -12,28 +11,22 @@ const getAllOrganizations = async (req, res) => {
     const sponsors = await OrganizationSponsor.find();
     res.json(sponsors);
   } catch (err) {
-    console.error("Fetch organizations error:", err.message);
-    res.status(500).json({ message: "Failed to fetch organizations" });
+    console.error("❌ getAllOrganizations error:", err);
+    res.status(500).json({ message: "Failed to fetch organization sponsors" });
   }
 };
 
 const createOrganization = async (req, res) => {
   try {
     const { name, bio, donationAmount } = req.body;
+
     let logo = null;
-    let logoId = null;
-
     if (req.file) {
-      const uploadPath = path.join(__dirname, "..", req.file.path);
-
-      const uploadRes = await cloudinary.uploader.upload(uploadPath, {
-        folder: "sponsors",
+      const uploadRes = await cloudinary.uploader.upload(req.file.path, {
+        folder: "sponsors/organizations",
+        public_id: `org-${Date.now()}`,
       });
-
-      logo = uploadRes.secure_url;
-      logoId = uploadRes.public_id;
-
-      fs.unlinkSync(uploadPath); // ✅ delete local file
+      logo = { url: uploadRes.secure_url, public_id: uploadRes.public_id };
     }
 
     const sponsor = new OrganizationSponsor({
@@ -41,13 +34,12 @@ const createOrganization = async (req, res) => {
       bio,
       donationAmount,
       logo,
-      logoId,
     });
 
     await sponsor.save();
     res.status(201).json(sponsor);
   } catch (err) {
-    console.error("Create Org Error:", err.message);
+    console.error("❌ Create Org Error:", err.message);
     res.status(500).json({ message: "Failed to create organization sponsor" });
   }
 };
@@ -59,49 +51,46 @@ const updateOrganization = async (req, res) => {
     const sponsor = await OrganizationSponsor.findById(req.params.id);
     if (!sponsor) return res.status(404).json({ error: "Sponsor not found" });
 
-    if (req.file) {
-      // ✅ remove old logo if exists
-      if (sponsor.logoId) {
-        await cloudinary.uploader.destroy(sponsor.logoId);
-      }
-
-      const uploadPath = path.join(__dirname, "..", req.file.path);
-      const uploadRes = await cloudinary.uploader.upload(uploadPath, {
-        folder: "sponsors",
-      });
-
-      sponsor.logo = uploadRes.secure_url;
-      sponsor.logoId = uploadRes.public_id;
-
-      fs.unlinkSync(uploadPath);
-    }
-
-    sponsor.name = name || sponsor.name;
-    sponsor.bio = bio || sponsor.bio;
-    sponsor.donationAmount = donationAmount || sponsor.donationAmount;
+    sponsor.name = name ?? sponsor.name;
+    sponsor.bio = bio ?? sponsor.bio;
+    sponsor.donationAmount = donationAmount ?? sponsor.donationAmount;
     sponsor.isActive = isActive ?? sponsor.isActive;
+
+    if (req.file) {
+      // Delete old logo if exists
+      if (sponsor.logo?.public_id) {
+        await cloudinary.uploader.destroy(sponsor.logo.public_id);
+      }
+      // Upload new
+      const uploadRes = await cloudinary.uploader.upload(req.file.path, {
+        folder: "sponsors/organizations",
+        public_id: `org-${Date.now()}`,
+      });
+      sponsor.logo = { url: uploadRes.secure_url, public_id: uploadRes.public_id };
+    }
 
     await sponsor.save();
     res.json(sponsor);
   } catch (error) {
-    console.error("Error updating organization sponsor:", error);
+    console.error("❌ Error updating organization sponsor:", error);
     res.status(500).json({ error: "Server error while updating organization sponsor" });
   }
 };
 
 const deleteOrganization = async (req, res) => {
   try {
-    const sponsor = await OrganizationSponsor.findById(req.params.id);
+    const { id } = req.params;
+    const sponsor = await OrganizationSponsor.findById(id);
     if (!sponsor) return res.status(404).json({ message: "Sponsor not found" });
 
-    if (sponsor.logoId) {
-      await cloudinary.uploader.destroy(sponsor.logoId); // ✅ remove from cloudinary
+    if (sponsor.logo?.public_id) {
+      await cloudinary.uploader.destroy(sponsor.logo.public_id);
     }
 
     await sponsor.deleteOne();
     res.json({ message: "Organization sponsor deleted" });
   } catch (err) {
-    console.error("Delete Org Error:", err.message);
+    console.error("❌ deleteOrganization error:", err);
     res.status(500).json({ message: "Failed to delete organization sponsor" });
   }
 };
@@ -115,28 +104,22 @@ const getAllIndividuals = async (req, res) => {
     const sponsors = await IndividualSponsor.find();
     res.json(sponsors);
   } catch (err) {
-    console.error("Fetch individuals error:", err.message);
-    res.status(500).json({ message: "Failed to fetch individuals" });
+    console.error("❌ getAllIndividuals error:", err);
+    res.status(500).json({ message: "Failed to fetch individual sponsors" });
   }
 };
 
 const createIndividual = async (req, res) => {
   try {
     const { name, bio, donationAmount } = req.body;
+
     let avatar = null;
-    let avatarId = null;
-
     if (req.file) {
-      const uploadPath = path.join(__dirname, "..", req.file.path);
-
-      const uploadRes = await cloudinary.uploader.upload(uploadPath, {
-        folder: "sponsors",
+      const uploadRes = await cloudinary.uploader.upload(req.file.path, {
+        folder: "sponsors/individuals",
+        public_id: `ind-${Date.now()}`,
       });
-
-      avatar = uploadRes.secure_url;
-      avatarId = uploadRes.public_id;
-
-      fs.unlinkSync(uploadPath);
+      avatar = { url: uploadRes.secure_url, public_id: uploadRes.public_id };
     }
 
     const sponsor = new IndividualSponsor({
@@ -144,13 +127,12 @@ const createIndividual = async (req, res) => {
       bio,
       donationAmount,
       avatar,
-      avatarId,
     });
 
     await sponsor.save();
     res.status(201).json(sponsor);
   } catch (err) {
-    console.error("Create Individual Error:", err.message);
+    console.error("❌ Create Individual Error:", err.message);
     res.status(500).json({ message: "Failed to create individual sponsor" });
   }
 };
@@ -163,47 +145,45 @@ const updateIndividual = async (req, res) => {
     const sponsor = await IndividualSponsor.findById(id);
     if (!sponsor) return res.status(404).json({ message: "Sponsor not found" });
 
+    sponsor.name = name ?? sponsor.name;
+    sponsor.bio = bio ?? sponsor.bio;
+    sponsor.donationAmount = donationAmount ?? sponsor.donationAmount;
+
     if (req.file) {
-      if (sponsor.avatarId) {
-        await cloudinary.uploader.destroy(sponsor.avatarId);
+      // Delete old avatar if exists
+      if (sponsor.avatar?.public_id) {
+        await cloudinary.uploader.destroy(sponsor.avatar.public_id);
       }
-
-      const uploadPath = path.join(__dirname, "..", req.file.path);
-      const uploadRes = await cloudinary.uploader.upload(uploadPath, {
-        folder: "sponsors",
+      // Upload new
+      const uploadRes = await cloudinary.uploader.upload(req.file.path, {
+        folder: "sponsors/individuals",
+        public_id: `ind-${Date.now()}`,
       });
-
-      sponsor.avatar = uploadRes.secure_url;
-      sponsor.avatarId = uploadRes.public_id;
-
-      fs.unlinkSync(uploadPath);
+      sponsor.avatar = { url: uploadRes.secure_url, public_id: uploadRes.public_id };
     }
-
-    sponsor.name = name || sponsor.name;
-    sponsor.bio = bio || sponsor.bio;
-    sponsor.donationAmount = donationAmount || sponsor.donationAmount;
 
     await sponsor.save();
     res.json(sponsor);
   } catch (err) {
-    console.error("Update Individual Error:", err.message);
+    console.error("❌ updateIndividual error:", err);
     res.status(500).json({ message: "Failed to update individual sponsor" });
   }
 };
 
 const deleteIndividual = async (req, res) => {
   try {
-    const sponsor = await IndividualSponsor.findById(req.params.id);
+    const { id } = req.params;
+    const sponsor = await IndividualSponsor.findById(id);
     if (!sponsor) return res.status(404).json({ message: "Sponsor not found" });
 
-    if (sponsor.avatarId) {
-      await cloudinary.uploader.destroy(sponsor.avatarId);
+    if (sponsor.avatar?.public_id) {
+      await cloudinary.uploader.destroy(sponsor.avatar.public_id);
     }
 
     await sponsor.deleteOne();
     res.json({ message: "Individual sponsor deleted" });
   } catch (err) {
-    console.error("Delete Individual Error:", err.message);
+    console.error("❌ deleteIndividual error:", err);
     res.status(500).json({ message: "Failed to delete individual sponsor" });
   }
 };

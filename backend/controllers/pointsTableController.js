@@ -2,14 +2,19 @@
 const Match = require("../models/matchModel");
 const Season = require("../models/seasonModel");
 
-// Convert overs (e.g. "19.5") to total balls
+// ----------------------
+// Helpers
+// ----------------------
+
+// Convert overs string (e.g. "19.5") → total balls
 const parseOvers = (overs) => {
   if (!overs) return 0;
   const [o, b] = overs.split('.').map(Number);
   return o * 6 + (b || 0);
 };
 
-// Calculate NRR = (runsFor/oversFaced) - (runsAgainst/oversBowled)
+// Calculate Net Run Rate (NRR)
+// NRR = (runsFor / oversFaced) - (runsAgainst / oversBowled)
 const calculateNRR = (runsFor, ballsFaced, runsAgainst, ballsBowled) => {
   const oversFaced = ballsFaced / 6;
   const oversBowled = ballsBowled / 6;
@@ -17,6 +22,9 @@ const calculateNRR = (runsFor, ballsFaced, runsAgainst, ballsBowled) => {
   return (runsFor / oversFaced) - (runsAgainst / oversBowled);
 };
 
+// ----------------------
+// Controller
+// ----------------------
 exports.getPointsTable = async (req, res) => {
   try {
     const { seasonId } = req.params;
@@ -29,7 +37,9 @@ exports.getPointsTable = async (req, res) => {
       return res.json({ groups: {}, all: [] });
     }
 
-    // Initialize table
+    // ----------------------
+    // Initialize team table
+    // ----------------------
     const table = {};
     season.groups.forEach((group) => {
       group.teams.forEach((t) => {
@@ -44,7 +54,7 @@ exports.getPointsTable = async (req, res) => {
           lost: 0,
           tied: 0,
           points: 0,
-          form: [],
+          form: [], // track last results (W/L/T/N)
           groupName: group.groupName,
           runsFor: 0,
           ballsFaced: 0,
@@ -55,6 +65,9 @@ exports.getPointsTable = async (req, res) => {
       });
     });
 
+    // ----------------------
+    // Process all matches
+    // ----------------------
     const matches = await Match.find({ seasonNumber: seasonId })
       .select("teamA teamB teamAResult teamBResult result winner groupName")
       .lean();
@@ -80,7 +93,7 @@ exports.getPointsTable = async (req, res) => {
       table[A].matches++;
       table[B].matches++;
 
-      // ✅ Update results and points (no subtraction on loss)
+      // ✅ Update results & points
       if (m.winner === "teamA") {
         table[A].won++; table[A].points += 2;
         table[B].lost++;
@@ -93,11 +106,15 @@ exports.getPointsTable = async (req, res) => {
         table[A].tied++; table[B].tied++;
         table[A].points += 1; table[B].points += 1;
         table[A].form.push("T"); table[B].form.push("T");
+      } else if (["draw", "no_result"].includes(m.winner)) {
+        // 🆕 Award 1 point for abandoned/draw matches
+        table[A].points += 1; table[B].points += 1;
+        table[A].form.push("N"); table[B].form.push("N");
       } else {
         table[A].form.push("N"); table[B].form.push("N");
       }
 
-      // Update runs & balls for NRR
+      // Update runs & balls (for NRR)
       table[A].runsFor += runsA;
       table[A].ballsFaced += ballsA;
       table[A].runsAgainst += runsB;
@@ -109,22 +126,28 @@ exports.getPointsTable = async (req, res) => {
       table[B].ballsBowled += ballsA;
     }
 
-    // Finalize NRR with 3 decimal places
+    // ----------------------
+    // Finalize NRR & Sorting
+    // ----------------------
     const finalize = (obj) => {
       const t = { ...obj };
-      t.nrr = parseFloat(calculateNRR(t.runsFor, t.ballsFaced, t.runsAgainst, t.ballsBowled).toFixed(3));
+      t.nrr = parseFloat(
+        calculateNRR(t.runsFor, t.ballsFaced, t.runsAgainst, t.ballsBowled).toFixed(3)
+      );
       return t;
     };
 
     const allArray = Object.values(table).map(finalize);
 
-    // Sorting
     const sortFn = (a, b) =>
       b.points === a.points ? b.nrr - a.nrr : b.points - a.points;
+
     allArray.sort(sortFn);
     allArray.forEach((t, i) => { t.position = i + 1; });
 
-    // Group-wise
+    // ----------------------
+    // Group-wise sorting
+    // ----------------------
     const groups = {};
     season.groups.forEach((g) => {
       groups[g.groupName] = allArray

@@ -1,4 +1,3 @@
-// backend/middleware/upload.js
 const multer = require("multer");
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const cloudinary = require("../config/cloudinary");
@@ -21,7 +20,7 @@ const storage = new CloudinaryStorage({
         folder = "gallery";
         break;
       case "logo":
-      case "avatar":
+      case "avatar": // 👈 used in sponsors & teamMembers
         folder = "sponsors";
         break;
       case "teamLogo":
@@ -49,14 +48,27 @@ const storage = new CloudinaryStorage({
   },
 });
 
+// ✅ File filter (allow only images + PDFs)
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith("image/") || file.mimetype === "application/pdf") {
+    cb(null, true);
+  } else {
+    cb(new Error("Only images and PDFs are allowed"), false);
+  }
+};
+
 // ✅ Multer instance with Cloudinary storage
-const upload = multer({ storage });
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 20 * 1024 * 1024 }, // 🔥 20 MB max
+});
 
 // ✅ Field-based middleware
 const uploadTeamFiles = () =>
   upload.fields([
     { name: "teamLogo", maxCount: 1 },
-    { name: "teamMember", maxCount: 1 },
+    { name: "avatar", maxCount: 1 }, // 👈 changed from "teamMember" for consistency
     { name: "paymentReceipt", maxCount: 1 },
   ]);
 
