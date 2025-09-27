@@ -171,32 +171,35 @@ const Navbar = () => {
 
 
 
-  const getProfileImageUrl = (path: string | null) => {
-    if (!path) {
-      return `${BASE_URL}/favicon.png`;
-    }
+  const getProfileImageUrl = (profileImage: any) => {
+  if (!profileImage) {
+    return `${BASE_URL}/favicon.png`;
+  }
 
-    // Allow cloud URLs
-    if (path.startsWith('http')) {
-      return path;
-    }
+  // 🚀 Cloudinary object (new schema)
+  if (typeof profileImage === "object" && profileImage.url) {
+    return profileImage.url;
+  }
 
-    // Normalize paths
-    let cleanPath = path
-      .replace(/\\/g, '/')                     // Windows → forward slashes
-      .replace(/\/+/g, '/')                    // collapse multiple slashes
-      .replace(/^\/uploads\/uploads\//, '/uploads/') // remove duplicate prefix
-      .replace(/^uploads\//, '/uploads/');     // ensure leading slash
+  // 🚀 Already a full URL (for future-proofing)
+  if (typeof profileImage === "string" && profileImage.startsWith("http")) {
+    return profileImage;
+  }
 
-    // Ensure single leading slash
-    if (!cleanPath.startsWith('/')) {
-      cleanPath = '/' + cleanPath;
-    }
+  // 🚀 Fallback to backend uploads
+  let cleanPath = (typeof profileImage === "string" ? profileImage : "")
+    .replace(/\\/g, "/")
+    .replace(/\/+/g, "/")
+    .replace(/^\/uploads\/uploads\//, "/uploads/")
+    .replace(/^uploads\//, "/uploads/");
 
-    const finalUrl = `${BASE_URL}${cleanPath}`;
-    console.log("🖼 Final image URL:", finalUrl);
-    return finalUrl;
-  };
+  if (!cleanPath.startsWith("/")) {
+    cleanPath = "/" + cleanPath;
+  }
+
+  return `${BASE_URL}${cleanPath}`;
+};
+
 
 
 
