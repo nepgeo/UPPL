@@ -9,6 +9,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2, X, Plus } from 'lucide-react';
 import api from "@/lib/api";
 
+interface NewsImage {
+  url: string;
+  public_id: string;
+}
+
 interface NewsItem {
   _id?: string;
   title: string;
@@ -24,7 +29,9 @@ const NewsManagement: React.FC = () => {
   const [editItem, setEditItem] = useState<NewsItem | null>(null);
   const [formData, setFormData] = useState({ title: '', content: '' });
   const [files, setFiles] = useState<File[]>([]);
-  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<(string | { url: string; public_id?: string })[]>([]);
+  const [removedPublicIds, setRemovedPublicIds] = useState<string[]>([]);
+
 
   const fetchNews = async () => {
     try {
@@ -54,66 +61,88 @@ const NewsManagement: React.FC = () => {
   };
 
   const removeImage = (index: number) => {
+  const img = previewUrls[index];
+
+  // If it's an existing Cloudinary image, store its public_id to delete later
+  if (typeof img !== "string" && img.public_id) {
+    // Collect for backend delete
+    setRemovedPublicIds(prev => [...prev, img.public_id]);
+  }
+
+  const updatedPreviews = [...previewUrls];
+  updatedPreviews.splice(index, 1);
+  setPreviewUrls(updatedPreviews);
+
+  // Remove local File if present
+  if (files[index]) {
     const updatedFiles = [...files];
-    const updatedPreviews = [...previewUrls];
     updatedFiles.splice(index, 1);
-    updatedPreviews.splice(index, 1);
     setFiles(updatedFiles);
-    setPreviewUrls(updatedPreviews);
-  };
-    const handleSubmit = async () => {
-    try {
-            setLoading(true);
-            const form = new FormData();
-            form.append('title', formData.title);
-            form.append('content', formData.content);
-            files.forEach((file) => form.append('images', file));
+  }
+};
 
-            // 🔐 Retrieve token (adjust this line as needed)
-            const token = localStorage.getItem('pplt20_token'); // or use user.token if you have context
+   const handleSubmit = async () => {
+  try {
+    setLoading(true);
+    const form = new FormData();
+    form.append("title", formData.title);
+    form.append("content", formData.content);
+    files.forEach((file) => form.append("images", file));
 
-            const config = {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-                Authorization: `Bearer ${token}`, // ✅ Include token here
-            },
-            };
+    // Add removed public IDs (stringified for backend)
+    if (removedPublicIds.length > 0) {
+      form.append("removedPublicIds", JSON.stringify(removedPublicIds));
+    }
 
-            if (editItem) {
-            await api.put(`/news/${editItem._id}`, form, config);
-            toast.success('News updated');
-            } else {
-            await api.post('/news', form, config);
-            toast.success('News created');
-            }
+    const token = localStorage.getItem("pplt20_token");
+    const config = {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Authorization: `Bearer ${token}`,
+      },
+    };
 
-            setFormOpen(false);
-            setEditItem(null);
-            setFormData({ title: '', content: '' });
-            setFiles([]);
-            setPreviewUrls([]);
-            fetchNews();
-            } catch (err) {
-                toast.error('Error saving news');
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
+    if (editItem) {
+      await api.put(`/news/${editItem._id}`, form, config);
+      toast.success("News updated");
+    } else {
+      await api.post("/news", form, config);
+      toast.success("News created");
+    }
+
+    setFormOpen(false);
+    setEditItem(null);
+    setFormData({ title: "", content: "" });
+    setFiles([]);
+    setPreviewUrls([]);
+    setRemovedPublicIds([]); // reset
+    fetchNews();
+  } catch (err) {
+    toast.error("Error saving news");
+    console.error(err);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
 
   const handleDelete = async (id: string) => {
-    const token = localStorage.getItem("pplt20_token");
-    if (!window.confirm('Are you sure you want to delete this news item?')) return;
+  const token = localStorage.getItem("pplt20_token");
+  if (!window.confirm("Are you sure you want to delete this news item?")) return;
 
-    try {
-      await api.delete(`/news/${id}`);
-      toast.success('News deleted');
-      fetchNews();
-    } catch (err) {
-      toast.error('Delete failed');
-    }
-  };
+  try {
+    await api.delete(`/news/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    toast.success("News deleted");
+    fetchNews();
+  } catch (err) {
+    toast.error("Delete failed");
+    console.error(err);
+  }
+};
+
 
 
   const openForm = (item?: NewsItem) => {
@@ -159,14 +188,15 @@ const NewsManagement: React.FC = () => {
                     : '—'}
                 </p>
                 <div className="flex gap-2 flex-wrap">
-                  {item.images?.map((url, idx) => (
+                  {item.images?.map((img, idx) => (
                     <img
                       key={idx}
-                      src={url}
+                      src={typeof img === "string" ? img : img.url} // supports both string & object
                       alt="news"
                       className="h-16 w-16 object-cover rounded"
                     />
                   ))}
+
                 </div>
                 <div className="flex justify-between mt-3">
                   <Button size="sm" variant="outline" onClick={() => openForm(item)}>Edit</Button>
@@ -202,21 +232,26 @@ const NewsManagement: React.FC = () => {
             <div>
               <label className="text-sm font-medium">Images</label>
               <div className="flex gap-2 mt-2 flex-wrap">
-                {previewUrls.map((url, index) => (
-                  <div key={index} className="relative group">
-                    <img
-                      src={url}
-                      className="h-20 w-20 object-cover rounded border"
-                      alt="preview"
-                    />
-                    <button
-                      className="absolute top-[-8px] right-[-8px] bg-red-500 text-white rounded-full p-1 shadow hover:bg-red-600"
-                      onClick={() => removeImage(index)}
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                ))}
+                {previewUrls.map((img, index) => {
+                  const imageUrl = typeof img === "string" ? img : img.url;
+                  return (
+                    <div key={index} className="relative group">
+                      <img
+                        src={imageUrl}
+                        className="h-20 w-20 object-cover rounded border"
+                        alt="preview"
+                      />
+                      <button
+                        type="button"
+                        className="absolute top-[-8px] right-[-8px] bg-red-500 text-white rounded-full p-1 shadow hover:bg-red-600"
+                        onClick={() => removeImage(index)}
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  );
+                })}
+
                 <label className="flex items-center justify-center h-20 w-20 bg-gray-100 rounded border cursor-pointer hover:bg-gray-200">
                   <Plus className="text-gray-500" />
                   <input

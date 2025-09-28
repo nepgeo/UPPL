@@ -1,31 +1,31 @@
 const mongoose = require("mongoose");
 const News = require("../models/newsModel");
 const asyncHandler = require("express-async-handler");
-const { uploadFileToCloudinary, destroyPublicId } = require("../utils/cloudinaryService");
+const {
+  uploadFileToCloudinary,
+  destroyPublicId,
+} = require("../utils/cloudinaryService");
 
 // ========================
 // GET /api/news
 // ========================
-const getAllNews = async (req, res) => {
+const getAllNews = asyncHandler(async (req, res) => {
   try {
     const news = await News.find()
       .populate("author", "name avatar role bio")
       .sort({ createdAt: -1 });
 
-    console.log("📢 News fetched:", news.length);
     res.status(200).json(news);
   } catch (err) {
-    console.error("❌ Error fetching news:", err.message);
-    console.error(err.stack);
-    res.status(500).json({ message: "Server Error", error: err.message });
+    console.error("❌ Error fetching news:", err);
+    res.status(500).json({ message: "Server Error" });
   }
-};
-
+});
 
 // ========================
 // GET /api/news/:id
 // ========================
-const getNewsById = async (req, res) => {
+const getNewsById = asyncHandler(async (req, res) => {
   try {
     const news = await News.findById(req.params.id).populate(
       "author",
@@ -41,12 +41,12 @@ const getNewsById = async (req, res) => {
     console.error("❌ Error fetching news by ID:", err);
     res.status(500).json({ message: "Server Error" });
   }
-};
+});
 
 // ========================
 // POST /api/news
 // ========================
-const createNews = async (req, res) => {
+const createNews = asyncHandler(async (req, res) => {
   try {
     const { title, content } = req.body;
     const author = req.body.author || req.user?.id;
@@ -55,11 +55,20 @@ const createNews = async (req, res) => {
       return res.status(400).json({ message: "Author is required" });
     }
 
+    if (!title || !content) {
+      return res
+        .status(400)
+        .json({ message: "Title and content are required" });
+    }
+
     let images = [];
     if (req.files && req.files.length > 0) {
       for (const file of req.files) {
         const uploaded = await uploadFileToCloudinary(file.path, "news");
-        images.push(uploaded);
+        images.push({
+          url: uploaded.secure_url,
+          public_id: uploaded.public_id,
+        });
       }
     }
 
@@ -75,7 +84,7 @@ const createNews = async (req, res) => {
     console.error("❌ Error creating news:", error);
     res.status(500).json({ message: "Server error" });
   }
-};
+});
 
 // ========================
 // PUT /api/news/:id
@@ -87,13 +96,7 @@ const updateNews = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: "Invalid news ID" });
   }
 
-  const { title, content } = req.body || {};
-
-  if (!title || !content) {
-    return res
-      .status(400)
-      .json({ message: "Title and content are required" });
-  }
+  const { title, content } = req.body;
 
   const news = await News.findById(id);
   if (!news) {
@@ -104,12 +107,16 @@ const updateNews = asyncHandler(async (req, res) => {
   if (req.files && req.files.length > 0) {
     for (const file of req.files) {
       const uploaded = await uploadFileToCloudinary(file.path, "news");
-      newImages.push(uploaded);
+      newImages.push({
+        url: uploaded.secure_url,
+        public_id: uploaded.public_id,
+      });
     }
   }
 
-  news.title = title;
-  news.content = content;
+  // Update fields
+  if (title) news.title = title;
+  if (content) news.content = content;
   if (newImages.length > 0) {
     news.images = [...news.images, ...newImages];
   }
@@ -123,7 +130,7 @@ const updateNews = asyncHandler(async (req, res) => {
 // DELETE /api/news/:id
 // ========================
 const deleteNews = asyncHandler(async (req, res) => {
-  const id = req.params.id;
+  const { id } = req.params;
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({ message: "Invalid news ID" });
@@ -137,7 +144,9 @@ const deleteNews = asyncHandler(async (req, res) => {
   // ✅ Delete images from Cloudinary
   if (news.images && news.images.length > 0) {
     for (const img of news.images) {
-      await destroyPublicId(img.public_id);
+      if (img.public_id) {
+        await destroyPublicId(img.public_id);
+      }
     }
   }
 
