@@ -1,6 +1,6 @@
 import { BASE_URL } from "../config";
 
-const getProfileImageUrl = (profileImage: any) => {
+export const getProfileImageUrl = (profileImage: any) => {
   if (!profileImage) return `${BASE_URL}/favicon.png`;
 
   if (typeof profileImage === "object" && profileImage.url) {
