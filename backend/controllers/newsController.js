@@ -12,12 +12,15 @@ const getAllNews = async (req, res) => {
       .populate("author", "name avatar role bio")
       .sort({ createdAt: -1 });
 
+    console.log("📢 News fetched:", news.length);
     res.status(200).json(news);
   } catch (err) {
-    console.error("❌ Error fetching news:", err);
-    res.status(500).json({ message: "Server Error" });
+    console.error("❌ Error fetching news:", err.message);
+    console.error(err.stack);
+    res.status(500).json({ message: "Server Error", error: err.message });
   }
 };
+
 
 // ========================
 // GET /api/news/:id
