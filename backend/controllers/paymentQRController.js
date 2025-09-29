@@ -82,9 +82,10 @@ async function updateQR(req, res) {
 // ========================
 // DELETE — by public_id
 // ========================
+// backend/controllers/paymentQRController.js
 async function deleteQR(req, res) {
   try {
-    const { public_id } = req.params;
+    const { public_id } = req.body; // 👈 use body
     if (!public_id) {
       return res.status(400).json({ success: false, message: "public_id is required" });
     }
@@ -105,6 +106,7 @@ async function deleteQR(req, res) {
     return res.status(500).json({ success: false, message: "Failed to delete QR" });
   }
 }
+
 
 module.exports = {
   getAllQRs,

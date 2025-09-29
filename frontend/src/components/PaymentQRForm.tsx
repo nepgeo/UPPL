@@ -28,6 +28,7 @@ const PaymentQRForm: React.FC = () => {
   const fetchQRImages = async () => {
     try {
       const res = await api.get("/payment-qr");
+      setQrImages(res.data || []); // keep as array of objects
 
       const normalized: QRImage[] = (res.data || []).map((item: any) => ({
         url: item.url || item.secure_url || "",
@@ -87,10 +88,11 @@ const PaymentQRForm: React.FC = () => {
         return;
       }
 
-      await api.delete(`/payment-qr/${encodeURIComponent(qr.public_id)}`, {
+      await api.delete("/payment-qr", {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("pplt20_token")}`,
         },
+        data: { public_id: qr.public_id },
       });
 
       fetchQRImages();

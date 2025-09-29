@@ -17,6 +17,23 @@ import api from '@/lib/api';
 import { API_BASE, BASE_URL } from '@/config';
 // console.log("DEBUG: API_BASE from config =", API_BASE);
 // console.log("DEBUG: BASE_URL from config =", BASE_URL);
+function getArticleImageUrl(image?: any) {
+  if (!image) return "/placeholder.svg";
+
+  // If backend sent Cloudinary object with url
+  if (typeof image === "object" && image.url) return image.url;
+
+  // If backend sent direct link string
+  if (typeof image === "string" && image.startsWith("http")) return image;
+
+  // If backend only sent public_id string
+  if (typeof image === "string") {
+    return `https://res.cloudinary.com/<your-cloud-name>/image/upload/${image}`;
+  }
+
+  return "/placeholder.svg";
+}
+
 
 
 function getProfileImageUrl(avatar?: any) {
@@ -226,7 +243,7 @@ const News = () => {
                 <Link to={`/news/${article._id}`}>
                   <div className="aspect-video bg-gray-200 rounded-t-lg overflow-hidden">
                     <img
-                      src={article.images?.[0]?.url || '/placeholder.svg'}
+                      src={getArticleImageUrl(article.images?.[0])}
                       alt={article.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                     />
