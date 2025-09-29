@@ -30,7 +30,7 @@ import CapIcon from "@/assets/icons/cap.png";
 import { Phone, CalendarDays } from "lucide-react"; 
 import { useLocation } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getProfileImageUrl } from "@/utils/getProfileImageUrl"; // make sure it's global
+import getProfileImageUrl  from "@/utils/getProfileImageUrl"; // make sure it's global
 
 
 const roleIcon = (roleRaw?: string) => {
