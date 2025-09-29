@@ -62,8 +62,8 @@ const SponsorManagement = () => {
 
     try {
       const [orgRes, indRes] = await Promise.all([
-        api.get('/api/sponsors/organizations', config),
-        api.get('/api/sponsors/individuals', config),
+        api.get('/sponsors/organizations', config),
+        api.get('/sponsors/individuals', config),
       ]);
       setOrgs(orgRes.data);
       setPeople(indRes.data);
@@ -73,7 +73,7 @@ const SponsorManagement = () => {
   };
 
   const handleDelete = async (type: 'organization' | 'individual', id: string) => {
-    const endpoint = `/api/sponsors/${type === 'organization' ? 'organizations' : 'individuals'}/${id}`;
+    const endpoint = `/sponsors/${type === 'organization' ? 'organizations' : 'individuals'}/${id}`;
     const token = localStorage.getItem('pplt20_token');
 
     try {
@@ -97,7 +97,7 @@ const SponsorManagement = () => {
     const token = localStorage.getItem('pplt20_token');
     try {
       setLoadingTeam(true);
-      const res = await api.get('/api/team-members', {
+      const res = await api.get('/team-members', {
         headers: { Authorization: `Bearer ${token}` },
       });
       setTeam(res.data);
@@ -115,7 +115,7 @@ const SponsorManagement = () => {
   const handleDeleteMember = async (id: string) => {
     const token = localStorage.getItem('pplt20_token');
     try {
-      await api.delete(`/api/team-members/${id}`, {
+      await api.delete(`/team-members/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       fetchTeam();
@@ -131,11 +131,11 @@ const SponsorManagement = () => {
 
     try {
       if (editMember._id) {
-        await api.put(`/api/team-members/${editMember._id}`, formData, {
+        await api.put(`/team-members/${editMember._id}`, formData, {
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" },
         });
       } else {
-        await api.post(`/api/team-members`, formData, {
+        await api.post(`/team-members`, formData, {
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" },
         });
       }
