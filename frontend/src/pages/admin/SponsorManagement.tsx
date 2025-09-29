@@ -118,12 +118,7 @@ const SponsorManagement = () => {
     }
   };
 
-  const getProfileImageUrl = (path: string | null | object) => {
-    // keep for backward compat - wraps resolveImageUrl
-    const url = resolveImageUrl(path);
-    if (url) return url;
-    return `${BASE_URL}/uploads/teamMembers/default-avatar.png`;
-  };
+
 
   return (
     <div className="p-3">
