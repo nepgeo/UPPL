@@ -7,7 +7,7 @@ import { BASE_URL } from "@/config";
 export interface Article {
   _id: string;
   title?: string;
-  images?: string[];
+  images?: ({ url: string; public_id?: string } | string)[];
   excerpt?: string;
   createdAt?: string | Date;
   category?: string;

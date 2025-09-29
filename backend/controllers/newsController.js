@@ -36,12 +36,21 @@ const getNewsById = asyncHandler(async (req, res) => {
       return res.status(404).json({ message: "News not found" });
     }
 
-    res.status(200).json(news);
+    // ✅ Normalize images → only return URLs to frontend
+    const formatted = {
+      ...news.toObject(),
+      images: news.images?.map((img) =>
+        typeof img === "object" ? img.url : img
+      ) || [],
+    };
+
+    res.status(200).json(formatted);
   } catch (err) {
     console.error("❌ Error fetching news by ID:", err);
     res.status(500).json({ message: "Server Error" });
   }
 });
+
 
 
 // controllers/newsController.js - createNews example
