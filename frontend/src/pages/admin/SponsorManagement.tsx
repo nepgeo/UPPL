@@ -20,6 +20,39 @@ const SponsorManagement = () => {
   const [indPage, setIndPage] = useState(1);
   const itemsPerPage = 5;
 
+  // ----------------------------
+  // Helper: Resolve image source
+  // Accepts:
+  //  - Cloudinary object { url, public_id } or {secure_url, public_id}
+  //  - full url string "https://..."
+  //  - legacy path "/uploads/..."
+  // ----------------------------
+  function resolveImageUrl(img: any) {
+    if (!img) return null;
+
+    // Cloudinary object (various shapes)
+    if (typeof img === 'object') {
+      // prefer url or secure_url fields
+      const url = img.url || img.secure_url || img.secureUrl || null;
+      if (url && typeof url === 'string' && url.startsWith('http')) return url;
+      // fallback: sometimes DB stored object with nested path
+      if (img.path && typeof img.path === 'string') {
+        return img.path.startsWith('http') ? img.path : `${BASE_URL}/${img.path.replace(/^\/+/, '')}`;
+      }
+      return null;
+    }
+
+    // string
+    if (typeof img === 'string') {
+      if (img.startsWith('http')) return img;
+      // legacy local path -> build absolute
+      const clean = img.replace(/^\/+/, '');
+      return `${BASE_URL}/${clean}`;
+    }
+
+    return null;
+  }
+
   // =====================
   // Sponsors Fetch
   // =====================
@@ -113,15 +146,12 @@ const SponsorManagement = () => {
     }
   };
 
-  const getProfileImageUrl = (path: string | null) => {
-    if (!path) return `${BASE_URL}/uploads/teamMembers/default-avatar.png`;
-    if (path.startsWith("http")) return path; // ✅ Cloudinary direct URL
-    return `${BASE_URL}${path.startsWith("/") ? path : "/" + path}`;
+  const getProfileImageUrl = (path: string | null | object) => {
+    // keep for backward compat - wraps resolveImageUrl
+    const url = resolveImageUrl(path);
+    if (url) return url;
+    return `${BASE_URL}/uploads/teamMembers/default-avatar.png`;
   };
-
-
-
-
 
   return (
     <div className="p-3">
@@ -322,7 +352,14 @@ const SponsorManagement = () => {
               <span className="font-bold">{(orgPage - 1) * itemsPerPage + index + 1}.</span>
               {sponsor.logo && (
                 <img
-                  src={sponsor.logo.startsWith("http") ? sponsor.logo : `${BASE_URL}/${sponsor.logo.replace(/^\/+/, '')}`}
+                  src={ (() => {
+                    // handle object or string: prefer sponsor.logo.url if exists
+                    if (typeof sponsor.logo === 'object') {
+                      return sponsor.logo.url || sponsor.logo.secure_url || resolveImageUrl(sponsor.logo) || undefined;
+                    }
+                    // string
+                    return resolveImageUrl(sponsor.logo) || undefined;
+                  })() }
                   alt={sponsor.name}
                   className="w-16 h-16 object-cover rounded-full"
                 />
@@ -341,7 +378,7 @@ const SponsorManagement = () => {
                 Edit
               </button>
               <button
-                onClick={() => handleDelete('organization', sponsor._id)}
+                onClick={() => handleDelete('organization', sponsor._1d || sponsor._id)}
                 className="text-red-600 ml-2"
               >
                 Delete
@@ -349,7 +386,7 @@ const SponsorManagement = () => {
             </div>
           ))}
 
-          
+
 
         {/* Pagination */}
         <div className="flex justify-center gap-2 mt-2">
@@ -384,11 +421,12 @@ const SponsorManagement = () => {
               <span className="font-bold">{(indPage - 1) * itemsPerPage + index + 1}.</span>
               {sponsor.avatar && (
                 <img
-                  src={
-                    sponsor.avatar.startsWith("http")
-                      ? sponsor.avatar
-                      : `${BASE_URL}/${sponsor.avatar.replace(/^\/+/, '')}`
-                  }
+                  src={ (() => {
+                    if (typeof sponsor.avatar === 'object') {
+                      return sponsor.avatar.url || sponsor.avatar.secure_url || resolveImageUrl(sponsor.avatar) || undefined;
+                    }
+                    return resolveImageUrl(sponsor.avatar) || undefined;
+                  })() }
                   alt={sponsor.name}
                   className="w-16 h-16 object-cover rounded-full"
                 />
