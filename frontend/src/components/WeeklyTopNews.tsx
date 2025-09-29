@@ -1,6 +1,8 @@
 // src/components/WeeklyTopNews.tsx
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { BASE_URL } from "@/config";
+
 
 export interface Article {
   _id: string;
@@ -16,12 +18,6 @@ export interface Article {
 const formatDate = (d?: string | Date) =>
   d ? new Date(d).toLocaleDateString() : "";
 
-// ✅ helper to normalize image URLs
-const getImageUrl = (path?: string) => {
-  if (!path) return "/placeholder.svg";
-  if (path.startsWith("http")) return path; // already full URL (Cloudinary, etc.)
-  return `${import.meta.env.VITE_API_BASE_URL}/${path.replace(/^\//, "")}`;
-};
 
 export default function WeeklyTopNews() {
   const [featuredNews, setFeaturedNews] = useState<Article[]>([]);
@@ -37,7 +33,7 @@ export default function WeeklyTopNews() {
 
   // Fetch & setup news on mount
   useEffect(() => {
-    fetch("/news")
+    fetch(`${BASE_URL}/news`)
       .then((res) => res.json())
       .then((data: Article[]) => {
         if (!data || data.length < 5) return;
@@ -84,6 +80,32 @@ export default function WeeklyTopNews() {
   const bigFeatured = items[0];
   const rightList = items.slice(1, 4);
 
+  const getProfileImageUrl = (path: string | null | { url?: string }) => {
+  if (!path) {
+    return `${BASE_URL}/uploads/teamMembers/default-avatar.png`;
+  }
+
+  if (typeof path === "object" && path.url) {
+    return path.url;
+  }
+
+  if (typeof path === "string") {
+    if (path.startsWith("http")) return path;
+
+    let cleanPath = path
+      .replace(/\\/g, "/")
+      .replace(/\/+/g, "/")
+      .replace(/^uploads\//, "/uploads/");
+    if (!cleanPath.startsWith("/")) cleanPath = "/" + cleanPath;
+
+    return `${BASE_URL}${cleanPath}`;
+  }
+
+  // Fallback
+  return `${BASE_URL}/uploads/teamMembers/default-avatar.png`;
+};
+
+
   return (
     <section className="py-16 bg-white">
       <div className="container mx-auto px-4">
@@ -111,7 +133,7 @@ export default function WeeklyTopNews() {
             >
               <div className="w-full h-[28rem] bg-gray-200">
                 <img
-                  src={getImageUrl(bigFeatured.images?.[0])}
+                  src={getProfileImageUrl(bigFeatured.images?.[0])}
                   alt={bigFeatured.title}
                   className="w-full h-full object-cover"
                 />
@@ -145,7 +167,7 @@ export default function WeeklyTopNews() {
                 className="flex gap-4 border-b pb-4 hover:bg-gray-50 p-2 rounded-lg transition"
               >
                 <img
-                  src={getImageUrl(article.images?.[0])}
+                  src={getProfileImageUrl(article.images?.[0])}
                   alt={article.title}
                   className="w-24 h-20 object-cover rounded-md"
                 />
@@ -194,7 +216,7 @@ export default function WeeklyTopNews() {
                 className="min-w-[320px] bg-white rounded-lg overflow-hidden shadow hover:shadow-lg transition"
               >
                 <img
-                  src={getImageUrl(article.images?.[0])}
+                  src={getProfileImageUrl(article.images?.[0])}
                   alt={article.title}
                   className="w-full h-72 object-cover"
                 />

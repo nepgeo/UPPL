@@ -2,17 +2,11 @@
 import React, { useEffect, useState } from "react";
 import api from "@/lib/api";
 import { BASE_URL } from "@/config";
+import photo from "@/assets/images/photo.jpg";
 
 // ✅ Helper to build profile image URL
-const getProfileImageUrl = (path: string | null) => {
-  if (!path) return `${BASE_URL}/uploads/teamMembers/default-avatar.png`;
-  if (path.startsWith("http")) return path;
 
-  let cleanPath = path.replace(/\/+/g, "/");
-  if (!cleanPath.startsWith("/")) cleanPath = "/" + cleanPath;
 
-  return `${BASE_URL}${cleanPath}`;
-};
 
 const TeamMembers: React.FC = () => {
   const [team, setTeam] = useState<any[]>([]);
@@ -34,11 +28,42 @@ const TeamMembers: React.FC = () => {
     _id: "fixed-member",
     name: "Madhur Bist",
     position: "Developer",
-    avatar: `${BASE_URL}/uploads/photo.jpg`,
+    avatar: photo,
   };
 
   // ✅ Append fixed member to fetched team
   const teamWithFixed = [...team, fixedMember];
+
+  const getProfileImageUrl = (
+  path: string | null | { url?: string; secure_url?: string }
+): string => {
+  if (!path) {
+    return `${BASE_URL}/uploads/teamMembers/default-avatar.png`;
+  }
+
+  // Case 1: Cloudinary object
+  if (typeof path === "object") {
+    if (path.url) return path.url;
+    if (path.secure_url) return path.secure_url;
+    return `${BASE_URL}/uploads/teamMembers/default-avatar.png`;
+  }
+
+  // Case 2: String
+  if (typeof path === "string") {
+    if (path.startsWith("http")) {
+      return path; // Already a URL
+    }
+    let cleanPath = path
+      .replace(/\\/g, "/")
+      .replace(/\/+/g, "/")
+      .replace(/^uploads\//, "/uploads/");
+    if (!cleanPath.startsWith("/")) cleanPath = "/" + cleanPath;
+    return `${BASE_URL}${cleanPath}`;
+  }
+
+  // Fallback
+  return `${BASE_URL}/uploads/teamMembers/default-avatar.png`;
+};
 
   return (
     <section className="bg-gray-50 py-10 relative">
