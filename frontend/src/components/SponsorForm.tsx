@@ -59,7 +59,7 @@ const SponsorForm: React.FC<SponsorFormProps> = ({ type, initialData, onSuccess 
       }
     };
 
-    const endpoint = `/api/sponsors/${type === 'organization' ? 'organizations' : 'individuals'}`;
+    const endpoint = `/sponsors/${type === 'organization' ? 'organizations' : 'individuals'}`;
 
     try {
       if (isEditing) {

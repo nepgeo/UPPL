@@ -3,6 +3,8 @@ import axios from "axios";
 
 import { BASE_URL} from "@/config";
 import api from "@/lib/api";
+import getProfileImageUrl from "@/utils/getProfileImageUrl";
+
 
 const Sponsors = () => {
   const [organizationSponsors, setOrganizationSponsors] = useState<any[]>([]);
@@ -20,8 +22,8 @@ const Sponsors = () => {
     const fetchSponsors = async () => {
       try {
         const [orgRes, indRes] = await Promise.all([
-          api.get("/api/sponsors/organizations"),
-          api.get("/api/sponsors/individuals"),
+          api.get("/sponsors/organizations"),
+          api.get("/sponsors/individuals"),
         ]);
         setOrganizationSponsors(orgRes.data);
         setPeopleSponsors(indRes.data);
@@ -81,10 +83,7 @@ const Sponsors = () => {
                       ${shadowClasses[i % shadowClasses.length]}`}
                   >
                     <img
-                      src={`${BASE_URL}/${sponsor.logo?.replace(
-                        /^\/+/,
-                        ""
-                      )}`}
+                      src={getProfileImageUrl(sponsor.logo)}
                       alt={sponsor.name}
                       className="h-[70px] sm:h-[100px] w-auto object-contain mx-auto filter grayscale hover:grayscale-0 transition-all duration-300"
                       onError={(e) => {
@@ -118,10 +117,8 @@ const Sponsors = () => {
                     ${shadowClasses[i % shadowClasses.length]}`}
                 >
                   <img
-                    src={`${BASE_URL}/${person.avatar?.replace(
-                      /^\/+/,
-                      ""
-                    )}`}
+                    src={getProfileImageUrl(person.avatar)}
+
                     className="w-[65px] h-[65px] sm:w-[90px] sm:h-[90px] rounded-full mx-auto object-cover"
                     alt={person.name}
                     onError={(e) => {

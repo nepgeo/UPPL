@@ -37,7 +37,7 @@ export default function WeeklyTopNews() {
 
   // Fetch & setup news on mount
   useEffect(() => {
-    fetch("/api/news")
+    fetch("/news")
       .then((res) => res.json())
       .then((data: Article[]) => {
         if (!data || data.length < 5) return;

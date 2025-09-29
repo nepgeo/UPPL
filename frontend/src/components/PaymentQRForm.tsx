@@ -22,14 +22,21 @@ const PaymentQRForm: React.FC = () => {
 
   // Fetch all QR images
   const fetchQRImages = async () => {
-    try {
-      const res = await api.get("/payment-qr");
-      console.log("API Response:", res.data);
-      setQrImages(res.data || []);
-    } catch (error) {
-      console.error("❌ Failed to fetch QR images:", error);
-    }
-  };
+  try {
+    const res = await api.get("/payment-qr");
+    console.log("API Response:", res.data);
+
+    // Normalize response to always be string[]
+    const urls = (res.data || []).map((item: any) =>
+      typeof item === "string" ? item : item.url || item.secure_url || ""
+    );
+
+    setQrImages(urls.filter(Boolean)); // remove empty strings
+  } catch (error) {
+    console.error("❌ Failed to fetch QR images:", error);
+  }
+};
+
 
   // Handle file selection
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -72,25 +79,33 @@ const PaymentQRForm: React.FC = () => {
   };
 
   // Handle delete request
-  const handleDelete = async (url: string) => {
-    try {
-      const filename = url.split("/").pop() || "";
-      await api.delete(
-        `/payment-qr/${encodeURIComponent(filename)}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("pplt20_token")}`,
-          },
-        }
-      );
-      fetchQRImages();
-      setDeleteUrl(null);
-      toast.success("QR deleted successfully!");
-    } catch (error) {
-      console.error("❌ Failed to delete QR:", error);
-      toast.error("Delete failed!");
+  const handleDelete = async (qr: string | { url?: string; secure_url?: string }) => {
+  try {
+    // Support both string + object
+    const rawUrl = typeof qr === "string" ? qr : qr.url || qr.secure_url || "";
+
+    if (!rawUrl) {
+      toast.error("Invalid QR code URL");
+      return;
     }
-  };
+
+    const filename = rawUrl.split("/").pop() || "";
+
+    await api.delete(`/payment-qr/${encodeURIComponent(filename)}`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("pplt20_token")}`,
+      },
+    });
+
+    fetchQRImages();
+    setDeleteUrl(null);
+    toast.success("QR deleted successfully!");
+  } catch (error) {
+    console.error("❌ Failed to delete QR:", error);
+    toast.error("Delete failed!");
+  }
+};
+
 
   useEffect(() => {
     fetchQRImages();
