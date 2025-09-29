@@ -34,27 +34,26 @@ export default function WeeklyTopNews() {
 
   // Fetch & setup news on mount
   useEffect(() => {
-    fetch(`${BASE_URL}/news`)
-      .then((res) => res.json())
-      .then((data: Article[]) => {
-        if (!data || data.length < 5) return;
+  fetch(`${BASE_URL}/news`)
+    .then((res) => res.json())
+    .then((data: Article[]) => {
+      if (!data || data.length === 0) return; // ✅ only skip if empty
 
-        // Shuffle
-        const shuffled = [...data].sort(() => Math.random() - 0.5);
+      // Sort newest first
+      const sortedByDate = [...data].sort(
+        (a, b) =>
+          new Date(b.createdAt!).getTime() -
+          new Date(a.createdAt!).getTime()
+      );
+      setFeaturedNews(sortedByDate.slice(0, 4)); // show up to 4
 
-        // Featured (first 4, newest first)
-        const sortedByDate = [...data].sort(
-          (a, b) =>
-            new Date(b.createdAt!).getTime() -
-            new Date(a.createdAt!).getTime()
-        );
-        setFeaturedNews(sortedByDate.slice(0, 4));
+      // Shuffle for weekly carousel
+      const shuffled = [...data].sort(() => Math.random() - 0.5);
+      setCarouselItems(shuffled);
+    })
+    .catch((err) => console.error("Error fetching news:", err));
+}, []);
 
-        // Weekly top news carousel
-        setCarouselItems(shuffled);
-      })
-      .catch((err) => console.error("Error fetching news:", err));
-  }, []);
 
   // Auto-slide carousel every 5s
   useEffect(() => {
