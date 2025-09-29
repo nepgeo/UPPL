@@ -9,14 +9,15 @@ export interface Article {
   title?: string;
   images?: ({ url: string; public_id?: string } | string)[];
   excerpt?: string;
-  createdAt?: string | Date;
+  createdAt: { type: Date, default: Date.now }
   category?: string;
   author?: { avatar?: string };
   readTime?: string;
 }
 
-const formatDate = (d?: string | Date) =>
+const formatDate = (d?: string | globalThis.Date | string) =>
   d ? new Date(d).toLocaleDateString() : "";
+
 
 
 export default function WeeklyTopNews() {
@@ -80,30 +81,21 @@ export default function WeeklyTopNews() {
   const bigFeatured = items[0];
   const rightList = items.slice(1, 4);
 
-  const getProfileImageUrl = (path: string | null | { url?: string }) => {
-  if (!path) {
-    return `${BASE_URL}/uploads/teamMembers/default-avatar.png`;
-  }
+  const getProfileImageUrl = (
+  path: string | null | { url?: string }
+): string => {
+  if (!path) return "/placeholder.svg";
 
-  if (typeof path === "object" && path.url) {
-    return path.url;
-  }
+  if (typeof path === "object" && path.url) return path.url;
 
   if (typeof path === "string") {
     if (path.startsWith("http")) return path;
-
-    let cleanPath = path
-      .replace(/\\/g, "/")
-      .replace(/\/+/g, "/")
-      .replace(/^uploads\//, "/uploads/");
-    if (!cleanPath.startsWith("/")) cleanPath = "/" + cleanPath;
-
-    return `${BASE_URL}${cleanPath}`;
+    return `${BASE_URL}${path.startsWith("/") ? path : "/" + path}`;
   }
 
-  // Fallback
-  return `${BASE_URL}/uploads/teamMembers/default-avatar.png`;
+  return "/placeholder.svg";
 };
+
 
 
   return (
