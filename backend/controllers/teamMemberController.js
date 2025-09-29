@@ -1,5 +1,6 @@
+// backend/controllers/teamMemberController.js
 const TeamMember = require('../models/teamMember');
-const { uploadFileToCloudinary, destroyPublicId } = require("../utils/cloudinaryService"); // ✅ shared Cloudinary utils
+const { uploadFileToCloudinary, destroyPublicId } = require("../utils/cloudinaryService");
 
 // ===============================
 // Get all team members
@@ -20,12 +21,12 @@ const getAllTeam = async (req, res) => {
 const createTeamMember = async (req, res) => {
   try {
     const { name, position } = req.body;
-
     let avatar = null;
 
+    // ✅ If an image was uploaded
     if (req.file) {
       const uploaded = await uploadFileToCloudinary(req.file.path, "teamMembers");
-      avatar = uploaded;
+      avatar = { url: uploaded.url, public_id: uploaded.public_id };
     }
 
     const member = new TeamMember({ name, position, avatar });
@@ -53,13 +54,13 @@ const updateTeamMember = async (req, res) => {
     if (name) member.name = name;
     if (position) member.position = position;
 
-    // ✅ Handle avatar replacement
+    // ✅ Replace avatar if a new one is uploaded
     if (req.file) {
       if (member.avatar?.public_id) {
         await destroyPublicId(member.avatar.public_id);
       }
       const uploaded = await uploadFileToCloudinary(req.file.path, "teamMembers");
-      member.avatar = uploaded;
+      member.avatar = { url: uploaded.url, public_id: uploaded.public_id };
     }
 
     const updated = await member.save();
@@ -93,9 +94,6 @@ const deleteTeamMember = async (req, res) => {
   }
 };
 
-// ===============================
-// Exports
-// ===============================
 module.exports = {
   getAllTeam,
   createTeamMember,

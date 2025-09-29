@@ -16,6 +16,13 @@ export interface Article {
 const formatDate = (d?: string | Date) =>
   d ? new Date(d).toLocaleDateString() : "";
 
+// ✅ helper to normalize image URLs
+const getImageUrl = (path?: string) => {
+  if (!path) return "/placeholder.svg";
+  if (path.startsWith("http")) return path; // already full URL (Cloudinary, etc.)
+  return `${import.meta.env.VITE_API_BASE_URL}/${path.replace(/^\//, "")}`;
+};
+
 export default function WeeklyTopNews() {
   const [featuredNews, setFeaturedNews] = useState<Article[]>([]);
   const [carouselItems, setCarouselItems] = useState<Article[]>([]);
@@ -82,7 +89,9 @@ export default function WeeklyTopNews() {
       <div className="container mx-auto px-4">
         {/* Latest News Heading */}
         <div className="mb-3 text-center">
-          <h2 className="text-3xl font-bold text-center mb-8 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Latest News</h2>
+          <h2 className="text-3xl font-bold text-center mb-8 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            Latest News
+          </h2>
           <p className="text-xl font-semibold mb-3 text-center text-muted-foreground">
             Stay informed with the latest headlines and updates.
           </p>
@@ -102,7 +111,7 @@ export default function WeeklyTopNews() {
             >
               <div className="w-full h-[28rem] bg-gray-200">
                 <img
-                  src={bigFeatured.images?.[0] || "/placeholder.svg"}
+                  src={getImageUrl(bigFeatured.images?.[0])}
                   alt={bigFeatured.title}
                   className="w-full h-full object-cover"
                 />
@@ -136,7 +145,7 @@ export default function WeeklyTopNews() {
                 className="flex gap-4 border-b pb-4 hover:bg-gray-50 p-2 rounded-lg transition"
               >
                 <img
-                  src={article.images?.[0] || "/placeholder.svg"}
+                  src={getImageUrl(article.images?.[0])}
                   alt={article.title}
                   className="w-24 h-20 object-cover rounded-md"
                 />
@@ -155,14 +164,16 @@ export default function WeeklyTopNews() {
               to="/news"
               className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-center transition"
             >
-              View All 
+              View All
             </Link>
           </div>
         </div>
 
         {/* Section Title */}
         <div className="text-center mb-10">
-          <h2 className="text-3xl font-bold text-center mb-8 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Weekly Top News</h2>
+          <h2 className="text-3xl font-bold text-center mb-8 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            Weekly Top News
+          </h2>
           <p className="text-gray-600 text-bold max-w-2xl mx-auto">
             Stay updated with our Weekly Top News, bringing you the latest
             trends, insights, and developments from around the world.
@@ -171,36 +182,35 @@ export default function WeeklyTopNews() {
 
         {/* Horizontal Carousel */}
         <div className="overflow-hidden">
-        <div className="flex gap-6 transition-transform duration-700 ease-in-out">
+          <div className="flex gap-6 transition-transform duration-700 ease-in-out">
             {carouselItems.slice(0, 3).map((article, idx) => (
-            <Link
+              <Link
                 key={article._id + idx}
                 to={
-                article._id === "placeholder"
+                  article._id === "placeholder"
                     ? "#"
                     : `/news/${article._id}`
                 }
                 className="min-w-[320px] bg-white rounded-lg overflow-hidden shadow hover:shadow-lg transition"
-            >
+              >
                 <img
-                src={article.images?.[0] || "/placeholder.svg"}
-                alt={article.title}
-                className="w-full h-72 object-cover" // taller image
+                  src={getImageUrl(article.images?.[0])}
+                  alt={article.title}
+                  className="w-full h-72 object-cover"
                 />
                 <div className="p-5">
-                <span className="text-xs text-gray-500 block mb-2">
-                    {formatDate(article.createdAt)} · {article.readTime || "5 min"} Read
-                </span>
-                <h3 className="font-semibold text-gray-900 line-clamp-2 text-lg">
+                  <span className="text-xs text-gray-500 block mb-2">
+                    {formatDate(article.createdAt)} ·{" "}
+                    {article.readTime || "5 min"} Read
+                  </span>
+                  <h3 className="font-semibold text-gray-900 line-clamp-2 text-lg">
                     {article.title || "Untitled"}
-                </h3>
+                  </h3>
                 </div>
-            </Link>
+              </Link>
             ))}
+          </div>
         </div>
-        </div>
-
-
       </div>
     </section>
   );

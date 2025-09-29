@@ -1,14 +1,17 @@
 // controllers/teamController.js
-const Team = require('../models/teamModel');
-const Season = require('../models/seasonModel');
-const User = require('../models/User');
-const mongoose = require('mongoose');
-const { uploadFileToCloudinary, destroyPublicId } = require("../utils/cloudinaryService");
+const Team = require("../models/teamModel");
+const Season = require("../models/seasonModel");
+const User = require("../models/User");
+const mongoose = require("mongoose");
+const {
+  uploadFileToCloudinary,
+  destroyPublicId,
+} = require("../utils/cloudinaryService");
 
 // Utility to generate 4-character team code
 function generateTeamCode(teamId) {
   const shortId = teamId.toString().slice(-4);
-  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   const randomChar = alphabet[Math.floor(Math.random() * alphabet.length)];
   return `${randomChar}${shortId.toUpperCase()}`;
 }
@@ -16,13 +19,8 @@ function generateTeamCode(teamId) {
 // ✅ Create Team
 const createTeam = async (req, res) => {
   try {
-    console.log("📦 req.body:", req.body);
-    console.log("📂 req.files:", req.files);
-    console.log("👤 req.user:", req.user);
-
     const { seasonNumber } = req.body;
 
-    // ✅ Validate season ID
     if (!mongoose.Types.ObjectId.isValid(seasonNumber)) {
       return res.status(400).json({ message: "❌ Invalid season ID" });
     }
@@ -36,14 +34,12 @@ const createTeam = async (req, res) => {
     let paymentReceipt = null;
     let teamLogo = null;
 
-    // 🔑 Use req.files from upload.fields
     if (req.files?.paymentReceipt?.[0]) {
       paymentReceipt = await uploadFileToCloudinary(
         req.files.paymentReceipt[0].path,
         "teams/paymentReceipts"
       );
     }
-
     if (req.files?.teamLogo?.[0]) {
       teamLogo = await uploadFileToCloudinary(
         req.files.teamLogo[0].path,
@@ -51,28 +47,22 @@ const createTeam = async (req, res) => {
       );
     }
 
-    // ✅ Ensure required uploads exist
-    if (!paymentReceipt?.url || !paymentReceipt?.public_id) {
-      return res.status(400).json({ message: "❌ Payment receipt is required" });
-    }
-
-    if (!teamLogo?.url || !teamLogo?.public_id) {
-      return res.status(400).json({ message: "❌ Team logo is required" });
+    if (!paymentReceipt?.url || !teamLogo?.url) {
+      return res.status(400).json({ message: "❌ Both paymentReceipt and teamLogo are required" });
     }
 
     // ✅ Parse players
     let players = [];
     if (req.body.players) {
       try {
-        players = JSON.parse(req.body.players);
+        players = typeof req.body.players === "string" 
+          ? JSON.parse(req.body.players) 
+          : req.body.players;
       } catch (err) {
-        return res
-          .status(400)
-          .json({ message: "❌ Invalid players data format" });
+        return res.status(400).json({ message: "❌ Invalid players data format" });
       }
     }
 
-    // ✅ Prepare players array
     const preparedPlayers = await Promise.all(
       players.map(async (p) => {
         const player = {
@@ -85,8 +75,7 @@ const createTeam = async (req, res) => {
         };
 
         if (p.playerCode) {
-          const trimmedCode = p.playerCode.toString().trim();
-          const matchedUser = await User.findOne({ playerCode: trimmedCode });
+          const matchedUser = await User.findOne({ playerCode: p.playerCode.trim() });
           if (matchedUser) {
             player.user = matchedUser._id;
             player.status = matchedUser.verified ? "verified" : "pending";
@@ -111,12 +100,12 @@ const createTeam = async (req, res) => {
       paymentReceipt,
       teamLogo,
       players: preparedPlayers,
-      teamCode: "TEMP", // placeholder
+      teamCode: "TEMP",
     });
 
     await newTeam.save();
 
-    // ✅ Generate team code after saving
+    // ✅ Generate team code after save
     newTeam.teamCode = generateTeamCode(newTeam._id);
     await newTeam.save();
 
@@ -133,38 +122,30 @@ const createTeam = async (req, res) => {
     });
     await season.save();
 
-    return res
-      .status(201)
-      .json({ message: "✅ Team registered successfully", team: newTeam });
+    return res.status(201).json({
+      message: "✅ Team registered successfully",
+      team: newTeam,
+    });
   } catch (err) {
     console.error("❌ Team creation failed:", err.message);
-    if (err.errors) {
-      Object.keys(err.errors).forEach((field) => {
-        console.error(`- ${field}: ${err.errors[field].message}`);
-      });
-    }
-    return res
-      .status(500)
-      .json({ message: "Internal server error", error: err.message });
+    return res.status(500).json({ message: "Internal server error", error: err.message });
   }
 };
-
-
 
 // ✅ Get teams by season
 const getTeamsBySeason = async (req, res) => {
   try {
     const { seasonId } = req.query;
     if (!mongoose.Types.ObjectId.isValid(seasonId)) {
-      return res.status(400).json({ message: 'Invalid season ID' });
+      return res.status(400).json({ message: "Invalid season ID" });
     }
 
     const teams = await Team.find({ seasonNumber: seasonId })
-      .populate('seasonNumber', 'seasonNumber entryDeadline isCurrent')
-      .populate('createdBy', 'name email role')
+      .populate("seasonNumber", "seasonNumber entryDeadline isCurrent")
+      .populate("createdBy", "name email role")
       .populate({
-        path: 'players.user',
-        select: 'name email phone profileImage documents playerCode role position dateOfBirth battingStyle bowlingStyle bio',
+        path: "players.user",
+        select: "name email phone profileImage documents playerCode role position dateOfBirth battingStyle bowlingStyle bio",
       })
       .lean();
 
@@ -179,8 +160,8 @@ const getTeamsBySeason = async (req, res) => {
 
     res.json(response);
   } catch (error) {
-    console.error('❌ Failed to fetch teams:', error);
-    res.status(500).json({ message: 'Internal server error', error: error.message });
+    console.error("❌ Failed to fetch teams:", error);
+    res.status(500).json({ message: "Internal server error", error: error.message });
   }
 };
 
@@ -188,25 +169,24 @@ const getTeamsBySeason = async (req, res) => {
 const getTeamById = async (req, res) => {
   try {
     const team = await Team.findById(req.params.id)
-      .populate('seasonNumber', 'number year')
-      .populate('createdBy', 'name email role')
-      .populate('players.user', 'name email playerCode role profileImage documents position battingStyle bowlingStyle phone verified')
+      .populate("seasonNumber", "number year")
+      .populate("createdBy", "name email role")
+      .populate("players.user", "name email playerCode role profileImage documents position battingStyle bowlingStyle phone verified")
       .lean();
 
-    if (!team) return res.status(404).json({ message: 'Team not found' });
+    if (!team) return res.status(404).json({ message: "Team not found" });
     res.json(team);
   } catch (err) {
-    console.error('Error fetching team:', err);
-    res.status(500).json({ message: 'Failed to fetch team', error: err.message });
+    console.error("Error fetching team:", err);
+    res.status(500).json({ message: "Failed to fetch team", error: err.message });
   }
 };
 
 // ✅ Update team
 const updateTeam = async (req, res) => {
   try {
-    const teamId = req.params.id;
-    const team = await Team.findById(teamId);
-    if (!team) return res.status(404).json({ message: 'Team not found' });
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ message: "Team not found" });
 
     const { teamName, captainName, coachName, managerName, contactNumber, players } = req.body;
 
@@ -216,82 +196,65 @@ const updateTeam = async (req, res) => {
     if (managerName) team.managerName = managerName;
     if (contactNumber) team.contactNumber = contactNumber;
 
-    // ✅ Update players
     if (players) {
-      let parsedPlayers = [];
-      if (typeof players === 'string') parsedPlayers = JSON.parse(players);
-      else if (Array.isArray(players)) parsedPlayers = players;
+      let parsedPlayers = typeof players === "string" ? JSON.parse(players) : players;
+      team.players = await Promise.all(
+        parsedPlayers.map(async (p) => {
+          const player = {
+            name: p.name || "",
+            position: p.position || "",
+            jerseyNumber: p.jerseyNumber ? Number(p.jerseyNumber) : null,
+            code: p.playerCode || null,
+            user: null,
+            status: "not_registered",
+          };
 
-      team.players = await Promise.all(parsedPlayers.map(async (p) => {
-        const player = {
-          name: p.name || '',
-          position: p.position || '',
-          jerseyNumber: p.jerseyNumber ? Number(p.jerseyNumber) : null,
-          code: p.playerCode || null,
-          user: null,
-          status: 'not_registered',
-        };
-
-        if (p.playerCode) {
-          const matchedUser = await User.findOne({ playerCode: p.playerCode.trim() });
-          if (matchedUser) {
-            player.user = matchedUser._id;
-            player.status = matchedUser.verified ? 'verified' : 'pending';
-            player.name = matchedUser.name;
-            player.code = matchedUser.playerCode;
+          if (p.playerCode) {
+            const matchedUser = await User.findOne({ playerCode: p.playerCode.trim() });
+            if (matchedUser) {
+              player.user = matchedUser._id;
+              player.status = matchedUser.verified ? "verified" : "pending";
+              player.name = matchedUser.name;
+              player.code = matchedUser.playerCode;
+            }
           }
-        }
-        return player;
-      }));
+          return player;
+        })
+      );
     }
 
-    // ✅ Update teamLogo
     if (req.files?.teamLogo?.[0]) {
-      if (team.teamLogo?.public_id) {
-        await destroyPublicId(team.teamLogo.public_id);
-      }
-      team.teamLogo = await uploadFileToCloudinary(
-        req.files.teamLogo[0].path,
-        "teams/logos"
-      );
+      if (team.teamLogo?.public_id) await destroyPublicId(team.teamLogo.public_id);
+      team.teamLogo = await uploadFileToCloudinary(req.files.teamLogo[0].path, "teams/logos");
     }
 
-    // ✅ Update paymentReceipt
     if (req.files?.paymentReceipt?.[0]) {
-      if (team.paymentReceipt?.public_id) {
-        await destroyPublicId(team.paymentReceipt.public_id);
-      }
-      team.paymentReceipt = await uploadFileToCloudinary(
-        req.files.paymentReceipt[0].path,
-        "teams/paymentReceipts"
-      );
+      if (team.paymentReceipt?.public_id) await destroyPublicId(team.paymentReceipt.public_id);
+      team.paymentReceipt = await uploadFileToCloudinary(req.files.paymentReceipt[0].path, "teams/paymentReceipts");
     }
 
     await team.save();
-    res.json({ message: '✅ Team updated successfully', team });
+    res.json({ message: "✅ Team updated successfully", team });
   } catch (err) {
-    console.error('❌ Error updating team:', err);
-    res.status(500).json({ message: 'Failed to update team', error: err.message });
+    console.error("❌ Error updating team:", err);
+    res.status(500).json({ message: "Failed to update team", error: err.message });
   }
 };
 
 // ✅ Delete team
 const deleteTeam = async (req, res) => {
   try {
-    const team = await Team.findByIdAndDelete(req.params.id);
-    if (!team) return res.status(404).json({ message: 'Team not found' });
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ message: "Team not found" });
 
-    if (team.teamLogo?.public_id) {
-      await destroyPublicId(team.teamLogo.public_id);
-    }
-    if (team.paymentReceipt?.public_id) {
-      await destroyPublicId(team.paymentReceipt.public_id);
-    }
+    if (team.teamLogo?.public_id) await destroyPublicId(team.teamLogo.public_id);
+    if (team.paymentReceipt?.public_id) await destroyPublicId(team.paymentReceipt.public_id);
 
-    res.json({ message: '✅ Team deleted successfully' });
+    await team.deleteOne();
+    res.json({ message: "✅ Team deleted successfully" });
   } catch (err) {
-    console.error('❌ Delete team error:', err);
-    res.status(500).json({ message: 'Failed to delete team', error: err.message });
+    console.error("❌ Delete team error:", err);
+    res.status(500).json({ message: "Failed to delete team", error: err.message });
   }
 };
 
@@ -299,28 +262,31 @@ const deleteTeam = async (req, res) => {
 const verifyTeam = async (req, res) => {
   try {
     const team = await Team.findById(req.params.id);
-    if (!team) return res.status(404).json({ message: 'Team not found' });
-    team.status = 'approved';
+    if (!team) return res.status(404).json({ message: "Team not found" });
+
+    team.status = "approved";
     await team.save();
-    res.json({ message: '✅ Team verified successfully' });
+    res.json({ message: "✅ Team verified successfully" });
   } catch (err) {
-    res.status(500).json({ message: 'Verification failed' });
+    res.status(500).json({ message: "Verification failed" });
   }
 };
 
 const rejectTeam = async (req, res) => {
   try {
     const team = await Team.findById(req.params.id);
-    if (!team) return res.status(404).json({ message: 'Team not found' });
-    team.status = 'rejected';
+    if (!team) return res.status(404).json({ message: "Team not found" });
+
+    team.status = "rejected";
     await team.save({ validateBeforeSave: false });
-    res.json({ message: '❌ Team rejected' });
+    res.json({ message: "❌ Team rejected" });
   } catch (err) {
-    console.error('❌ Rejection error:', err);
-    res.status(500).json({ message: 'Rejection failed', error: err.message });
+    console.error("❌ Rejection error:", err);
+    res.status(500).json({ message: "Rejection failed", error: err.message });
   }
 };
 
+// ✅ Teams with players only
 const getTeamsWithPlayers = async (req, res) => {
   try {
     const teams = await Team.find()
@@ -331,7 +297,7 @@ const getTeamsWithPlayers = async (req, res) => {
       })
       .lean();
 
-    const teamsWithPlayers = teams.map(team => ({
+    const teamsWithPlayers = teams.map((team) => ({
       _id: team._id,
       teamName: team.teamName,
       teamCode: team.teamCode,
@@ -339,8 +305,8 @@ const getTeamsWithPlayers = async (req, res) => {
       groupName: team.groupName || null,
       seasonNumber: team.seasonNumber,
       players: (team.players || [])
-        .filter(p => p.user)
-        .map(p => ({
+        .filter((p) => p.user)
+        .map((p) => ({
           _id: p.user._id,
           name: p.user.name,
           profileImage: p.user.profileImage || null,

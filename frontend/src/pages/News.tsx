@@ -226,7 +226,7 @@ const News = () => {
                 <Link to={`/news/${article._id}`}>
                   <div className="aspect-video bg-gray-200 rounded-t-lg overflow-hidden">
                     <img
-                      src={article.images?.[0].url || '/placeholder.svg'}
+                      src={article.images?.[0]?.url || '/placeholder.svg'}
                       alt={article.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                     />

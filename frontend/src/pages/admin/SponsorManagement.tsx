@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import { Users } from 'lucide-react';
 import SponsorForm from '@/components/SponsorForm';
 import PaymentQRForm from "@/components/PaymentQRForm";
-import { Users } from 'lucide-react';
 import api from '@/lib/api';
-import { API_BASE, BASE_URL } from '@/config';
+import { BASE_URL } from '@/config';
 
 const SponsorManagement = () => {
   const [orgs, setOrgs] = useState([]);
@@ -13,28 +12,26 @@ const SponsorManagement = () => {
 
   // 🔹 Team states
   const [team, setTeam] = useState([]);
-  const [teamModal, setTeamModal] = useState(false); // main list modal
-  const [editMember, setEditMember] = useState<any | null>(null); // edit/add modal
+  const [teamModal, setTeamModal] = useState(false);
+  const [editMember, setEditMember] = useState<any | null>(null);
   const [loadingTeam, setLoadingTeam] = useState(false);
+
   const [orgPage, setOrgPage] = useState(1);
-const [indPage, setIndPage] = useState(1);
-const itemsPerPage = 5; // adjust as needed
+  const [indPage, setIndPage] = useState(1);
+  const itemsPerPage = 5;
 
-
-  // 🔹 Sponsors fetch
+  // =====================
+  // Sponsors Fetch
+  // =====================
   const fetchData = async () => {
     const token = localStorage.getItem('pplt20_token');
     const config = { headers: { Authorization: `Bearer ${token}` } };
 
     try {
       const [orgRes, indRes] = await Promise.all([
-        api.get('/sponsors/organizations', config),
-        api.get('/sponsors/individuals', config),
+        api.get('/api/sponsors/organizations', config),
+        api.get('/api/sponsors/individuals', config),
       ]);
-
-      // console.log('✅ Organizations Data:', orgRes.data);
-      // console.log('✅ Individuals Data:', indRes.data);
-
       setOrgs(orgRes.data);
       setPeople(indRes.data);
     } catch (err) {
@@ -60,12 +57,14 @@ const itemsPerPage = 5; // adjust as needed
     fetchData();
   }, []);
 
-  // 🔹 Team fetch
+  // =====================
+  // Team Fetch
+  // =====================
   const fetchTeam = async () => {
     const token = localStorage.getItem('pplt20_token');
     try {
       setLoadingTeam(true);
-      const res = await api.get('/team-members', {
+      const res = await api.get('/api/team-members', {
         headers: { Authorization: `Bearer ${token}` },
       });
       setTeam(res.data);
@@ -80,11 +79,10 @@ const itemsPerPage = 5; // adjust as needed
     fetchTeam();
   }, []);
 
-  // 🔹 Delete member
   const handleDeleteMember = async (id: string) => {
     const token = localStorage.getItem('pplt20_token');
     try {
-      await api.delete(`/team-members/${id}`, {
+      await api.delete(`/api/team-members/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       fetchTeam();
@@ -93,7 +91,6 @@ const itemsPerPage = 5; // adjust as needed
     }
   };
 
-  // 🔹 Save (Add/Edit) member
   const handleSaveMember = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -101,7 +98,7 @@ const itemsPerPage = 5; // adjust as needed
 
     try {
       if (editMember._id) {
-        await api.put(`/team-members/${editMember._id}`, formData, {
+        await api.put(`/api/team-members/${editMember._id}`, formData, {
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" },
         });
       } else {
@@ -116,42 +113,12 @@ const itemsPerPage = 5; // adjust as needed
     }
   };
 
-  const addMember = async (formData: FormData) => {
-    const token = localStorage.getItem("pplt20_token");
-    await api.post(`/team-members`, formData, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "multipart/form-data",
-      },
-    });
-    fetchTeam(); // refresh list
+  const getProfileImageUrl = (path: string | null) => {
+    if (!path) return `${BASE_URL}/uploads/teamMembers/default-avatar.png`;
+    if (path.startsWith("http")) return path; // ✅ Cloudinary direct URL
+    return `${BASE_URL}${path.startsWith("/") ? path : "/" + path}`;
   };
 
-  const getProfileImageUrl = (path: string | null) => {
-
-  if (!path) {
-    return `${BASE_URL}/uploads/teamMembers/default-avatar.png`;
-  }
-
-  // If already a full URL, return as is
-  if (path.startsWith('http')) return path;
-
-  // 🧹 Clean & normalize path
-  let cleanPath = path
-    .replace(/\/+/g, '/')                        // collapse multiple slashes
-    .replace(/^\/uploads\/team\//, '/uploads/teamMembers/') // fix old DB paths
-    .replace(/^\/uploads\/uploads\//, '/uploads/')          // double uploads fix
-    .replace(/^uploads\//, '/uploads/');                   // ensure /uploads/
-
-  // Ensure it starts with /
-  if (!cleanPath.startsWith('/')) {
-    cleanPath = '/' + cleanPath;
-  }
-
-  const finalUrl = `${BASE_URL}${cleanPath}`;
-  console.log("🖼 Final image URL:", finalUrl);
-  return finalUrl;
-};
 
 
 
@@ -355,11 +322,12 @@ const itemsPerPage = 5; // adjust as needed
               <span className="font-bold">{(orgPage - 1) * itemsPerPage + index + 1}.</span>
               {sponsor.logo && (
                 <img
-                  src={`${BASE_URL}/${sponsor.logo?.replace(/^\/+/, '')}`}
+                  src={sponsor.logo.startsWith("http") ? sponsor.logo : `${BASE_URL}/${sponsor.logo.replace(/^\/+/, '')}`}
                   alt={sponsor.name}
                   className="w-16 h-16 object-cover rounded-full"
                 />
               )}
+
               <div className="flex-1">
                 <h3 className="font-bold">{sponsor.name}</h3>
                 <p className="text-sm text-gray-500">
@@ -416,11 +384,16 @@ const itemsPerPage = 5; // adjust as needed
               <span className="font-bold">{(indPage - 1) * itemsPerPage + index + 1}.</span>
               {sponsor.avatar && (
                 <img
-                  src={`${BASE_URL}/${sponsor.avatar?.replace(/^\/+/, '')}`}
+                  src={
+                    sponsor.avatar.startsWith("http")
+                      ? sponsor.avatar
+                      : `${BASE_URL}/${sponsor.avatar.replace(/^\/+/, '')}`
+                  }
                   alt={sponsor.name}
                   className="w-16 h-16 object-cover rounded-full"
                 />
               )}
+
               <div className="flex-1">
                 <h3 className="font-bold">{sponsor.name}</h3>
                 <p className="text-sm text-gray-500">{sponsor.title}</p>

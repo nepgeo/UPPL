@@ -130,7 +130,7 @@ const NewsArticle = () => {
                 {article.images.map((img, index) => (
                   <SwiperSlide key={index}>
                     <img
-                      src={`${BASE_URL}/${img.url}`}
+                      src={typeof img === "string" ? img : img.url}  
                       alt={`Slide ${index + 1}`}
                       className="w-full h-96 object-cover"
                     />
