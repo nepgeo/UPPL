@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import { toast } from "react-toastify";
 import { 
   Upload, 
@@ -10,40 +9,42 @@ import {
   AlertCircle,
   Image as ImageIcon 
 } from "lucide-react";
-import api from '@/lib/api';
+import api from "@/lib/api";
+
+interface QRImage {
+  url: string;
+  public_id: string;
+}
 
 const PaymentQRForm: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
-  const [qrImages, setQrImages] = useState<string[]>([]);
+  const [qrImages, setQrImages] = useState<QRImage[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [deleteUrl, setDeleteUrl] = useState<string | null>(null);
+  const [deleteQr, setDeleteQr] = useState<QRImage | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   // Fetch all QR images
   const fetchQRImages = async () => {
-  try {
-    const res = await api.get("/payment-qr");
-    console.log("API Response:", res.data);
+    try {
+      const res = await api.get("/payment-qr");
 
-    // Normalize response to always be string[]
-    const urls = (res.data || []).map((item: any) =>
-      typeof item === "string" ? item : item.url || item.secure_url || ""
-    );
+      const normalized: QRImage[] = (res.data || []).map((item: any) => ({
+        url: item.url || item.secure_url || "",
+        public_id: item.public_id || "",
+      }));
 
-    setQrImages(urls.filter(Boolean)); // remove empty strings
-  } catch (error) {
-    console.error("❌ Failed to fetch QR images:", error);
-  }
-};
-
+      setQrImages(normalized.filter((q) => q.url && q.public_id));
+    } catch (error) {
+      console.error("❌ Failed to fetch QR images:", error);
+    }
+  };
 
   // Handle file selection
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       setFile(selectedFile);
-      // Create preview URL
       const url = URL.createObjectURL(selectedFile);
       setPreviewUrl(url);
     }
@@ -78,34 +79,28 @@ const PaymentQRForm: React.FC = () => {
     }
   };
 
-  // Handle delete request
-  const handleDelete = async (qr: string | { url?: string; secure_url?: string }) => {
-  try {
-    // Support both string + object
-    const rawUrl = typeof qr === "string" ? qr : qr.url || qr.secure_url || "";
+  // Handle delete
+  const handleDelete = async (qr: QRImage) => {
+    try {
+      if (!qr.public_id) {
+        toast.error("Invalid QR code ID");
+        return;
+      }
 
-    if (!rawUrl) {
-      toast.error("Invalid QR code URL");
-      return;
+      await api.delete(`/payment-qr/${encodeURIComponent(qr.public_id)}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("pplt20_token")}`,
+        },
+      });
+
+      fetchQRImages();
+      setDeleteQr(null);
+      toast.success("QR deleted successfully!");
+    } catch (error) {
+      console.error("❌ Failed to delete QR:", error);
+      toast.error("Delete failed!");
     }
-
-    const filename = rawUrl.split("/").pop() || "";
-
-    await api.delete(`/payment-qr/${encodeURIComponent(filename)}`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("pplt20_token")}`,
-      },
-    });
-
-    fetchQRImages();
-    setDeleteUrl(null);
-    toast.success("QR deleted successfully!");
-  } catch (error) {
-    console.error("❌ Failed to delete QR:", error);
-    toast.error("Delete failed!");
-  }
-};
-
+  };
 
   useEffect(() => {
     fetchQRImages();
@@ -128,37 +123,29 @@ const PaymentQRForm: React.FC = () => {
           </div>
         </div>
         <button
-  onClick={() => {
-    setIsModalOpen(true);
-    setFile(null);
-    setPreviewUrl(null);
-  }}
-  className="
-    flex items-center gap-2
-    bg-blue-600 hover:bg-blue-700 text-white
-    px-3 sm:px-4 py-2 sm:py-2.5
-    rounded-xl
-    shadow-sm hover:shadow-md
-    transition-all duration-200
-  "
->
-  <Plus className="w-3 sm:w-4 h-3 sm:h-4" />
-  <span className="font-medium text-sm sm:text-base">Add QR</span>
-</button>
-
+          onClick={() => {
+            setIsModalOpen(true);
+            setFile(null);
+            setPreviewUrl(null);
+          }}
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
+        >
+          <Plus className="w-3 sm:w-4 h-3 sm:h-4" />
+          <span className="font-medium text-sm sm:text-base">Add QR</span>
+        </button>
       </div>
 
       {/* QR Images Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
         {qrImages.length > 0 ? (
-          qrImages.map((url, index) => (
+          qrImages.map((qr) => (
             <div
-              key={url || `qr-${index}`}
+              key={qr.public_id}
               className="relative group rounded-xl overflow-hidden border border-gray-200 hover:border-gray-300 transition-all duration-200 hover:shadow-lg"
             >
               <div className="aspect-square bg-gray-50">
                 <img
-                  src={url}
+                  src={qr.url}
                   alt="QR Code"
                   className="w-full h-full object-cover"
                 />
@@ -170,7 +157,7 @@ const PaymentQRForm: React.FC = () => {
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setDeleteUrl(url);
+                      setDeleteQr(qr);
                     }}
                     className="w-full bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors"
                   >
@@ -187,7 +174,9 @@ const PaymentQRForm: React.FC = () => {
               <ImageIcon className="w-8 h-8 text-gray-400" />
             </div>
             <p className="text-gray-500 text-center">No QR codes uploaded yet</p>
-            <p className="text-sm text-gray-400 mt-1">Click "Add QR" to upload your first QR code</p>
+            <p className="text-sm text-gray-400 mt-1">
+              Click "Add QR" to upload your first QR code
+            </p>
           </div>
         )}
       </div>
@@ -219,13 +208,14 @@ const PaymentQRForm: React.FC = () => {
                     className="hidden"
                     id="qr-upload"
                   />
-                  <label
-                    htmlFor="qr-upload"
-                    className="block w-full cursor-pointer"
-                  >
-                    <div className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${
-                      file ? 'border-blue-300 bg-blue-50' : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
-                    }`}>
+                  <label htmlFor="qr-upload" className="block w-full cursor-pointer">
+                    <div
+                      className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${
+                        file
+                          ? "border-blue-300 bg-blue-50"
+                          : "border-gray-300 hover:border-gray-400 hover:bg-gray-50"
+                      }`}
+                    >
                       {previewUrl ? (
                         <div className="space-y-4">
                           <img
@@ -253,8 +243,8 @@ const PaymentQRForm: React.FC = () => {
                     disabled={!file || isLoading}
                     className={`flex-1 px-4 py-2.5 rounded-xl font-medium transition-all duration-200 ${
                       file && !isLoading
-                        ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md'
-                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        ? "bg-blue-600 hover:bg-blue-700 text-white shadow-sm hover:shadow-md"
+                        : "bg-gray-100 text-gray-400 cursor-not-allowed"
                     }`}
                   >
                     {isLoading ? (
@@ -263,7 +253,7 @@ const PaymentQRForm: React.FC = () => {
                         Uploading...
                       </span>
                     ) : (
-                      'Upload QR Code'
+                      "Upload QR Code"
                     )}
                   </button>
                   <button
@@ -281,7 +271,7 @@ const PaymentQRForm: React.FC = () => {
       )}
 
       {/* Delete Confirmation Modal */}
-      {deleteUrl && (
+      {deleteQr && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm transform transition-all">
             <div className="p-6">
@@ -289,7 +279,7 @@ const PaymentQRForm: React.FC = () => {
               <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <AlertCircle className="w-6 h-6 text-red-600" />
               </div>
-              
+
               {/* Content */}
               <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">
                 Delete QR Code?
@@ -297,17 +287,17 @@ const PaymentQRForm: React.FC = () => {
               <p className="text-gray-500 text-center text-sm">
                 This action cannot be undone. This QR code will be permanently removed.
               </p>
-              
+
               {/* Actions */}
               <div className="flex gap-3 mt-6">
                 <button
-                  onClick={() => handleDelete(deleteUrl)}
+                  onClick={() => handleDelete(deleteQr)}
                   className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-xl font-medium transition-colors"
                 >
                   Delete
                 </button>
                 <button
-                  onClick={() => setDeleteUrl(null)}
+                  onClick={() => setDeleteQr(null)}
                   className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-medium transition-colors"
                 >
                   Cancel

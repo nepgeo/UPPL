@@ -50,9 +50,16 @@ const TeamMembers: React.FC = () => {
 
   // Case 2: String
   if (typeof path === "string") {
+    // ✅ Local frontend asset (already bundled by Vite/CRA)
+    if (path.includes("/assets/") || path.startsWith("/src/")) {
+      return path; // don’t prepend BASE_URL
+    }
+
     if (path.startsWith("http")) {
       return path; // Already a URL
     }
+
+    // ✅ Backend local path
     let cleanPath = path
       .replace(/\\/g, "/")
       .replace(/\/+/g, "/")
@@ -64,6 +71,7 @@ const TeamMembers: React.FC = () => {
   // Fallback
   return `${BASE_URL}/uploads/teamMembers/default-avatar.png`;
 };
+
 
   return (
     <section className="bg-gray-50 py-10 relative">
