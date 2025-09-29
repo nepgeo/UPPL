@@ -22,3 +22,5 @@ export const getProfileImageUrl = (profileImage: any) => {
 
   return `${BASE_URL}/favicon.png`;
 };
+
+export default getProfileImageUrl;

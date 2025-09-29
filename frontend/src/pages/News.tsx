@@ -15,16 +15,25 @@ import {
 } from '@/components/ui/select';
 import api from '@/lib/api';
 import { API_BASE, BASE_URL } from '@/config';
-console.log("DEBUG: API_BASE from config =", API_BASE);
-console.log("DEBUG: BASE_URL from config =", BASE_URL);
+// console.log("DEBUG: API_BASE from config =", API_BASE);
+// console.log("DEBUG: BASE_URL from config =", BASE_URL);
 
 
+function getProfileImageUrl(avatar?: any) {
+  if (!avatar) return `${BASE_URL}/favicon.png`;
 
-function getProfileImageUrl(path?: string | null) {
-  if (!path) return `${BASE_URL}/favicon.png`;
-  if (path.startsWith("http")) return path;
+  // ✅ Case 1: Already a Cloudinary object with {url, public_id}
+  if (typeof avatar === "object" && avatar.url) {
+    return avatar.url;
+  }
 
-  let cleanPath = path
+  // ✅ Case 2: Direct Cloudinary/remote URL
+  if (typeof avatar === "string" && avatar.startsWith("http")) {
+    return avatar;
+  }
+
+  // ✅ Case 3: Legacy local uploads
+  let cleanPath = String(avatar)
     .replace(/\\/g, "/")
     .replace(/\/+/g, "/")
     .replace(/^\/uploads\/uploads\//, "/uploads/")
@@ -33,6 +42,8 @@ function getProfileImageUrl(path?: string | null) {
   if (!cleanPath.startsWith("/")) cleanPath = "/" + cleanPath;
   return `${BASE_URL}${cleanPath}`;
 }
+
+
 
 
 const News = () => {
@@ -160,7 +171,7 @@ const News = () => {
                   <Link to={`/news/${article._id}`}>
                     <div className="aspect-video bg-gray-200 rounded-t-lg overflow-hidden">
                       <img
-                        src={article.images?.[0] || '/placeholder.svg'}
+                        src={article.images?.[0]?.url || '/placeholder.svg'}
                         alt={article.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                       />
@@ -215,7 +226,7 @@ const News = () => {
                 <Link to={`/news/${article._id}`}>
                   <div className="aspect-video bg-gray-200 rounded-t-lg overflow-hidden">
                     <img
-                      src={article.images?.[0] || '/placeholder.svg'}
+                      src={article.images?.[0].url || '/placeholder.svg'}
                       alt={article.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                     />

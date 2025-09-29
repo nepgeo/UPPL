@@ -130,7 +130,7 @@ const NewsArticle = () => {
                 {article.images.map((img, index) => (
                   <SwiperSlide key={index}>
                     <img
-                      src={`${BASE_URL}/${img}`}
+                      src={`${BASE_URL}/${img.url}`}
                       alt={`Slide ${index + 1}`}
                       className="w-full h-96 object-cover"
                     />
@@ -180,7 +180,7 @@ const NewsArticle = () => {
               <CardContent className="p-6">
                 <div className="flex items-center space-x-4">
                   <img
-                    src={article.author.avatar || '/default-avatar.png'}
+                    src={article.author?.avatar?.url || article.author?.avatar || '/default-avatar.png'}
                     alt={article.author.name}
                     className="w-16 h-16 rounded-full object-cover"
                   />
