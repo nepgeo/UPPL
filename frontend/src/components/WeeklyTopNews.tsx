@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { BASE_URL } from "@/config";
+import api from "@/lib/api";
 
 
 export interface Article {
@@ -9,7 +10,7 @@ export interface Article {
   title?: string;
   images?: ({ url: string; public_id?: string } | string)[];
   excerpt?: string;
-  createdAt: { type: Date, default: Date.now }
+  createdAt: string;
   category?: string;
   author?: { avatar?: string };
   readTime?: string;
@@ -32,12 +33,15 @@ export default function WeeklyTopNews() {
     createdAt: new Date().toISOString(),
   };
 
-  // Fetch & setup news on mount
-  useEffect(() => {
-  fetch(`${BASE_URL}/news`)
-    .then((res) => res.json())
-    .then((data: Article[]) => {
-      if (!data || data.length === 0) return; // ✅ only skip if empty
+
+
+useEffect(() => {
+  const loadNews = async () => {
+    try {
+      const res = await api.get<Article[]>("/news");
+      const data = res.data;
+
+      if (!data || data.length === 0) return;
 
       // Sort newest first
       const sortedByDate = [...data].sort(
@@ -45,14 +49,19 @@ export default function WeeklyTopNews() {
           new Date(b.createdAt!).getTime() -
           new Date(a.createdAt!).getTime()
       );
-      setFeaturedNews(sortedByDate.slice(0, 4)); // show up to 4
+      setFeaturedNews(sortedByDate.slice(0, 4));
 
       // Shuffle for weekly carousel
       const shuffled = [...data].sort(() => Math.random() - 0.5);
       setCarouselItems(shuffled);
-    })
-    .catch((err) => console.error("Error fetching news:", err));
+    } catch (err) {
+      console.error("❌ Error fetching news:", err);
+    }
+  };
+
+  loadNews();
 }, []);
+
 
 
   // Auto-slide carousel every 5s
