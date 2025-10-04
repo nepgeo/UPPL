@@ -1,28 +1,15 @@
 // backend/controllers/paymentQRController.js
 const cloudinary = require("../config/cloudinary");
-const {
-  uploadFileToCloudinary,
-  destroyPublicId,
-} = require("../utils/cloudinaryService");
+const { uploadFileToCloudinary, destroyPublicId } = require("../utils/cloudinaryService");
+const PaymentQR = require("../models/paymentQRModel"); // ✅ Import model
 
 // ========================
 // GET all QR images
 // ========================
 async function getAllQRs(req, res) {
   try {
-    const result = await cloudinary.search
-      .expression("folder:payment-qr/*")
-      .sort_by("public_id", "desc")
-      .max_results(50)
-      .execute();
-
-    // Always return {url, public_id}
-    const files = result.resources.map((file) => ({
-      url: file.secure_url,
-      public_id: file.public_id,
-    }));
-
-    return res.json(files);
+    const qrs = await PaymentQR.find().sort({ createdAt: -1 }); // ✅ Fetch from DB
+    return res.json(qrs);
   } catch (err) {
     console.error("❌ Error fetching QR codes:", err);
     return res.status(500).json({ message: "Failed to fetch QR images" });
@@ -40,10 +27,16 @@ async function createQR(req, res) {
 
     const uploaded = await uploadFileToCloudinary(req.file.path, "payment-qr");
 
+    // ✅ Save in MongoDB
+    const newQR = await PaymentQR.create({
+      url: uploaded.url,
+      public_id: uploaded.public_id,
+    });
+
     return res.status(201).json({
       success: true,
-      message: "✅ QR uploaded successfully",
-      qr: { url: uploaded.url, public_id: uploaded.public_id },
+      message: "✅ QR uploaded and saved successfully",
+      qr: newQR,
     });
   } catch (err) {
     console.error("❌ createQR error:", err);
@@ -67,11 +60,17 @@ async function updateQR(req, res) {
     await destroyPublicId(public_id);
     const uploaded = await uploadFileToCloudinary(req.file.path, "payment-qr");
 
+    // ✅ Update DB entry
+    const updatedQR = await PaymentQR.findOneAndUpdate(
+      { public_id },
+      { url: uploaded.url, public_id: uploaded.public_id },
+      { new: true }
+    );
+
     return res.json({
       success: true,
       message: "✅ QR updated successfully",
-      oldPublicId: public_id,
-      qr: { url: uploaded.url, public_id: uploaded.public_id },
+      qr: updatedQR,
     });
   } catch (err) {
     console.error("❌ updateQR error:", err);
@@ -89,10 +88,7 @@ async function deleteQR(req, res) {
       return res.status(400).json({ success: false, message: "public_id is required" });
     }
 
-    // 1️⃣ Remove file extension if present
     public_id = public_id.replace(/\.(jpg|jpeg|png)$/i, "");
-
-    // 2️⃣ Prepend folder if missing (Cloudinary needs full path)
     if (!public_id.startsWith("payment-qr/")) {
       public_id = `payment-qr/${public_id}`;
     }
@@ -104,13 +100,12 @@ async function deleteQR(req, res) {
       return res.status(500).json({ success: false, message: "Failed to delete QR" });
     }
 
-    if (result.result === "not found") {
-      return res.status(404).json({ success: false, message: "QR not found" });
-    }
+    // ✅ Delete from MongoDB as well
+    await PaymentQR.findOneAndDelete({ public_id });
 
     return res.json({
       success: true,
-      message: "🗑️ QR deleted successfully",
+      message: "🗑️ QR deleted successfully from Cloudinary & DB",
       public_id,
     });
   } catch (err) {
@@ -118,10 +113,6 @@ async function deleteQR(req, res) {
     return res.status(500).json({ success: false, message: "Failed to delete QR" });
   }
 }
-
-
-
-
 
 module.exports = {
   getAllQRs,
