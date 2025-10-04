@@ -30,11 +30,13 @@ router.put(
 
 // Delete (admin) by public_id
 // DELETE /api/payment-qr/:public_id
+
 router.delete(
-  "/",
+  "/:public_id",
   protect,
   requireAdminOrSuperAdmin,
   paymentQRController.deleteQR
 );
+
 
 module.exports = router;

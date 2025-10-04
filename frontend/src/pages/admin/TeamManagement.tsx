@@ -573,83 +573,83 @@ const handleEditTeam = (team: any) => {
 
         {/* Player List */}
           <div className="mt-6">
-    <h3 className="text-lg font-semibold mb-2">Players</h3>
+          <h3 className="text-lg font-semibold mb-2">Players</h3>
 
-    {/* Warning for unnamed */}
-    {selectedTeam.players.filter((p) => !p.name).length >= 3 && (
-      <p className="text-sm text-red-500 mb-2">
-        ⚠️ Multiple unnamed players. Please complete player registrations.
-      </p>
-    )}
+          {/* Warning for unnamed */}
+          {selectedTeam.players.filter((p) => !p.name).length >= 3 && (
+            <p className="text-sm text-red-500 mb-2">
+              ⚠️ Multiple unnamed players. Please complete player registrations.
+            </p>
+          )}
 
-    <div className="max-h-[400px] overflow-y-auto pr-1">
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-        {[...selectedTeam.players]
-          .sort((a, b) => {
-            const statusOrder = { verified: 1, pending: 2, not_registered: 3 };
-            return (statusOrder[a.status] || 4) - (statusOrder[b.status] || 4);
-          })
-          .map((player) => (
-            <div
-              key={player._id}
-              onClick={() => setSelectedPlayer(player)}
-              className="cursor-pointer bg-white border rounded-lg p-3 shadow hover:shadow-md transition text-[13px]"
-            >
-              <div className="flex items-center gap-2">
-                {/* Avatar */}
-                <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-xs font-bold overflow-hidden">
-                  {player.user?.profileImage ? (
-                    <img
-                      src={
-                        player.user.profileImage.startsWith('http')
-                          ? player.user.profileImage
-                          : `${BASE_URL}/${player.user.profileImage
-                              .replace(/^\/+/, '')
-                              .replace(/\\/g, '/')}`
-                      }
-                      alt={player.user.name || player.name || 'Player'}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.src = '/default-avatar.png';
-                      }}
-                    />
-                  ) : (
-                    <span>
-                      {player.user?.name?.[0]?.toUpperCase() ||
-                        player.name?.[0]?.toUpperCase() ||
-                        '?'}
-                    </span>
-                  )}
-                </div>
+          <div className="max-h-[400px] overflow-y-auto pr-1">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {[...selectedTeam.players]
+                .sort((a, b) => {
+                  const statusOrder = { verified: 1, pending: 2, not_registered: 3 };
+                  return (statusOrder[a.status] || 4) - (statusOrder[b.status] || 4);
+                })
+                .map((player) => (
+                  <div
+                    key={player._id}
+                    onClick={() => setSelectedPlayer(player)}
+                    className="cursor-pointer bg-white border rounded-lg p-3 shadow hover:shadow-md transition text-[13px]"
+                  >
+                    <div className="flex items-center gap-2">
+                      {/* Avatar */}
+                      <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-xs font-bold overflow-hidden">
+                        {player.user?.profileImage ? (
+                          <img
+                            src={
+                              player.user.profileImage.startsWith('http')
+                                ? player.user.profileImage
+                                : `${BASE_URL}/${player.user.profileImage
+                                    .replace(/^\/+/, '')
+                                    .replace(/\\/g, '/')}`
+                            }
+                            alt={player.user.name || player.name || 'Player'}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = '/default-avatar.png';
+                            }}
+                          />
+                        ) : (
+                          <span>
+                            {player.user?.name?.[0]?.toUpperCase() ||
+                              player.name?.[0]?.toUpperCase() ||
+                              '?'}
+                          </span>
+                        )}
+                      </div>
 
-                {/* Name + Code */}
-                <div>
-                  <p className="font-medium">{player.name || 'Unnamed'}</p>
-                  <p className="text-muted-foreground text-xs">
-                    Code: {player.code || '—'}
-                  </p>
-                </div>
-              </div>
+                      {/* Name + Code */}
+                      <div>
+                        <p className="font-medium">{player.name || 'Unnamed'}</p>
+                        <p className="text-muted-foreground text-xs">
+                          Code: {player.code || '—'}
+                        </p>
+                      </div>
+                    </div>
 
-              {/* Status */}
-              <div className="mt-2">
-                <span
-                  className={`inline-block text-[11px] px-2 py-0.5 rounded text-white ${
-                    player.status === 'verified'
-                      ? 'bg-green-500'
-                      : player.status === 'pending'
-                      ? 'bg-yellow-500'
-                      : 'bg-gray-400'
-                  }`}
-                >
-                  {player.status}
-                </span>
-              </div>
+                    {/* Status */}
+                    <div className="mt-2">
+                      <span
+                        className={`inline-block text-[11px] px-2 py-0.5 rounded text-white ${
+                          player.status === 'verified'
+                            ? 'bg-green-500'
+                            : player.status === 'pending'
+                            ? 'bg-yellow-500'
+                            : 'bg-gray-400'
+                        }`}
+                      >
+                        {player.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
             </div>
-          ))}
-      </div>
-    </div>
-  </div>
+          </div>
+        </div>
 
         
         {selectedPlayer && (

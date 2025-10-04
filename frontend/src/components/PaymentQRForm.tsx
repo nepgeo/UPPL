@@ -88,12 +88,12 @@ const PaymentQRForm: React.FC = () => {
         return;
       }
 
-      await api.delete("/payment-qr", {
+      await api.delete(`/payment-qr/${qr.public_id}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("pplt20_token")}`,
         },
-        data: { public_id: qr.public_id },
       });
+
 
       fetchQRImages();
       setDeleteQr(null);
