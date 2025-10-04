@@ -30,21 +30,21 @@ const PaymentQRForm: React.FC = () => {
     const res = await api.get("/payment-qr");
     console.log("API Response:", res.data);
 
-    // ✅ Ensure we get the correct array
-    const qrsArray = Array.isArray(res.data?.qrs) ? res.data.qrs : [];
+    // ✅ Extract the qrs array safely
+    const qrsArray = res.data && Array.isArray(res.data.qrs) ? res.data.qrs : [];
 
-    // ✅ Normalize each QR image
+    // ✅ Normalize and filter
     const normalized: QRImage[] = qrsArray.map((item: any) => ({
       url: item.url || item.secure_url || "",
       public_id: item.public_id || "",
     }));
 
-    // ✅ Update state safely
     setQrImages(normalized.filter((q) => q.url && q.public_id));
   } catch (error) {
     console.error("❌ Failed to fetch QR images:", error);
   }
 };
+
 
 
 
