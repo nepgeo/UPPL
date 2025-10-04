@@ -1,7 +1,8 @@
 // backend/controllers/paymentQRController.js
 const cloudinary = require("../config/cloudinary");
 const { uploadFileToCloudinary, destroyPublicId } = require("../utils/cloudinaryService");
-const PaymentQR = require("../models/paymentQRModel"); // ✅ Import model
+// const PaymentQR = require("../models/payementQR"); // ✅ Import model
+const payementQR = require("../models/paymentQR");
 
 // ========================
 // GET all QR images
