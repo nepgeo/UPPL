@@ -48,6 +48,7 @@ const PaymentQRForm: React.FC = () => {
 
 
 
+
   // Handle file selection
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
