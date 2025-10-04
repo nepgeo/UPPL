@@ -23,10 +23,11 @@ async function uploadFileToCloudinary(localFilePath, folder = "general") {
 async function destroyPublicId(public_id, options = {}) {
   if (!public_id) return;
   try {
-    await cloudinary.uploader.destroy(public_id, options);
+    const result = await cloudinary.uploader.destroy(public_id, options);
+    return result; // 🔑 return the result
   } catch (err) {
-    // don't crash on destroy failure; just log
     console.warn("cloudinary destroy failed", public_id, err.message || err);
+    return undefined;
   }
 }
 
