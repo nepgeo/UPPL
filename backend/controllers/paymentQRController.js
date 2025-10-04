@@ -91,9 +91,11 @@ async function deleteQR(req, res) {
 
     const result = await destroyPublicId(public_id);
 
-    if (!result) {
-      return res.status(404).json({ success: false, message: "QR not found" });
-    }
+      // Cloudinary returns { result: 'ok' } or { result: 'not found' }
+      if (result.result === 'not found') {
+        return res.status(404).json({ success: false, message: "QR not found" });
+      }
+
 
     return res.json({
       success: true,

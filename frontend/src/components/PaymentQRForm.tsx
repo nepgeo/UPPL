@@ -81,29 +81,28 @@ const PaymentQRForm: React.FC = () => {
   };
 
   // Handle delete
-  const handleDelete = async (qr: QRImage) => {
-    try {
-      if (!qr.public_id) {
-        toast.error("Invalid QR code ID");
-        return;
-      }
+  const [isDeleting, setIsDeleting] = useState(false);
 
-      await api.delete(`/payment-qr/${encodeURIComponent(qr.public_id)}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("pplt20_token")}`,
-        },
-      });
+const handleDelete = async (qr: QRImage) => {
+  setIsDeleting(true);
+  try {
+    console.log("Deleting QR:", qr.public_id);
 
+    await api.delete(`/payment-qr/${encodeURIComponent(qr.public_id)}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem("pplt20_token")}` },
+    });
 
+    fetchQRImages();
+    setDeleteQr(null);
+    toast.success("QR deleted successfully!");
+  } catch (error) {
+    console.error("❌ Failed to delete QR:", error);
+    toast.error("Delete failed!");
+  } finally {
+    setIsDeleting(false);
+  }
+};
 
-      fetchQRImages();
-      setDeleteQr(null);
-      toast.success("QR deleted successfully!");
-    } catch (error) {
-      console.error("❌ Failed to delete QR:", error);
-      toast.error("Delete failed!");
-    }
-  };
 
   useEffect(() => {
     fetchQRImages();
