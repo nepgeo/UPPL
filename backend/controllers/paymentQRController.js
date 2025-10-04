@@ -84,18 +84,25 @@ async function updateQR(req, res) {
 // ========================
 async function deleteQR(req, res) {
   try {
-    const { public_id } = req.params; // ✅ use params instead of body
+    let { public_id } = req.params;
     if (!public_id) {
       return res.status(400).json({ success: false, message: "public_id is required" });
     }
 
+    // Remove file extension if present
+    public_id = public_id.replace(/\.(jpg|jpeg|png)$/i, "");
+
     const result = await destroyPublicId(public_id);
 
-      // Cloudinary returns { result: 'ok' } or { result: 'not found' }
-      if (result.result === 'not found') {
-        return res.status(404).json({ success: false, message: "QR not found" });
-      }
+    // 🔹 Check if result is valid
+    if (!result) {
+      console.error("❌ Cloudinary returned undefined for public_id:", public_id);
+      return res.status(500).json({ success: false, message: "Failed to delete QR" });
+    }
 
+    if (result.result === "not found") {
+      return res.status(404).json({ success: false, message: "QR not found" });
+    }
 
     return res.json({
       success: true,
@@ -107,6 +114,7 @@ async function deleteQR(req, res) {
     return res.status(500).json({ success: false, message: "Failed to delete QR" });
   }
 }
+
 
 
 

@@ -42,10 +42,12 @@ const TeamManagement = () => {
   const [selectedSeasonId, setSelectedSeasonId] = useState('');
   const [teams, setTeams] = useState([]);
 
-  const [newSeason, setNewSeason] = useState({
-    number: '',
-    endDate: new Date().toISOString().slice(0, 16),
-  });
+  const [newSeason, setNewSeason] = useState<{ number: string; endDate: string; year?: string }>({
+  number: "",
+  endDate: "",
+  year: undefined,
+});
+
   const [showSeasonModal, setShowSeasonModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingSeason, setEditingSeason] = useState({ number: '', endDate: ''});
@@ -384,18 +386,21 @@ const handleEditTeam = (team: any) => {
   return (
     <div className="p-6 space-y-6">
       {/* Season Management */}
-      <Card>
+            <Card>
         <CardHeader>
           <CardTitle>Manage Seasons</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4">
+          {/* Create New Season */}
+          <div className="flex flex-col sm:flex-row sm:items-end gap-4 flex-wrap">
             <Input
               placeholder="Season Number"
               value={newSeason.number}
               onChange={(e) => setNewSeason({ ...newSeason, number: e.target.value })}
+              className="flex-1 min-w-[120px]" // responsive width
             />
-            <div className="flex items-center gap-2">
+
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-1 min-w-[180px]">
               <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
                 Team Entry Date:
               </label>
@@ -406,30 +411,34 @@ const handleEditTeam = (team: any) => {
                   setNewSeason({
                     ...newSeason,
                     endDate: e.target.value,
-                    year: new Date(e.target.value).getFullYear().toString(), // auto-set year
+                    year: new Date(e.target.value).getFullYear().toString(),
                   })
                 }
-                className="min-w-[240px]"
+                className="w-full sm:w-auto"
                 title="Entry Ends"
               />
             </div>
 
-            <Button onClick={handleCreateSeason}>
-              <Plus className="h-4 w-4 mr-1" /> Add Season
-            </Button>
-            <Button variant="outline" onClick={() => setShowSeasonModal(true)}>
-              View All Seasons
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <Button className="flex-1 sm:flex-none" onClick={handleCreateSeason}>
+                <Plus className="h-4 w-4 mr-1" /> Add Season
+              </Button>
+              <Button variant="outline" className="flex-1 sm:flex-none" onClick={() => setShowSeasonModal(true)}>
+                View All Seasons
+              </Button>
+            </div>
           </div>
 
+          {/* Set Active Season */}
           <div className="pt-2 space-y-4">
             <p className="text-sm text-muted-foreground font-medium">Set Active Season</p>
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 flex-wrap">
               <Select
                 value={seasonInput.number}
                 onValueChange={(val) => setSeasonInput((prev) => ({ ...prev, number: val }))}
+                // className="flex-1 min-w-[140px]"
               >
-                <SelectTrigger className="w-[160px]">
+                <SelectTrigger className="w-full sm:w-[160px]">
                   <SelectValue placeholder="Select Season Number" />
                 </SelectTrigger>
                 <SelectContent>
@@ -441,22 +450,24 @@ const handleEditTeam = (team: any) => {
                 </SelectContent>
               </Select>
 
-              <div className="flex items-center gap-4 ml-auto">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-1 min-w-[180px] ml-0 sm:ml-auto">
                 <label className="text-sm">Entry Ends:</label>
                 <Input
                   type="datetime-local"
-                  className="w-[220px]"
                   value={seasonInput.endDate}
-                  disabled // 🔒 Make it read-only
+                  disabled
+                  className="w-full sm:w-[220px]"
                 />
               </div>
 
-              <Button onClick={handleSetSeason}>Set</Button>
+              <Button className="flex-1 sm:flex-none" onClick={handleSetSeason}>
+                Set
+              </Button>
             </div>
           </div>
-
         </CardContent>
       </Card>
+
 
       {/* Team View Section */}
       <Card>
