@@ -31,15 +31,14 @@ const fetchQRImages = async () => {
     const res = await api.get("/payment-qr");
     console.log("✅ API Response:", res.data);
 
-    // Ensure we’re safely accessing the array
-    if (res.data?.success && Array.isArray(res.data.qrs)) {
-      const normalized: QRImage[] = res.data.qrs.map((item: any) => ({
-        url: item.url || "",
-        public_id: item.public_id || "",
+    if (res.data && res.data.success && Array.isArray(res.data.qrs)) {
+      const formatted = res.data.qrs.map((qr: any) => ({
+        url: qr.url,
+        public_id: qr.public_id,
       }));
-      setQrImages(normalized);
+      setQrImages(formatted);
     } else {
-      console.warn("⚠️ Unexpected API response structure:", res.data);
+      console.warn("⚠️ Unexpected API response format:", res.data);
       setQrImages([]);
     }
   } catch (error) {
@@ -47,6 +46,7 @@ const fetchQRImages = async () => {
     toast.error("Failed to load QR images!");
   }
 };
+
 
 
 
