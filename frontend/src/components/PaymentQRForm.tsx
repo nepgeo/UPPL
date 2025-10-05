@@ -25,25 +25,29 @@ const PaymentQRForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   // Fetch all QR images
-  const fetchQRImages = async () => {
+  // Fetch all QR images
+const fetchQRImages = async () => {
   try {
     const res = await api.get("/payment-qr");
-    console.log("API Response:", res.data);
+    console.log("✅ API Response:", res.data);
 
-    // ✅ Extract the qrs array safely
-    const qrsArray = res.data && Array.isArray(res.data.qrs) ? res.data.qrs : [];
-
-    // ✅ Normalize and filter
-    const normalized: QRImage[] = qrsArray.map((item: any) => ({
-      url: item.url || item.secure_url || "",
-      public_id: item.public_id || "",
-    }));
-
-    setQrImages(normalized.filter((q) => q.url && q.public_id));
+    // Ensure we’re safely accessing the array
+    if (res.data?.success && Array.isArray(res.data.qrs)) {
+      const normalized: QRImage[] = res.data.qrs.map((item: any) => ({
+        url: item.url || "",
+        public_id: item.public_id || "",
+      }));
+      setQrImages(normalized);
+    } else {
+      console.warn("⚠️ Unexpected API response structure:", res.data);
+      setQrImages([]);
+    }
   } catch (error) {
     console.error("❌ Failed to fetch QR images:", error);
+    toast.error("Failed to load QR images!");
   }
 };
+
 
 
 
