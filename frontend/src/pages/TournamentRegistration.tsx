@@ -55,27 +55,20 @@ useEffect(() => {
   const fetchQRImages = async () => {
     try {
       const res = await api.get("/payment-qr");
+      console.log("📡 Raw QR Data:", res.data);
+      
+      // ✅ Correct extraction
+      const urls = Array.isArray(res.data?.qrs)
+        ? res.data.qrs.map((item: any) => item.url)
+        : [];
 
-      console.log("📡 Raw QR URLs:", res.data);
-
-      // ✅ res.data is now an array of URLs
-      setQrImages(Array.isArray(res.data) ? res.data : []);
+      setQrImages(urls);
     } catch (error: any) {
       console.error("❌ Error fetching QR images:", error.message);
     }
   };
-
   fetchQRImages();
 }, []);
-
-
-
-
-
-
-
-
-
 
 
 
