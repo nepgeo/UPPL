@@ -39,7 +39,11 @@ const TournamentRegistration: React.FC = () => {
     }))
   );
   const [loading, setLoading] = useState(false);
-  const [qrImages, setQrImages] = useState<string[]>([]);
+  // const [qrImages, setQrImages] = useState<string[]>([]);
+  const [qrImages, setQrImages] = useState([
+  "https://res.cloudinary.com/dv0emra21/image/upload/v1759637166/payment-qr/o2uj6qbl1ixczwskd6zw.jpg",
+]);
+
   const [openModal, setOpenModal] = useState(false);
   const [zoomImage, setZoomImage] = useState<string | null>(null);
   const [seasonId, setSeasonId] = useState<string>('');
