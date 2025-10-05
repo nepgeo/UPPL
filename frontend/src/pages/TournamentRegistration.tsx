@@ -54,21 +54,21 @@ const TournamentRegistration: React.FC = () => {
 useEffect(() => {
   const fetchQRImages = async () => {
     try {
-      // 👇 Ensure full API URL works in all environments (Render backend)
+      // ✅ use full backend URL for safety
       const res = await axios.get(`${API_BASE}/payment-qr`);
-
       console.log("📡 Raw QR Data:", res.data);
 
-      if (res.data?.success && Array.isArray(res.data.qrs)) {
-        const urls = res.data.qrs.map((item: any) => item.url);
+      // ✅ extract properly
+      if (res.data && Array.isArray(res.data.qrs)) {
+        const urls = res.data.qrs.map((q: any) => q?.url).filter(Boolean);
         console.log("✅ Extracted URLs:", urls);
         setQrImages(urls);
       } else {
-        console.warn("⚠️ No QR URLs found in response");
+        console.warn("⚠️ No valid qrs array found");
         setQrImages([]);
       }
-    } catch (error: any) {
-      console.error("❌ Error fetching QR images:", error);
+    } catch (err) {
+      console.error("❌ Error fetching QR images:", err);
     }
   };
 
