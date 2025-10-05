@@ -38,10 +38,15 @@ export default function WeeklyTopNews() {
 useEffect(() => {
   const loadNews = async () => {
     try {
+      console.log("🔍 Fetching news from:", "/news");
       const res = await api.get<Article[]>("/news");
-      const data = res.data;
+      console.log("✅ News response:", res);
 
-      if (!data || data.length === 0) return;
+      const data = res.data;
+      if (!data || data.length === 0) {
+        console.warn("⚠️ No news data received");
+        return;
+      }
 
       // Sort newest first
       const sortedByDate = [...data].sort(
@@ -54,6 +59,7 @@ useEffect(() => {
       // Shuffle for weekly carousel
       const shuffled = [...data].sort(() => Math.random() - 0.5);
       setCarouselItems(shuffled);
+
     } catch (err) {
       console.error("❌ Error fetching news:", err);
     }
