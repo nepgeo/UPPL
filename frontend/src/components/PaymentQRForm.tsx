@@ -31,21 +31,28 @@ const fetchQRImages = async () => {
     const res = await api.get("/payment-qr");
     console.log("✅ API Response:", res.data);
 
-    if (res.data && res.data.success && Array.isArray(res.data.qrs)) {
-      const formatted = res.data.qrs.map((qr: any) => ({
-        url: qr.url,
-        public_id: qr.public_id,
-      }));
-      setQrImages(formatted);
-    } else {
-      console.warn("⚠️ Unexpected API response format:", res.data);
+    // Extract qrs safely
+    const qrs = res.data?.qrs ?? [];
+
+    if (!Array.isArray(qrs)) {
+      console.warn("⚠️ Expected qrs to be an array but got:", qrs);
       setQrImages([]);
+      return;
     }
+
+    // Map safely
+    const formatted = qrs.map((qr: any) => ({
+      url: qr.url,
+      public_id: qr.public_id,
+    }));
+
+    setQrImages(formatted);
   } catch (error) {
     console.error("❌ Failed to fetch QR images:", error);
     toast.error("Failed to load QR images!");
   }
 };
+
 
 
 
