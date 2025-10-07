@@ -68,32 +68,31 @@ exports.deleteAlbum = async (req, res) => {
 exports.uploadImages = async (req, res) => {
   try {
     const { title, albumId, tags } = req.body;
-    const files = req.files || [];
 
-    console.log("Received files:", files);
-    if (!files.length) {
+    if (!albumId || !mongoose.Types.ObjectId.isValid(albumId)) {
+      return res.status(400).json({ message: "Invalid album ID" });
+    }
+
+    const files = req.files || [];
+    if (files.length === 0) {
       return res.status(400).json({ message: "No files uploaded" });
     }
 
     const tagArray = tags ? tags.split(",").map((t) => t.trim()) : [];
     const savedImages = [];
 
+    console.log("Received files:", files);
+
     for (const file of files) {
+      console.log("Uploading file to Cloudinary:", file.originalname);
+
       let uploaded;
       try {
         uploaded = await uploadFileToCloudinary(file.path, "gallery");
         console.log("Cloudinary upload result:", uploaded);
       } catch (err) {
-        console.error("❌ Cloudinary upload failed for file:", file.originalname, err);
-        continue; // skip this file but continue with others
-      }
-
-      if (!uploaded || !uploaded.url || !uploaded.public_id) {
-        console.warn(
-          "Skipped file because upload did not return url/public_id:",
-          file.originalname
-        );
-        continue;
+        console.error(`❌ Cloudinary upload failed for file: ${file.originalname}`, err);
+        continue; // skip this file
       }
 
       try {
@@ -101,22 +100,22 @@ exports.uploadImages = async (req, res) => {
           title,
           album: new mongoose.Types.ObjectId(albumId),
           tags: tagArray,
-          url: uploaded.url,
-          public_id: uploaded.public_id,
+          image: {
+            url: uploaded.url,
+            public_id: uploaded.public_id,
+          },
         });
 
         await image.save();
         savedImages.push(image);
-        console.log("Saved image to DB:", image._id);
+        console.log(`✅ Saved image to DB: ${file.originalname}`);
       } catch (err) {
-        console.error("❌ Failed to save image to DB for file:", file.originalname, err);
+        console.error(`❌ Failed to save image to DB for file: ${file.originalname}`, err);
       }
     }
 
-    if (!savedImages.length) {
-      return res.status(500).json({
-        message: "No images were uploaded successfully",
-      });
+    if (savedImages.length === 0) {
+      return res.status(500).json({ message: "Failed to upload any images" });
     }
 
     res.status(201).json({
@@ -128,6 +127,7 @@ exports.uploadImages = async (req, res) => {
     res.status(500).json({ message: "Failed to upload images" });
   }
 };
+
 
 
 // Get images with filters
