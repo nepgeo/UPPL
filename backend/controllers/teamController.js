@@ -19,7 +19,16 @@ function generateTeamCode(teamId) {
 // ✅ Create Team
 const createTeam = async (req, res) => {
   try {
-    const { seasonNumber } = req.body;
+    let { seasonNumber } = req.body;
+
+    // ✅ 1. Auto-use current season if none provided
+    if (!seasonNumber) {
+      const currentSeason = await Season.findOne({ isCurrent: true });
+      if (!currentSeason) {
+        return res.status(400).json({ message: "❌ No active season found" });
+      }
+      seasonNumber = currentSeason._id;
+    }
 
     if (!mongoose.Types.ObjectId.isValid(seasonNumber)) {
       return res.status(400).json({ message: "❌ Invalid season ID" });
@@ -48,16 +57,19 @@ const createTeam = async (req, res) => {
     }
 
     if (!paymentReceipt?.url || !teamLogo?.url) {
-      return res.status(400).json({ message: "❌ Both paymentReceipt and teamLogo are required" });
+      return res.status(400).json({
+        message: "❌ Both paymentReceipt and teamLogo are required",
+      });
     }
 
-    // ✅ Parse players
+    // ✅ Parse and prepare players
     let players = [];
     if (req.body.players) {
       try {
-        players = typeof req.body.players === "string" 
-          ? JSON.parse(req.body.players) 
-          : req.body.players;
+        players =
+          typeof req.body.players === "string"
+            ? JSON.parse(req.body.players)
+            : req.body.players;
       } catch (err) {
         return res.status(400).json({ message: "❌ Invalid players data format" });
       }
@@ -75,7 +87,9 @@ const createTeam = async (req, res) => {
         };
 
         if (p.playerCode) {
-          const matchedUser = await User.findOne({ playerCode: p.playerCode.trim() });
+          const matchedUser = await User.findOne({
+            playerCode: p.playerCode.trim(),
+          });
           if (matchedUser) {
             player.user = matchedUser._id;
             player.status = matchedUser.verified ? "verified" : "pending";
@@ -87,7 +101,7 @@ const createTeam = async (req, res) => {
       })
     );
 
-    // ✅ Create team
+    // ✅ Create the team
     const newTeam = new Team({
       teamName: req.body.teamName,
       captainName: req.body.captainName,
@@ -105,11 +119,11 @@ const createTeam = async (req, res) => {
 
     await newTeam.save();
 
-    // ✅ Generate team code after save
+    // ✅ Generate team code
     newTeam.teamCode = generateTeamCode(newTeam._id);
     await newTeam.save();
 
-    // ✅ Push into season groups
+    // ✅ Add to season groups
     let group = season.groups.find((g) => g.groupName === req.body.groupName);
     if (!group) {
       group = { groupName: req.body.groupName || "Ungrouped", teams: [] };
@@ -128,9 +142,13 @@ const createTeam = async (req, res) => {
     });
   } catch (err) {
     console.error("❌ Team creation failed:", err.message);
-    return res.status(500).json({ message: "Internal server error", error: err.message });
+    return res.status(500).json({
+      message: "Internal server error",
+      error: err.message,
+    });
   }
 };
+
 
 // ✅ Get teams by season
 const getTeamsBySeason = async (req, res) => {
