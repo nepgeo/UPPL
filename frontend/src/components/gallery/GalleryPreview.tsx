@@ -20,6 +20,23 @@ interface Image {
   likes?: number;
 }
 
+// ✅ Safe universal image resolver
+const getImageUrl = (img: any): string => {
+  if (!img) return "";
+
+  if (typeof img === "string") {
+    if (img.startsWith("data:")) return img; // base64 preview
+    if (img.startsWith("http")) return img;  // Cloudinary/external URL ✅
+    return `${BASE_URL}/${img.replace(/\\/g, "/")}`; // Local backend ✅
+  }
+
+  if (typeof img === "object") {
+    return img.secure_url || img.url || "";
+  }
+
+  return "";
+};
+
 const GalleryPreview = () => {
   const [images, setImages] = useState<Image[]>([]);
   const [activeIndex, setActiveIndex] = useState(2);
@@ -112,9 +129,12 @@ const GalleryPreview = () => {
                     >
                       <div className="relative group">
                         <img
-                          src={`${BASE_URL}/${image.url}`}
+                          src={getImageUrl(image.url)}
                           alt={image.title}
                           className="w-full h-[350px] sm:h-[450px] md:h-[500px] object-cover"
+                          onError={(e) => {
+                            e.currentTarget.src = "/placeholder.jpg";
+                          }}
                         />
                         <div className="absolute top-3 right-3 sm:top-4 sm:right-4 p-2 bg-black/50 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity">
                           <FiMaximize2 className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -173,7 +193,7 @@ const GalleryPreview = () => {
               onClick={(e) => e.stopPropagation()}
             >
               <img
-                src={`${BASE_URL}/${previewImage.url}`}
+                src={getImageUrl(previewImage.url)}
                 alt={previewImage.title}
                 className="w-full h-full object-contain bg-black"
               />
