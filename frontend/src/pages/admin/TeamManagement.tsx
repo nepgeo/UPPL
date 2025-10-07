@@ -517,7 +517,7 @@ const handleEditTeam = (team: any) => {
           >
             <div className="w-full h-32 overflow-hidden rounded-md mb-3">
               <img
-                src={team.teamLogo}
+                src={team.teamLogo?.url}
                 alt={team.teamName}
                 className="w-full h-full object-cover"
               />
@@ -544,7 +544,7 @@ const handleEditTeam = (team: any) => {
         {/* Team Logo */}
         <div className="w-full h-64 overflow-hidden rounded-xl mb-6 shadow">
           <img
-            src={selectedTeam.teamLogo}
+            src={selectedTeam.teamLogo?.url}
             alt={selectedTeam.teamName}
             className="w-full h-full object-cover"
           />
