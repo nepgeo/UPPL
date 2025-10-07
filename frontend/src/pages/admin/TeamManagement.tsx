@@ -830,31 +830,43 @@ const handleEditTeam = (team: any) => {
           <h3 className="text-lg font-semibold mb-2">Payment Receipt</h3>
 
           {selectedTeam.paymentReceipt ? (
-            <div
-              className="relative w-48 h-48 border-2 border-dashed border-slate-300 rounded-lg overflow-hidden cursor-pointer group"
-              onClick={() =>
-                setZoomedImage(
-                  selectedTeam.paymentReceipt.startsWith("http")
-                    ? selectedTeam.paymentReceipt
-                    : `${BASE_URL}/${selectedTeam.paymentReceipt.replace(/\\/g, "/")}`
-                )
-              }
-            >
-              <img
-                src={
-                  selectedTeam.paymentReceipt.startsWith("http")
-                    ? selectedTeam.paymentReceipt
-                    : `${BASE_URL}/${selectedTeam.paymentReceipt.replace(/\\/g, "/")}`
-                }
-                alt="Payment Receipt"
-                className="w-full h-full object-contain p-2 transition-transform group-hover:scale-105"
-              />
+            (() => {
+              // 🧠 Handle both string or Cloudinary object
+              const receiptUrl =
+                typeof selectedTeam.paymentReceipt === "string"
+                  ? selectedTeam.paymentReceipt
+                  : selectedTeam.paymentReceipt?.secure_url ||
+                    selectedTeam.paymentReceipt?.url ||
+                    "";
 
-              {/* Hover overlay */}
-              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
-                <ZoomIn className="text-white opacity-0 group-hover:opacity-100 transition-opacity" size={24} />
-              </div>
-            </div>
+              const displayUrl = receiptUrl.startsWith("http")
+                ? receiptUrl
+                : `${BASE_URL}/${receiptUrl.replace(/\\/g, "/")}`;
+
+              return (
+                <div
+                  className="relative w-48 h-48 border-2 border-dashed border-slate-300 rounded-lg overflow-hidden cursor-pointer group"
+                  onClick={() => setZoomedImage(displayUrl)}
+                >
+                  <img
+                    src={displayUrl}
+                    alt="Payment Receipt"
+                    className="w-full h-full object-contain p-2 transition-transform group-hover:scale-105"
+                    onError={(e) => {
+                      e.currentTarget.src = "/default-image.png"; // fallback
+                    }}
+                  />
+
+                  {/* Hover overlay */}
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
+                    <ZoomIn
+                      className="text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                      size={24}
+                    />
+                  </div>
+                </div>
+              );
+            })()
           ) : (
             <div className="w-48 h-48 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center text-slate-400 text-sm bg-gray-50">
               <ImageIcon size={24} />
@@ -862,7 +874,6 @@ const handleEditTeam = (team: any) => {
             </div>
           )}
         </div>
-
 
 
         {/* Actions */}
