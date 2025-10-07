@@ -34,6 +34,42 @@ import {
   DropdownMenuItem,
 } from '@/components/ui/dropdown-menu';
 
+// Define the Team type so TypeScript recognizes it
+interface Team {
+  _id?: string;
+  teamName?: string;
+  coachName?: string;
+  captainName?: string;
+  managerName?: string;
+  contactNumber?: string;
+  teamCode?: string;
+  status?: string;
+  email?: string;
+  createdBy?: any;
+  teamLogo?: string | { url?: string; secure_url?: string };
+  paymentReceipt?: string | { url?: string; secure_url?: string };
+  players: {
+    _id?: string;
+    name?: string;
+    position?: string;
+    jerseyNumber?: string;
+    playerCode?: string;
+    code?: string;
+    status?: string;
+    user?: {
+      name?: string;
+      email?: string;
+      phone?: string;
+      profileImage?: string | { url?: string; secure_url?: string };
+      documents?: Array<string | { url?: string; secure_url?: string }>;
+      [key: string]: any;
+    };
+  }[];
+  season?: { number?: number; year?: string };
+  createdAt?: string;
+}
+
+
 
 const TeamManagement = () => {
   const navigate = useNavigate();
@@ -1062,9 +1098,11 @@ const handleEditTeam = (team: any) => {
             ? editableTeam.paymentReceipt.startsWith("data:")
               ? editableTeam.paymentReceipt
               : `${BASE_URL}/${editableTeam.paymentReceipt.replace(/\\/g, "/")}`
-            : editableTeam.paymentReceipt?.secure_url ||
-              editableTeam.paymentReceipt?.url ||
+            : typeof editableTeam.paymentReceipt === "object" && editableTeam.paymentReceipt !== null
+            ? editableTeam.paymentReceipt.secure_url ||
+              editableTeam.paymentReceipt.url ||
               ""
+            : ""
         }
         alt="Receipt"
         className="w-20 h-20 rounded-lg border object-cover"
@@ -1091,6 +1129,7 @@ const handleEditTeam = (team: any) => {
     />
   </div>
 </div>
+
 
 
             {/* Squad Details */}
