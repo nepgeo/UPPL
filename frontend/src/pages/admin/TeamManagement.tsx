@@ -101,6 +101,23 @@ const TeamManagement = () => {
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
 const [logoFile, setLogoFile] = useState<File | null>(null); // if not already declared
 
+    const getImageUrl = (img: any): string => {
+      if (!img) return "";
+
+      // Case 1: Plain string
+      if (typeof img === "string") {
+        if (img.startsWith("data:")) return img; // base64 from FileReader
+        if (img.startsWith("http")) return img;  // full external URL
+        return `${BASE_URL}/${img.replace(/\\/g, "/")}`; // relative local path
+      }
+
+      // Case 2: Cloudinary / object format
+      if (typeof img === "object") {
+        return img.secure_url || img.url || "";
+      }
+
+      return "";
+    };
 
 
 
@@ -354,10 +371,10 @@ const handleEditTeam = (team: any) => {
     position: p.position || p.user?.position || '',
     jerseyNumber: p.jerseyNumber?.toString() || '',
     playerCode: p.code || p.playerCode || p.user?.playerCode || '',
-    code: p.code || '',          // include actual code field
-    user: p.user || null,        // include full user object
-    status: p.status || 'not_registered', // preserve status
-    _id: p._id || undefined,     // optional: preserve for tracking
+    code: p.code || '',
+    user: p.user || null,
+    status: p.status || 'not_registered',
+    _id: p._id || undefined,
   })) || [];
 
   setEditableTeam({
@@ -369,18 +386,15 @@ const handleEditTeam = (team: any) => {
     teamCode: team.teamCode || '',
     status: team.status || 'pending',
     email: team.createdBy?.email || '',
-    teamLogo: team.teamLogo
-      ? `${BASE_URL}/${team.teamLogo.replace(/\\/g, '/')}`
-      : '',
-    paymentReceipt: team.paymentReceipt
-      ? `${BASE_URL}/${team.paymentReceipt.replace(/\\/g, '/')}`
-      : '',
+    teamLogo: getImageUrl(team.teamLogo),
+    paymentReceipt: getImageUrl(team.paymentReceipt),
     players: formattedPlayers,
     _id: team._id,
   });
 
   setEditMode(true);
 };
+
 
   const handleVerifyTeam = async (teamId: string) => {
     try {
@@ -417,24 +431,8 @@ const handleEditTeam = (team: any) => {
     }
   };
 
-  // ✅ Universal helper to normalize image URLs from Cloudinary or backend
-  const getImageUrl = (img: any): string => {
-  if (!img) return "";
 
-  // Case 1: Plain string
-  if (typeof img === "string") {
-    if (img.startsWith("data:")) return img; // base64 from FileReader
-    if (img.startsWith("http")) return img;  // full external URL
-    return `${BASE_URL}/${img.replace(/\\/g, "/")}`; // relative local path
-  }
-
-  // Case 2: Cloudinary / object format
-  if (typeof img === "object") {
-    return img.secure_url || img.url || "";
-  }
-
-  return "";
-};
+  
 
 
 
