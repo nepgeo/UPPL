@@ -14,11 +14,14 @@ interface Album {
 interface Image {
   _id: string;
   title: string;
-  url: string;
-  album: Album;
-  description?: string;
-  likes?: number;
+  image: {
+    url: string;
+    public_id: string;
+  };
+  album: string;
+  tags?: string[];
 }
+
 
 // ✅ Safe universal image resolver
 const getImageUrl = (img: any): string => {
@@ -129,7 +132,7 @@ const GalleryPreview = () => {
                     >
                       <div className="relative group">
                         <img
-                          src={getImageUrl(image.url)}
+                          src={getImageUrl(image.image)}
                           alt={image.title}
                           className="w-full h-[350px] sm:h-[450px] md:h-[500px] object-cover"
                           onError={(e) => {
@@ -193,7 +196,7 @@ const GalleryPreview = () => {
               onClick={(e) => e.stopPropagation()}
             >
               <img
-                src={getImageUrl(previewImage.url)}
+                src={getImageUrl(previewImage?.image)}
                 alt={previewImage.title}
                 className="w-full h-full object-contain bg-black"
               />
