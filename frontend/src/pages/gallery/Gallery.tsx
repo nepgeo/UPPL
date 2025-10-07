@@ -15,6 +15,24 @@ const Gallery = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState('grid'); // 'grid', 'timeline', 'masonry'
+  
+  const getImageUrl = (img: any): string => {
+  if (!img) return "";
+
+  // 🧠 Case 1: Image is just a string
+  if (typeof img === "string") {
+    if (img.startsWith("data:")) return img; // base64 preview
+    if (img.startsWith("http")) return img;  // full external URL
+    return `${BASE_URL}/${img.replace(/\\/g, "/")}`; // relative local path
+  }
+
+  // 🧠 Case 2: Cloudinary / object format
+  if (typeof img === "object") {
+    return img.secure_url || img.url || "";
+  }
+
+  return "";
+};
 
   useEffect(() => {
     api.get('/gallery/images')
@@ -50,10 +68,11 @@ const Gallery = () => {
           <div className="aspect-square bg-gray-200 overflow-hidden">
             <Link to={`/gallery/view/${item._id}`}>
               <img 
-                src={`${BASE_URL}/${item.url}`} 
+                src={getImageUrl(item.image)} 
                 alt={item.title}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />
+
             </Link>
           </div>
           <CardContent className="p-4">
@@ -88,10 +107,11 @@ const Gallery = () => {
             <Card className="group hover:shadow-lg transition-shadow cursor-pointer">
               <div className="aspect-video bg-gray-200 overflow-hidden">
                 <img 
-                  src={`${BASE_URL}/${item.url}`} 
+                  src={getImageUrl(item.image)} 
                   alt={item.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
+
               </div>
             </Card>
           </div>
@@ -133,10 +153,11 @@ const Gallery = () => {
         <Card key={item._id} className="group hover:shadow-lg transition-shadow cursor-pointer break-inside-avoid">
           <div className="aspect-square bg-gray-200 overflow-hidden">
             <img 
-              src={`${BASE_URL}/${item.url}`} 
+              src={getImageUrl(item.image)} 
               alt={item.title}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             />
+
           </div>
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
