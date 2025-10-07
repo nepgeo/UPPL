@@ -43,8 +43,11 @@ const generateGroups = async (req, res) => {
     const groups = [];
     let groupIndex = 0;
 
-    for (let i = 0; i < shuffled.length; i += 4) {
-      const chunk = shuffled.slice(i, i + 4);
+    // Change: group size = 3
+    const GROUP_SIZE = 3;
+
+    for (let i = 0; i < shuffled.length; i += GROUP_SIZE) {
+      const chunk = shuffled.slice(i, i + GROUP_SIZE);
       groups.push({
         groupName: String.fromCharCode(65 + groupIndex), // A, B, C...
         teams: chunk.map((t) => ({
@@ -94,6 +97,7 @@ const generateGroups = async (req, res) => {
     });
   }
 };
+
 
 // DELETE /api/groups/season/:seasonId
 const deleteGroupsBySeason = async (req, res) => {
