@@ -419,14 +419,23 @@ const handleEditTeam = (team: any) => {
 
   // ✅ Universal helper to normalize image URLs from Cloudinary or backend
   const getImageUrl = (img: any): string => {
-    if (!img) return "";
-    if (typeof img === "string") return img;
-    if (typeof img === "object") {
-      if (img.secure_url) return img.secure_url;
-      if (img.url) return img.url;
-    }
-    return "";
-  };
+  if (!img) return "";
+
+  // Case 1: Plain string
+  if (typeof img === "string") {
+    if (img.startsWith("data:")) return img; // base64 from FileReader
+    if (img.startsWith("http")) return img;  // full external URL
+    return `${BASE_URL}/${img.replace(/\\/g, "/")}`; // relative local path
+  }
+
+  // Case 2: Cloudinary / object format
+  if (typeof img === "object") {
+    return img.secure_url || img.url || "";
+  }
+
+  return "";
+};
+
 
 
 
@@ -1051,15 +1060,7 @@ const handleEditTeam = (team: any) => {
   <div className="flex items-center gap-4">
     {editableTeam.teamLogo && (
       <img
-        src={
-          typeof editableTeam.teamLogo === "string"
-            ? editableTeam.teamLogo.startsWith("data:")
-              ? editableTeam.teamLogo
-              : `${BASE_URL}/${editableTeam.teamLogo.replace(/\\/g, "/")}`
-            : editableTeam.teamLogo?.secure_url ||
-              editableTeam.teamLogo?.url ||
-              ""
-        }
+        src={getImageUrl(editableTeam.teamLogo)}
         alt="Team Logo"
         className="w-20 h-20 rounded-lg border object-cover"
         onError={(e) => (e.currentTarget.src = "/default-logo.png")}
@@ -1086,24 +1087,13 @@ const handleEditTeam = (team: any) => {
   </div>
 </div>
 
-
-            {/* Payment Receipt */}
-            <div className="mt-6">
+{/* Payment Receipt */}
+<div className="mt-6">
   <Label className="block mb-2" htmlFor="paymentReceipt">Payment Receipt</Label>
   <div className="flex items-center gap-4">
     {editableTeam.paymentReceipt && (
       <img
-        src={
-          typeof editableTeam.paymentReceipt === "string"
-            ? editableTeam.paymentReceipt.startsWith("data:")
-              ? editableTeam.paymentReceipt
-              : `${BASE_URL}/${editableTeam.paymentReceipt.replace(/\\/g, "/")}`
-            : typeof editableTeam.paymentReceipt === "object" && editableTeam.paymentReceipt !== null
-            ? editableTeam.paymentReceipt.secure_url ||
-              editableTeam.paymentReceipt.url ||
-              ""
-            : ""
-        }
+        src={getImageUrl(editableTeam.paymentReceipt)}
         alt="Receipt"
         className="w-20 h-20 rounded-lg border object-cover"
         onError={(e) => (e.currentTarget.src = "/default-image.png")}
@@ -1129,6 +1119,7 @@ const handleEditTeam = (team: any) => {
     />
   </div>
 </div>
+
 
 
 
