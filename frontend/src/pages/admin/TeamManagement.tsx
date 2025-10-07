@@ -827,53 +827,63 @@ const handleEditTeam = (team: any) => {
 
         {/* Payment Receipt */}
         <div className="mt-8">
-          <h3 className="text-lg font-semibold mb-2">Payment Receipt</h3>
+  {/* Payment Receipt */}
+<div className="mt-8">
+  <h3 className="text-lg font-semibold mb-2">Payment Receipt</h3>
 
-          {selectedTeam.paymentReceipt ? (
-            (() => {
-              // 🧠 Handle both string or Cloudinary object
-              const receiptUrl =
-                typeof selectedTeam.paymentReceipt === "string"
-                  ? selectedTeam.paymentReceipt
-                  : selectedTeam.paymentReceipt?.secure_url ||
-                    selectedTeam.paymentReceipt?.url ||
-                    "";
+  {selectedTeam.paymentReceipt ? (
+    (() => {
+      // ✅ Always resolve to a usable string URL
+      let receiptUrl = "";
 
-              const displayUrl = receiptUrl.startsWith("http")
-                ? receiptUrl
-                : `${BASE_URL}/${receiptUrl.replace(/\\/g, "/")}`;
+      if (typeof selectedTeam.paymentReceipt === "string") {
+        receiptUrl = selectedTeam.paymentReceipt;
+      } else if (
+        selectedTeam.paymentReceipt &&
+        (selectedTeam.paymentReceipt.secure_url || selectedTeam.paymentReceipt.url)
+      ) {
+        receiptUrl =
+          selectedTeam.paymentReceipt.secure_url ||
+          selectedTeam.paymentReceipt.url;
+      }
 
-              return (
-                <div
-                  className="relative w-48 h-48 border-2 border-dashed border-slate-300 rounded-lg overflow-hidden cursor-pointer group"
-                  onClick={() => setZoomedImage(displayUrl)}
-                >
-                  <img
-                    src={displayUrl}
-                    alt="Payment Receipt"
-                    className="w-full h-full object-contain p-2 transition-transform group-hover:scale-105"
-                    onError={(e) => {
-                      e.currentTarget.src = "/default-image.png"; // fallback
-                    }}
-                  />
+      const displayUrl = receiptUrl.startsWith("http")
+        ? receiptUrl
+        : `${BASE_URL}/${receiptUrl.replace(/\\/g, "/")}`;
 
-                  {/* Hover overlay */}
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
-                    <ZoomIn
-                      className="text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                      size={24}
-                    />
-                  </div>
-                </div>
-              );
-            })()
-          ) : (
-            <div className="w-48 h-48 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center text-slate-400 text-sm bg-gray-50">
-              <ImageIcon size={24} />
-              No receipt uploaded
-            </div>
-          )}
+      return (
+        <div
+          className="relative w-48 h-48 border-2 border-dashed border-slate-300 rounded-lg overflow-hidden cursor-pointer group"
+          onClick={() => setZoomedImage(displayUrl)}
+        >
+          <img
+            src={displayUrl}
+            alt="Payment Receipt"
+            className="w-full h-full object-contain p-2 transition-transform group-hover:scale-105"
+            onError={(e) => {
+              e.currentTarget.src = "/default-image.png";
+            }}
+          />
+
+          {/* Hover overlay */}
+          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
+            <ZoomIn
+              className="text-white opacity-0 group-hover:opacity-100 transition-opacity"
+              size={24}
+            />
+          </div>
         </div>
+      );
+    })()
+  ) : (
+    <div className="w-48 h-48 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center text-slate-400 text-sm bg-gray-50">
+      <ImageIcon size={24} />
+      No receipt uploaded
+    </div>
+  )}
+</div>
+
+
 
 
         {/* Actions */}
