@@ -97,6 +97,25 @@ const Teams = () => {
     fetchTeams();
   }, []);
 
+  const getImageUrl = (img: any): string => {
+  if (!img) return "";
+
+  // Case 1: Plain string
+  if (typeof img === "string") {
+    if (img.startsWith("data:")) return img; // base64
+    if (img.startsWith("http")) return img;  // full external (Cloudinary, etc.)
+    return `${BASE_URL}/${img.replace(/\\/g, "/")}`; // local relative path
+  }
+
+  // Case 2: Object (Cloudinary response)
+  if (typeof img === "object") {
+    return img.secure_url || img.url || "";
+  }
+
+  return "";
+};
+
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Page Header */}
@@ -122,9 +141,8 @@ const Teams = () => {
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {teams.map((team, index) => {
-              const logoUrl = team.teamLogo
-                ? `${BASE_URL}/${String(team.teamLogo).replace(/\\/g, "/")}`
-                : "";
+              const logoUrl = getImageUrl(team.teamLogo);
+
 
               return (
                 <Card key={team._id} className="hover:shadow-lg transition-shadow">
@@ -193,11 +211,12 @@ const Teams = () => {
               <div className="relative w-full h-40 bg-gray-100 flex-shrink-0">
                 {selectedTeam.teamLogo && (
                   <img
-                    src={`${BASE_URL}/${String(selectedTeam.teamLogo).replace(/\\/g, "/")}`}
+                    src={getImageUrl(selectedTeam.teamLogo)}
                     alt={selectedTeam.teamName}
                     className="w-full h-full object-cover"
                   />
                 )}
+
               </div>
 
               {/* Scrollable Content */}
@@ -235,11 +254,9 @@ const Teams = () => {
                     const normalizePath = (path: string) => path.replace(/^\/+/, "").replace(/\\/g, "/");
 
                     const pic =
-                      (player?.user?.profileImage &&
-                        `${BASE_URL}/${normalizePath(player.user.profileImage)}`) ||
-                      (player?.profileImage &&
-                        `${BASE_URL}/${normalizePath(player.profileImage)}`) ||
-                      "";
+                      getImageUrl(player?.user?.profileImage) ||
+                      getImageUrl(player?.profileImage);
+
 
                     const role = (player?.role || player?.position || "Unknown").toLowerCase();
 
