@@ -73,7 +73,7 @@ const Teams = () => {
     const fetchTeams = async () => {
       try {
         const token = localStorage.getItem("pplt20_token");
-        const seasonRes = await api.get("/api/seasons/current", {
+        const seasonRes = await api.get("/seasons/current", {
           headers: { Authorization: `Bearer ${token}` },
         });
         const currentSeason = seasonRes.data;

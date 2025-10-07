@@ -39,7 +39,7 @@ useEffect(() => {
   const loadNews = async () => {
     try {
       console.log("🔍 Fetching news from:", "/news");
-      const res = await api.get<Article[]>("/api/news");
+      const res = await api.get<Article[]>("/news");
       console.log("✅ News response:", res);
 
       const data = res.data;
