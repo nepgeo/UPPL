@@ -381,6 +381,18 @@ const handleEditTeam = (team: any) => {
     }
   };
 
+  // ✅ Universal helper to normalize image URLs from Cloudinary or backend
+  const getImageUrl = (img: any): string => {
+    if (!img) return "";
+    if (typeof img === "string") return img;
+    if (typeof img === "object") {
+      if (img.secure_url) return img.secure_url;
+      if (img.url) return img.url;
+    }
+    return "";
+  };
+
+
 
 
   return (
@@ -516,11 +528,7 @@ const handleEditTeam = (team: any) => {
             onClick={() => setSelectedTeam(team)}
           >
             <div className="w-full h-32 overflow-hidden rounded-md mb-3">
-              <img
-                src={team.teamLogo?.url}
-                alt={team.teamName}
-                className="w-full h-full object-cover"
-              />
+              <img src={getImageUrl(team.teamLogo)} alt={team.teamName} className="w-full h-full object-cover" />
             </div>
             <div className="space-y-1">
               <h2 className="font-bold text-lg">{team.teamName}</h2>
@@ -543,11 +551,7 @@ const handleEditTeam = (team: any) => {
 
         {/* Team Logo */}
         <div className="w-full h-64 overflow-hidden rounded-xl mb-6 shadow">
-          <img
-            src={selectedTeam.teamLogo?.url}
-            alt={selectedTeam.teamName}
-            className="w-full h-full object-cover"
-          />
+          <img src={getImageUrl(selectedTeam.teamLogo)} alt={selectedTeam.teamName} className="w-full h-full object-cover" />
         </div>
 
         {/* Team Info */}
@@ -609,29 +613,30 @@ const handleEditTeam = (team: any) => {
                     <div className="flex items-center gap-2">
                       {/* Avatar */}
                       <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-xs font-bold overflow-hidden">
-                        {player.user?.profileImage ? (
-                          <img
-                            src={
-                              player.user.profileImage.startsWith('http')
-                                ? player.user.profileImage
-                                : `${BASE_URL}/${player.user.profileImage
-                                    .replace(/^\/+/, '')
-                                    .replace(/\\/g, '/')}`
-                            }
-                            alt={player.user.name || player.name || 'Player'}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.currentTarget.src = '/default-avatar.png';
-                            }}
-                          />
-                        ) : (
-                          <span>
-                            {player.user?.name?.[0]?.toUpperCase() ||
-                              player.name?.[0]?.toUpperCase() ||
-                              '?'}
-                          </span>
-                        )}
-                      </div>
+  {player.user?.profileImage ? (
+    <img
+      src={
+        typeof player.user.profileImage === "string"
+          ? player.user.profileImage
+          : player.user.profileImage?.secure_url ||
+            player.user.profileImage?.url ||
+            ""
+      }
+      alt={player.user.name || player.name || "Player"}
+      className="w-full h-full object-cover"
+      onError={(e) => {
+        e.currentTarget.src = "/default-avatar.png";
+      }}
+    />
+  ) : (
+    <span>
+      {player.user?.name?.[0]?.toUpperCase() ||
+        player.name?.[0]?.toUpperCase() ||
+        "?"}
+    </span>
+  )}
+</div>
+
 
                       {/* Name + Code */}
                       <div>
@@ -743,41 +748,44 @@ const handleEditTeam = (team: any) => {
               </div>
 
               {/* Player Photo */}
-              <div className="mt-8">
-                <h4 className="text-lg font-semibold mb-2">Player Photo</h4>
-                {selectedPlayer.user?.profileImage ? (
-                  <img
-                    src={selectedPlayer.user.profileImage}
-                    alt="Player"
-                    className="w-full max-w-sm rounded-lg border shadow-md cursor-pointer hover:scale-105 transition"
-                    onClick={() => setZoomedImage(selectedPlayer.user.profileImage)}
-                  />
-                ) : (
-                  <div className="w-full max-w-sm h-48 flex items-center justify-center border border-dashed rounded-lg text-sm text-muted-foreground bg-gray-100">
-                    No photo uploaded
-                  </div>
-                )}
-              </div>
+<div className="mt-8">
+  <h4 className="text-lg font-semibold mb-2">Player Photo</h4>
+  {selectedPlayer.user?.profileImage ? (
+    <img
+      src={getImageUrl(selectedPlayer.user.profileImage)}
+      alt={selectedPlayer.user?.name || "Player"}
+      className="w-full max-w-sm rounded-lg border shadow-md cursor-pointer hover:scale-105 transition"
+      onClick={() => setZoomedImage(getImageUrl(selectedPlayer.user.profileImage))}
+      onError={(e) => (e.currentTarget.src = "/default-avatar.png")}
+    />
+  ) : (
+    <div className="w-full max-w-sm h-48 flex items-center justify-center border border-dashed rounded-lg text-sm text-muted-foreground bg-gray-100">
+      No photo uploaded
+    </div>
+  )}
+</div>
 
-              {/* Documents */}
-              <div className="mt-8">
-                <h4 className="text-lg font-semibold mb-2">Documents</h4>
-                {selectedPlayer.user?.documents?.length > 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {selectedPlayer.user.documents.map((doc: string, idx: number) => (
-                      <img
-                        key={idx}
-                        src={doc}
-                        alt={`Document ${idx + 1}`}
-                        className="w-full h-32 object-cover rounded shadow cursor-pointer hover:scale-105 transition"
-                        onClick={() => setZoomedImage(doc)}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-sm text-muted-foreground">No documents uploaded.</div>
-                )}
-              </div>
+{/* Documents */}
+<div className="mt-8">
+  <h4 className="text-lg font-semibold mb-2">Documents</h4>
+  {selectedPlayer.user?.documents?.length > 0 ? (
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      {selectedPlayer.user.documents.map((doc: any, idx: number) => (
+        <img
+          key={idx}
+          src={getImageUrl(doc)}
+          alt={`Document ${idx + 1}`}
+          className="w-full h-32 object-cover rounded shadow cursor-pointer hover:scale-105 transition"
+          onClick={() => setZoomedImage(getImageUrl(doc))}
+          onError={(e) => (e.currentTarget.src = "/default-image.png")}
+        />
+      ))}
+    </div>
+  ) : (
+    <div className="text-sm text-muted-foreground">No documents uploaded.</div>
+  )}
+</div>
+
 
               {/* Admin Actions */}
               <div className="mt-8 flex justify-end gap-3">
@@ -825,61 +833,44 @@ const handleEditTeam = (team: any) => {
         )}
 
 
-  {/* Payment Receipt */}
-<div className="mt-8">
+  <div className="mt-8">
   <h3 className="text-lg font-semibold mb-2">Payment Receipt</h3>
 
   {selectedTeam.paymentReceipt ? (
     (() => {
-      // ✅ Always resolve to a usable string URL
-      let receiptUrl = "";
+      const receiptUrl = getImageUrl(selectedTeam.paymentReceipt);
 
-      if (typeof selectedTeam.paymentReceipt === "string") {
-        receiptUrl = selectedTeam.paymentReceipt;
-      } else if (
-        selectedTeam.paymentReceipt &&
-        (selectedTeam.paymentReceipt.secure_url || selectedTeam.paymentReceipt.url)
-      ) {
-        receiptUrl =
-          selectedTeam.paymentReceipt.secure_url ||
-          selectedTeam.paymentReceipt.url;
-      }
-
-      const displayUrl = receiptUrl.startsWith("http")
-        ? receiptUrl
-        : `${BASE_URL}/${receiptUrl.replace(/\\/g, "/")}`;
+      if (!receiptUrl)
+        return (
+          <div className="w-48 h-48 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center text-slate-400 text-sm bg-gray-50">
+            <ImageIcon size={24} /> Invalid or missing receipt
+          </div>
+        );
 
       return (
         <div
           className="relative w-48 h-48 border-2 border-dashed border-slate-300 rounded-lg overflow-hidden cursor-pointer group"
-          onClick={() => setZoomedImage(displayUrl)}
+          onClick={() => setZoomedImage(receiptUrl)}
         >
           <img
-            src={displayUrl}
+            src={receiptUrl}
             alt="Payment Receipt"
             className="w-full h-full object-contain p-2 transition-transform group-hover:scale-105"
-            onError={(e) => {
-              e.currentTarget.src = "/default-image.png";
-            }}
+            onError={(e) => (e.currentTarget.src = "/default-image.png")}
           />
-
-          {/* Hover overlay */}
           <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
-            <ZoomIn
-              className="text-white opacity-0 group-hover:opacity-100 transition-opacity"
-              size={24}
-            />
+            <ZoomIn className="text-white opacity-0 group-hover:opacity-100 transition-opacity" size={24} />
           </div>
         </div>
       );
     })()
   ) : (
     <div className="w-48 h-48 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center text-slate-400 text-sm bg-gray-50">
-      <ImageIcon size={24} />
-      No receipt uploaded
+      <ImageIcon size={24} /> No receipt uploaded
     </div>
   )}
 </div>
+
 
 
 
@@ -1020,73 +1011,87 @@ const handleEditTeam = (team: any) => {
 
             {/* Team Logo */}
             <div className="mt-6">
-              <Label className="block mb-2" htmlFor="teamLogo">Team Logo</Label>
-              <div className="flex items-center gap-4">
-                {editableTeam.teamLogo && (
-                  <img
-                    src={
-                      typeof editableTeam.teamLogo === 'string'
-                        ? editableTeam.teamLogo.startsWith('data:')
-                          ? editableTeam.teamLogo
-                          : `${BASE_URL}/${editableTeam.teamLogo.replace(/\\\\/g, '/').replace(/\\/g, '/')}`
-                        : ''
-                    }
-                    alt="Team Logo"
-                    className="w-20 h-20 rounded-lg border object-cover"
-                  />
-                )}
-                <Input
-                  type="file"
-                  id="teamLogo"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    const reader = new FileReader();
-                    reader.onload = () => {
-                      setEditableTeam({ ...editableTeam, teamLogo: reader.result as string });
-                    };
-                    reader.readAsDataURL(file);
-                    setLogoFile(file);
-                  }}
-                />
-              </div>
-            </div>
+  <Label className="block mb-2" htmlFor="teamLogo">Team Logo</Label>
+  <div className="flex items-center gap-4">
+    {editableTeam.teamLogo && (
+      <img
+        src={
+          typeof editableTeam.teamLogo === "string"
+            ? editableTeam.teamLogo.startsWith("data:")
+              ? editableTeam.teamLogo
+              : `${BASE_URL}/${editableTeam.teamLogo.replace(/\\/g, "/")}`
+            : editableTeam.teamLogo?.secure_url ||
+              editableTeam.teamLogo?.url ||
+              ""
+        }
+        alt="Team Logo"
+        className="w-20 h-20 rounded-lg border object-cover"
+        onError={(e) => (e.currentTarget.src = "/default-logo.png")}
+      />
+    )}
+    <Input
+      type="file"
+      id="teamLogo"
+      accept="image/*"
+      onChange={(e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          setEditableTeam({
+            ...editableTeam,
+            teamLogo: reader.result as string,
+          });
+        };
+        reader.readAsDataURL(file);
+        setLogoFile(file);
+      }}
+    />
+  </div>
+</div>
+
 
             {/* Payment Receipt */}
             <div className="mt-6">
-              <Label className="block mb-2" htmlFor="paymentReceipt">Payment Receipt</Label>
-              <div className="flex items-center gap-4">
-                {editableTeam.paymentReceipt && (
-                  <img
-                    src={
-                      typeof editableTeam.paymentReceipt === 'string'
-                        ? editableTeam.paymentReceipt.startsWith('data:')
-                          ? editableTeam.paymentReceipt
-                          : `${BASE_URL}/${editableTeam.paymentReceipt.replace(/\\/g, '/')}`
-                        : ''
-                    }
-                    alt="Receipt"
-                    className="w-20 h-20 rounded-lg border object-cover"
-                  />
-                )}
-                <Input
-                  type="file"
-                  id="paymentReceipt"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    const reader = new FileReader();
-                    reader.onload = () => {
-                      setEditableTeam({ ...editableTeam, paymentReceipt: reader.result as string });
-                    };
-                    reader.readAsDataURL(file);
-                    setReceiptFile(file);
-                  }}
-                />
-              </div>
-            </div>
+  <Label className="block mb-2" htmlFor="paymentReceipt">Payment Receipt</Label>
+  <div className="flex items-center gap-4">
+    {editableTeam.paymentReceipt && (
+      <img
+        src={
+          typeof editableTeam.paymentReceipt === "string"
+            ? editableTeam.paymentReceipt.startsWith("data:")
+              ? editableTeam.paymentReceipt
+              : `${BASE_URL}/${editableTeam.paymentReceipt.replace(/\\/g, "/")}`
+            : editableTeam.paymentReceipt?.secure_url ||
+              editableTeam.paymentReceipt?.url ||
+              ""
+        }
+        alt="Receipt"
+        className="w-20 h-20 rounded-lg border object-cover"
+        onError={(e) => (e.currentTarget.src = "/default-image.png")}
+      />
+    )}
+    <Input
+      type="file"
+      id="paymentReceipt"
+      accept="image/*"
+      onChange={(e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          setEditableTeam({
+            ...editableTeam,
+            paymentReceipt: reader.result as string,
+          });
+        };
+        reader.readAsDataURL(file);
+        setReceiptFile(file);
+      }}
+    />
+  </div>
+</div>
+
 
             {/* Squad Details */}
             <div className="mt-8">
