@@ -65,26 +65,58 @@ exports.deleteAlbum = async (req, res) => {
 
 // ========== IMAGE HANDLERS ==========
 
-// Upload multiple images
 exports.uploadImages = async (req, res) => {
   try {
     const { title, albumId, tags } = req.body;
     const files = req.files || [];
-    const tagArray = tags ? tags.split(",").map((t) => t.trim()) : [];
 
+    console.log("Received files:", files);
+    if (!files.length) {
+      return res.status(400).json({ message: "No files uploaded" });
+    }
+
+    const tagArray = tags ? tags.split(",").map((t) => t.trim()) : [];
     const savedImages = [];
 
     for (const file of files) {
-      const uploaded = await uploadFileToCloudinary(file.path, "gallery");
-      const image = new GalleryImage({
-        title,
-        album: new mongoose.Types.ObjectId(albumId),
-        tags: tagArray,
-        url: uploaded.url,
-        public_id: uploaded.public_id,
+      let uploaded;
+      try {
+        uploaded = await uploadFileToCloudinary(file.path, "gallery");
+        console.log("Cloudinary upload result:", uploaded);
+      } catch (err) {
+        console.error("❌ Cloudinary upload failed for file:", file.originalname, err);
+        continue; // skip this file but continue with others
+      }
+
+      if (!uploaded || !uploaded.url || !uploaded.public_id) {
+        console.warn(
+          "Skipped file because upload did not return url/public_id:",
+          file.originalname
+        );
+        continue;
+      }
+
+      try {
+        const image = new GalleryImage({
+          title,
+          album: new mongoose.Types.ObjectId(albumId),
+          tags: tagArray,
+          url: uploaded.url,
+          public_id: uploaded.public_id,
+        });
+
+        await image.save();
+        savedImages.push(image);
+        console.log("Saved image to DB:", image._id);
+      } catch (err) {
+        console.error("❌ Failed to save image to DB for file:", file.originalname, err);
+      }
+    }
+
+    if (!savedImages.length) {
+      return res.status(500).json({
+        message: "No images were uploaded successfully",
       });
-      await image.save();
-      savedImages.push(image);
     }
 
     res.status(201).json({
@@ -96,6 +128,7 @@ exports.uploadImages = async (req, res) => {
     res.status(500).json({ message: "Failed to upload images" });
   }
 };
+
 
 // Get images with filters
 exports.getImages = async (req, res) => {
