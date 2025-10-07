@@ -3,7 +3,18 @@ const Album = require("../models/Album");
 const GalleryImage = require("../models/galleryImage");
 const { uploadFileToCloudinary, destroyPublicId } = require("../utils/cloudinaryService");
 
-// ========== ALBUM HANDLERS ==========
+// ==================== Helper ====================
+const normalizeImage = (imgDoc) => {
+  if (!imgDoc) return null;
+  const obj = imgDoc.toObject ? imgDoc.toObject() : imgDoc;
+  return {
+    ...obj,
+    url: obj.image?.url || obj.url || "",
+    public_id: obj.image?.public_id || obj.public_id || "",
+  };
+};
+
+// ==================== ALBUM HANDLERS ====================
 
 // Create album
 exports.createAlbum = async (req, res) => {
@@ -46,10 +57,10 @@ exports.deleteAlbum = async (req, res) => {
   try {
     const images = await GalleryImage.find({ album: req.params.id });
 
-    // ✅ Delete images from Cloudinary
+    // Delete images from Cloudinary
     for (const image of images) {
-      if (image.public_id) {
-        await destroyPublicId(image.public_id);
+      if (image.image?.public_id) {
+        await destroyPublicId(image.image.public_id);
       }
     }
 
@@ -63,8 +74,9 @@ exports.deleteAlbum = async (req, res) => {
   }
 };
 
-// ========== IMAGE HANDLERS ==========
+// ==================== IMAGE HANDLERS ====================
 
+// Upload images
 exports.uploadImages = async (req, res) => {
   try {
     const { title, albumId, tags } = req.body;
@@ -81,15 +93,10 @@ exports.uploadImages = async (req, res) => {
     const tagArray = tags ? tags.split(",").map((t) => t.trim()) : [];
     const savedImages = [];
 
-    console.log("Received files:", files);
-
     for (const file of files) {
-      console.log("Uploading file to Cloudinary:", file.originalname);
-
       let uploaded;
       try {
         uploaded = await uploadFileToCloudinary(file.path, "gallery");
-        console.log("Cloudinary upload result:", uploaded);
       } catch (err) {
         console.error(`❌ Cloudinary upload failed for file: ${file.originalname}`, err);
         continue; // skip this file
@@ -108,7 +115,6 @@ exports.uploadImages = async (req, res) => {
 
         await image.save();
         savedImages.push(image);
-        console.log(`✅ Saved image to DB: ${file.originalname}`);
       } catch (err) {
         console.error(`❌ Failed to save image to DB for file: ${file.originalname}`, err);
       }
@@ -120,15 +126,13 @@ exports.uploadImages = async (req, res) => {
 
     res.status(201).json({
       message: `${savedImages.length} image(s) uploaded successfully`,
-      images: savedImages,
+      images: savedImages.map(normalizeImage),
     });
   } catch (err) {
     console.error("❌ Upload failed:", err);
     res.status(500).json({ message: "Failed to upload images" });
   }
 };
-
-
 
 // Get images with filters
 exports.getImages = async (req, res) => {
@@ -158,7 +162,7 @@ exports.getImages = async (req, res) => {
       .limit(parseInt(limit));
 
     const filtered = images.filter((img) => img.album !== null);
-    res.json(filtered);
+    res.json(filtered.map(normalizeImage));
   } catch (err) {
     console.error("❌ Fetch images error:", err);
     res.status(500).json({ message: "Failed to fetch images" });
@@ -173,7 +177,7 @@ exports.updateImage = async (req, res) => {
       req.body,
       { new: true }
     );
-    res.json(updated);
+    res.json(normalizeImage(updated));
   } catch (err) {
     console.error("❌ Update image failed:", err);
     res.status(500).json({ message: "Failed to update image" });
@@ -188,9 +192,9 @@ exports.deleteImage = async (req, res) => {
       return res.status(404).json({ message: "Image not found" });
     }
 
-    // ✅ Delete from Cloudinary
-    if (image.public_id) {
-      await destroyPublicId(image.public_id);
+    // Delete from Cloudinary
+    if (image.image?.public_id) {
+      await destroyPublicId(image.image.public_id);
     }
 
     await GalleryImage.findByIdAndDelete(req.params.id);
@@ -201,9 +205,7 @@ exports.deleteImage = async (req, res) => {
   }
 };
 
-// ========== EXPORT HANDLER ==========
-
-// Instead of downloading from local path, return Cloudinary URL
+// Download image (return Cloudinary URL)
 exports.downloadImage = async (req, res) => {
   try {
     const image = await GalleryImage.findById(req.params.id);
@@ -211,8 +213,7 @@ exports.downloadImage = async (req, res) => {
       return res.status(404).json({ message: "Image not found" });
     }
 
-    // ✅ Cloudinary file — just return the URL
-    res.json({ url: image.url });
+    res.json({ url: image.image?.url || image.url });
   } catch (err) {
     console.error("❌ Download image failed:", err);
     res.status(500).json({ message: "Failed to download image" });
