@@ -354,7 +354,7 @@ const Home = () => {
 
 
       {/* Quick Actions */}
-      <section className="py-16">
+      <section className="py-8">
         <div className="container mx-auto px-4">
           <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-8 text-white">
             <div className="grid md:grid-cols-2 gap-10 items-center">
