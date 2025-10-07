@@ -80,7 +80,7 @@ const Teams = () => {
         setSeasonNumber(currentSeason.seasonNumber);
 
         const teamsRes = await api.get(
-          `/api/teams?seasonId=${currentSeason._id}`,
+          `/teams?seasonId=${currentSeason._id}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         //  console.log("Fetched Teams:", teamsRes.data);
