@@ -162,7 +162,7 @@ useEffect(() => {
     try {
       setLoading(true);
       const token = localStorage.getItem('pplt20_token');
-      const res = await api.get('/groups/schedule', {
+      const res = await api.get('/schedule', {
         headers: { Authorization: `Bearer ${token}` },
       });
       setSchedule(res.data.schedule);
@@ -229,38 +229,44 @@ useEffect(() => {
 
 
   const handleGenerateAll = async () => {
-    try {
-      const token = localStorage.getItem('pplt20_token');
-      if (!schedule?.seasonNumber?._id) return;
+  try {
+    const token = localStorage.getItem("pplt20_token");
+    if (!token) throw new Error("Not authenticated");
+    if (!schedule?.seasonNumber?._id) throw new Error("Season not found");
 
-      // ✅ Generate Groups
-      await api.post(
-        `/groups/generate/${schedule.seasonNumber._id}`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+    console.log("Generating for season:", schedule.seasonNumber._id);
 
-      // ✅ Generate League Matches
-      await api.post(
-        `/groups/generate/league/${schedule.seasonNumber._id}`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      toast({
-        title: "Success",
-        description: "Groups and League Matches generated successfully!",
-      });
-      fetchSchedule();
-      fetchMatches();
-    } catch (err) {
-      console.error('❌ Failed to generate groups or league matches:', err);
-      toast({
-        title: "Error",
-        description: "Failed to generate groups or league matches",
-        variant: "destructive",
-      });
-    }
-  };
+    // Generate Groups
+    await api.post(
+      `/groups/generate/${schedule.seasonNumber._id}`,
+      {},
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    // Generate League Matches
+    await api.post(
+      `/groups/generate/league/${schedule.seasonNumber._id}`,
+      {},
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    toast({
+      title: "✅ Success",
+      description: "Groups and League Matches generated successfully!",
+    });
+
+    await fetchSchedule();
+    await fetchMatches();
+  } catch (err) {
+    console.error("❌ Generation failed:", err.response?.data || err.message);
+    toast({
+      title: "Error",
+      description: err.response?.data?.message || "Failed to generate schedule",
+      variant: "destructive",
+    });
+  }
+};
+
 
 
   const handleDownload = async (type: 'pdf' | 'jpg') => {
@@ -534,54 +540,86 @@ const handleSubmitMatchResult = async () => {
   return (
     <div className="p-6">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-        {/* Title & Subtitle */}
-        <div className="mb-4 sm:mb-6">
-          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-gray-800 flex items-center gap-2">
-            📄 UPPL Season {schedule?.seasonNumber?.seasonNumber} –{" "}
-            {new Date(schedule?.seasonNumber?.entryDeadline).getFullYear()}
-          </h2>
-          <p className="text-xs sm:text-sm md:text-base text-gray-500 mt-1">
-            Entry Deadline:{" "}
-            {new Date(schedule?.seasonNumber?.entryDeadline).toLocaleString()}
-          </p>
-        </div>
+      {/* ======= HEADER SECTION ======= */}
+<div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 border-b border-gray-200 pb-4">
+  {/* Title + Info */}
+  <div className="space-y-1 sm:space-y-2">
+    <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900 flex items-center gap-3">
+      <span className="text-indigo-600 text-3xl sm:text-4xl">🏆</span>
+      <span>
+        UPPL Season{" "}
+        {schedule?.seasonNumber?.seasonNumber ?? (
+          <span className="text-gray-400">N/A</span>
+        )}
+      </span>
+    </h2>
 
+    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-gray-600 text-xs sm:text-sm md:text-base">
+      <p>
+        📅 Year:{" "}
+        {schedule?.seasonNumber?.entryDeadline
+          ? new Date(schedule.seasonNumber.entryDeadline).getFullYear()
+          : "N/A"}
+      </p>
+      <span className="hidden sm:block text-gray-400">|</span>
+      <p>
+        ⏰ Entry Deadline:{" "}
+        {schedule?.seasonNumber?.entryDeadline
+          ? new Date(
+              schedule.seasonNumber.entryDeadline
+            ).toLocaleString("en-GB", {
+              dateStyle: "medium",
+              timeStyle: "short",
+            })
+          : "Not Set"}
+      </p>
+      <span className="hidden sm:block text-gray-400">|</span>
+      <p>
+        🏅 Status:{" "}
+        {schedule?.groups?.length > 0 ? (
+          <span className="text-green-600 font-semibold">Active</span>
+        ) : (
+          <span className="text-gray-500 font-medium">No Schedule Yet</span>
+        )}
+      </p>
+    </div>
+  </div>
 
-        {/* Actions */}
-        <div className="flex flex-col sm:flex-row flex-wrap gap-3 items-center">
-          {user?.role === "super-admin" && (
-            <Button
-              variant="outline"
-              className="flex items-center gap-2 w-full sm:w-auto"
-              onClick={handleGenerateAll}
-            >
-              <RefreshCcw size={16} /> Generate Groups + League Matches
-            </Button>
-          )}
+  {/* Actions */}
+  <div className="flex flex-col sm:flex-row flex-wrap gap-3 items-center">
+    {user?.role === "super-admin" && (
+      <Button
+        variant="outline"
+        className="flex items-center gap-2 w-full sm:w-auto border-indigo-500 text-indigo-700 hover:bg-indigo-50 font-semibold transition"
+        onClick={handleGenerateAll}
+      >
+        <RefreshCcw size={16} /> Generate Schedule
+      </Button>
+    )}
 
-          {/* Download Dropdown */}
-          <div className="relative group w-full sm:w-auto mt-2 sm:mt-0">
-            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 cursor-pointer transition mx-auto sm:mx-0">
-              <DownloadIcon className="w-5 h-5 text-gray-700" />
-            </div>
-            <div className="absolute top-12 right-0 hidden group-hover:flex flex-col bg-white border rounded-lg shadow-lg text-sm min-w-[120px] z-10">
-              <button
-                className="px-4 py-2 hover:bg-gray-100 text-left"
-                onClick={() => handleDownload("jpg")}
-              >
-                Download JPG
-              </button>
-              <button
-                className="px-4 py-2 hover:bg-gray-100 text-left"
-                onClick={() => handleDownload("pdf")}
-              >
-                Download PDF
-              </button>
-            </div>
-          </div>
-        </div>
+    {/* Download Dropdown */}
+    <div className="relative group w-full sm:w-auto mt-2 sm:mt-0">
+      <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 hover:bg-indigo-100 cursor-pointer transition mx-auto sm:mx-0 border border-gray-200 shadow-sm">
+        <DownloadIcon className="w-5 h-5 text-gray-700 group-hover:text-indigo-600" />
       </div>
+      <div className="absolute top-12 right-0 hidden group-hover:flex flex-col bg-white border border-gray-200 rounded-lg shadow-xl text-sm min-w-[140px] z-10">
+        <button
+          className="px-4 py-2 hover:bg-indigo-50 text-left transition"
+          onClick={() => handleDownload("jpg")}
+        >
+          📷 Download JPG
+        </button>
+        <button
+          className="px-4 py-2 hover:bg-indigo-50 text-left transition"
+          onClick={() => handleDownload("pdf")}
+        >
+          📄 Download PDF
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 
       {/* Groups */}
