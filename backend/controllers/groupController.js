@@ -153,9 +153,25 @@ const setScheduleTime = async (req, res) => {
 };
 
 // GET /api/schedule
+// GET /api/groups/schedule
 const getSchedule = async (req, res) => {
   try {
-    const schedule = await GroupSchedule.findOne()
+    console.log("📡 [getSchedule] Request received");
+
+    // ✅ Step 1: Find the current active season
+    const currentSeason = await Season.findOne({ isCurrent: true });
+    if (!currentSeason) {
+      console.warn("⚠️ No current season found in database");
+      return res.status(404).json({
+        success: false,
+        message: "No current season found. Please mark a season as current.",
+      });
+    }
+
+    console.log("📘 [getSchedule] Current season ID:", currentSeason._id);
+
+    // ✅ Step 2: Find the schedule linked to the current season
+    const schedule = await GroupSchedule.findOne({ seasonNumber: currentSeason._id })
       .sort({ createdAt: -1 })
       .populate("seasonNumber")
       .populate({
@@ -164,15 +180,32 @@ const getSchedule = async (req, res) => {
       });
 
     if (!schedule) {
-      return res.status(404).json({ success: false, message: "No schedule found" });
+      console.warn("⚠️ [getSchedule] No schedule found for this season:", currentSeason._id);
+      return res.status(404).json({
+        success: false,
+        message: "No schedule found for the current season",
+        season: currentSeason,
+      });
     }
 
-    res.json({ success: true, schedule });
+    console.log("✅ [getSchedule] Schedule found:", schedule._id);
+
+    return res.json({
+      success: true,
+      message: "Schedule fetched successfully",
+      schedule,
+      season: currentSeason,
+    });
   } catch (err) {
-    console.error("❌ Failed to fetch schedule:", err);
-    res.status(500).json({ success: false, message: "Internal server error" });
+    console.error("❌ [getSchedule] Failed to fetch schedule:", err);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: err.message,
+    });
   }
 };
+
 
 // ================== MATCHES ==================
 
