@@ -18,6 +18,7 @@ function shuffleArray(array) {
 const generateGroups = async (req, res) => {
   try {
     const { seasonId } = req.params;
+    console.log("📩 generateGroups called for seasonId:", seasonId, "by user:", req.user?.id, req.user?.role);
 
     if (!seasonId || !mongoose.Types.ObjectId.isValid(seasonId)) {
       return res.status(400).json({ success: false, message: "Invalid season ID" });
@@ -179,6 +180,7 @@ const getSchedule = async (req, res) => {
 const generateLeagueMatches = async (req, res) => {
   try {
     const { seasonId } = req.params;
+    console.log("📩 generateLeagueMatches called for seasonId:", seasonId, "by user:", req.user?.id, req.user?.role);
 
     let season;
     if (mongoose.Types.ObjectId.isValid(seasonId)) {

@@ -159,19 +159,61 @@ useEffect(() => {
 
 
   const fetchSchedule = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('pplt20_token');
-      const res = await api.get('/schedule', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setSchedule(res.data.schedule);
-    } catch (err) {
-      console.error('❌ Failed to fetch schedule:', err);
-    } finally {
-      setLoading(false);
+  console.log("📡 [fetchSchedule] Starting to fetch schedule...");
+  try {
+    setLoading(true);
+
+    // --- Log what URL will actually be called
+    console.log("🌐 [fetchSchedule] API Base:", api.defaults.baseURL);
+    console.log("🌐 [fetchSchedule] Endpoint: /groups/schedule");
+
+    const res = await api.get("/groups/schedule");
+
+    // --- Log full raw response for inspection
+    console.log("✅ [fetchSchedule] Response received:", res);
+
+    // --- Log key fields to verify structure
+    if (res.data?.success) {
+      console.log("📦 [fetchSchedule] Schedule data:", res.data.schedule);
+    } else {
+      console.warn(
+        "⚠️ [fetchSchedule] Unexpected response structure:",
+        res.data
+      );
     }
-  };
+
+    setSchedule(res.data.schedule);
+  } catch (err: any) {
+    console.error("❌ [fetchSchedule] Failed to fetch schedule:", err);
+
+    // --- Log deeper error details if available
+    if (err.response) {
+      console.error(
+        "❌ [fetchSchedule] Server responded with:",
+        err.response.status,
+        err.response.data
+      );
+    } else if (err.request) {
+      console.error("❌ [fetchSchedule] No response received from server:", err.request);
+    }
+
+    const serverMessage =
+      err?.response?.data?.message ||
+      err?.message ||
+      "Failed to fetch schedule";
+
+    toast({
+      title: "Failed to load schedule",
+      description: serverMessage,
+      variant: "destructive",
+    });
+  } finally {
+    setLoading(false);
+    console.log("🟢 [fetchSchedule] Finished (loading state cleared).");
+  }
+};
+
+
 
   // ✅ Change fetchMatches to exclude playoff/final matches at the source
   const fetchMatches = async () => {
@@ -230,42 +272,52 @@ useEffect(() => {
 
   const handleGenerateAll = async () => {
   try {
-    const token = localStorage.getItem("pplt20_token");
-    if (!token) throw new Error("Not authenticated");
-    if (!schedule?.seasonNumber?._id) throw new Error("Season not found");
+    const token = localStorage.getItem('pplt20_token');
+    if (!token) {
+      toast({ title: "Auth required", description: "Please login as an admin", variant: "destructive" });
+      return;
+    }
+    if (!schedule?.seasonNumber?._id) {
+      toast({ title: "No season", description: "No season selected or schedule missing", variant: "destructive" });
+      return;
+    }
 
-    console.log("Generating for season:", schedule.seasonNumber._id);
+    console.log("⚙️ Generating for season:", schedule.seasonNumber._id);
 
     // Generate Groups
-    await api.post(
+    const res1 = await api.post(
       `/groups/generate/${schedule.seasonNumber._id}`,
       {},
       { headers: { Authorization: `Bearer ${token}` } }
     );
+    console.log("generate groups response:", res1.data);
 
     // Generate League Matches
-    await api.post(
+    const res2 = await api.post(
       `/groups/generate/league/${schedule.seasonNumber._id}`,
       {},
       { headers: { Authorization: `Bearer ${token}` } }
     );
+    console.log("generate league matches response:", res2.data);
 
     toast({
-      title: "✅ Success",
+      title: "Success",
       description: "Groups and League Matches generated successfully!",
     });
 
     await fetchSchedule();
     await fetchMatches();
-  } catch (err) {
-    console.error("❌ Generation failed:", err.response?.data || err.message);
+  } catch (err: any) {
+    console.error('❌ Failed to generate groups or league matches:', err);
+    const serverMessage = err?.response?.data?.message || err?.message || "Unknown error";
     toast({
       title: "Error",
-      description: err.response?.data?.message || "Failed to generate schedule",
+      description: serverMessage,
       variant: "destructive",
     });
   }
 };
+
 
 
 
