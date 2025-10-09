@@ -18,7 +18,13 @@ function shuffleArray(array) {
 const generateGroups = async (req, res) => {
   try {
     const { seasonId } = req.params;
-    console.log("📩 generateGroups called for seasonId:", seasonId, "by user:", req.user?.id, req.user?.role);
+    console.log(
+      "📩 generateGroups called for seasonId:",
+      seasonId,
+      "by user:",
+      req.user?.id,
+      req.user?.role
+    );
 
     if (!seasonId || !mongoose.Types.ObjectId.isValid(seasonId)) {
       return res.status(400).json({ success: false, message: "Invalid season ID" });
@@ -33,7 +39,7 @@ const generateGroups = async (req, res) => {
       .select("_id teamName teamCode")
       .lean();
 
-    if (!teams || teams.length < 2) {
+    if (!teams || teams.length < 4) {
       return res.status(400).json({
         success: false,
         message: "Not enough approved teams to form groups",
@@ -42,33 +48,39 @@ const generateGroups = async (req, res) => {
 
     const shuffled = shuffleArray(teams);
     const groups = [];
-    let groupIndex = 0;
 
-    // Change: group size = 3
-    const GROUP_SIZE = 3;
+    // First group gets 4 teams
+    groups.push({
+      groupName: "A",
+      teams: shuffled.slice(0, 4).map((t) => ({
+        team: t._id,
+        teamName: t.teamName,
+        teamCode: t.teamCode,
+      })),
+    });
 
-    for (let i = 0; i < shuffled.length; i += GROUP_SIZE) {
-      const chunk = shuffled.slice(i, i + GROUP_SIZE);
-      groups.push({
-        groupName: String.fromCharCode(65 + groupIndex), // A, B, C...
-        teams: chunk.map((t) => ({
-          team: t._id,
-          teamName: t.teamName,
-          teamCode: t.teamCode,
-        })),
-      });
-      groupIndex++;
-    }
+    // Remaining teams divided into 3 groups
+    const remainingTeams = shuffled.slice(4);
+    const groupNames = ["B", "C", "D"];
+    const baseSize = Math.floor(remainingTeams.length / 3); // minimum size for each group
+    let extra = remainingTeams.length % 3; // remainder to distribute
 
-    // Fix: if last group has only 1 team, move one from a previous group
-    if (groups.length > 1 && groups[groups.length - 1].teams.length === 1) {
-      for (let i = 0; i < groups.length - 1; i++) {
-        if (groups[i].teams.length > 2) {
-          const moved = groups[i].teams.pop();
-          groups[groups.length - 1].teams.push(moved);
-          break;
-        }
+    let startIndex = 0;
+    for (let i = 0; i < 3; i++) {
+      let size = baseSize + (extra > 0 ? 1 : 0);
+      extra--;
+      const chunk = remainingTeams.slice(startIndex, startIndex + size);
+      if (chunk.length > 0) {
+        groups.push({
+          groupName: groupNames[i],
+          teams: chunk.map((t) => ({
+            team: t._id,
+            teamName: t.teamName,
+            teamCode: t.teamCode,
+          })),
+        });
       }
+      startIndex += size;
     }
 
     // Clear old group schedule
@@ -98,6 +110,7 @@ const generateGroups = async (req, res) => {
     });
   }
 };
+
 
 
 // DELETE /api/groups/season/:seasonId
