@@ -679,13 +679,13 @@ const handleCancelLiveMatch = async () => {
   {/* Actions */}
   <div className="flex flex-col sm:flex-row flex-wrap gap-3 items-center">
     {user?.role === "super-admin" && (
-      <Button
-        variant="outline"
-        className="flex items-center gap-2 w-full sm:w-auto border-indigo-500 text-indigo-700 hover:bg-indigo-50 font-semibold transition"
-        onClick={handleGenerateAll}
-      >
-        <RefreshCcw size={16} /> Generate Schedule
-      </Button>
+      // <Button
+      //   variant="outline"
+      //   className="flex items-center gap-2 w-full sm:w-auto border-indigo-500 text-indigo-700 hover:bg-indigo-50 font-semibold transition"
+      //   onClick={handleGenerateAll}
+      // >
+      //   <RefreshCcw size={16} /> Generate Schedule
+      // </Button>
     )}
 
     {/* Download Dropdown */}
