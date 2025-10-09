@@ -50,6 +50,10 @@ const PointsTable = () => {
   const [loading, setLoading] = useState(true);
   const [teams, setTeams] = useState([]);
   const [matches, setMatches] = useState([]);
+  const [previousRanks, setPreviousRanks] = useState({});
+
+  
+
 
   useEffect(() => {
     const fetchSeasonData = async () => {
@@ -62,6 +66,7 @@ const PointsTable = () => {
         const seasonRes = await fetch('/api/seasons/current', { headers });
         const currentSeason = await seasonRes.json();
         const currentSeasonId = currentSeason?._id || currentSeason?.id || currentSeason?.seasonNumber;
+        
         if (!currentSeasonId) {
           console.warn('No current season found from /api/seasons/current');
           setPointsTable({ groups: {}, all: [] });
@@ -187,11 +192,15 @@ const PointsTable = () => {
         if (finalAll.length === 0 && Array.isArray(normalizedPoints.all) && normalizedPoints.all.length) {
           const normAll = normalizedPoints.all.map((r, idx) => normalizeTeamRow(r, idx));
           const groupsFromAll = {};
-          normAll.forEach((t) => {
-            const g = t.groupName || 'Group';
-            if (!groupsFromAll[g]) groupsFromAll[g] = [];
-            groupsFromAll[g].push(t);
-          });
+normAll.forEach((t) => {
+  let g = t.groupName?.trim();
+  if (!g || g.toLowerCase() === 'group' || g.toLowerCase() === 'ungrouped') {
+    g = 'Ungrouped';
+  }
+  if (!groupsFromAll[g]) groupsFromAll[g] = [];
+  groupsFromAll[g].push(t);
+});
+
           Object.keys(groupsFromAll).forEach((g) => {
             groupsFromAll[g].sort((a, b) => {
               if ((a.position || 0) !== (b.position || 0)) return (a.position || 0) - (b.position || 0);
@@ -328,7 +337,10 @@ const PointsTable = () => {
             <CardHeader className="bg-gray-100 border-b">
               <CardTitle className="flex items-center">
                 <Trophy className="h-5 w-5 mr-2 text-yellow-500" />
-                Group {groupName} - Standings
+                {groupName === 'Ungrouped'
+  ? 'Ungrouped Teams - Standings'
+  : `Group ${groupName} - Standings`}
+
               </CardTitle>
             </CardHeader>
             <CardContent>
