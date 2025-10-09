@@ -24,6 +24,12 @@ const teamsInfo = {
 // ✅ New function to handle team logo/profile image
 function getProfileImageUrl(path) {
   if (!path) return `${BASE_URL}/favicon.png`;
+
+  // 🧠 Handle Cloudinary-style objects
+  if (typeof path === "object" && path.url) return path.url;
+
+  if (typeof path !== "string") return `${BASE_URL}/favicon.png`;
+
   if (path.startsWith("http")) return path;
 
   let cleanPath = path
@@ -35,6 +41,7 @@ function getProfileImageUrl(path) {
   if (!cleanPath.startsWith("/")) cleanPath = "/" + cleanPath;
   return `${BASE_URL}${cleanPath}`;
 }
+
 
 // Types are loose here to keep the file as plain JS-friendly; but shape normalization is done below.
 const PointsTable = () => {

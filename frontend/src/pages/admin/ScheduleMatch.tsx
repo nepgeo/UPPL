@@ -588,6 +588,45 @@ const handleSubmitMatchResult = async () => {
     }
   }, [schedule]);
 
+  // ✅ Helper to safely get image URL
+const getImageUrl = (image: any): string => {
+  if (!image) return "/default-logo.png";
+  if (typeof image === "string") return image;
+  return image.url || image.secure_url || "/default-logo.png";
+};
+
+// ✅ Cancel a live match (mark it as upcoming again)
+const handleCancelLiveMatch = async () => {
+  if (!selectedMatch) return;
+
+  try {
+    const token = localStorage.getItem("pplt20_token");
+    await api.patch(
+      `/matches/${selectedMatch._id}`,
+      { result: "upcoming" },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    toast({
+      title: "Match Cancelled",
+      description: "This match has been moved back to Upcoming.",
+      variant: "default",
+    });
+
+    setCompleteDialogOpen(false);
+    fetchMatches();
+  } catch (err) {
+    console.error("❌ Failed to cancel live match:", err);
+    toast({
+      title: "Error",
+      description: "Unable to cancel match.",
+      variant: "destructive",
+    });
+  }
+};
+
+
+
 
   return (
     <div className="p-6">
@@ -831,7 +870,7 @@ const handleSubmitMatchResult = async () => {
                         <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-full overflow-hidden border-2 md:border-4 border-white shadow-lg transition-transform duration-300 group-hover:scale-105">
                           {match.teamA.teamLogo ? (
                             <img
-                              src={match.teamA.teamLogo}
+                              src={getImageUrl(match.teamA.teamLogo)}
                               alt="Team A Logo"
                               className="w-full h-full object-cover"
                             />
@@ -880,7 +919,7 @@ const handleSubmitMatchResult = async () => {
                         <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-full overflow-hidden border-2 md:border-4 border-white shadow-lg transition-transform duration-300 group-hover:scale-105">
                           {match.teamB.teamLogo ? (
                             <img
-                              src={match.teamB.teamLogo}
+                              src={getImageUrl(match.teamB.teamLogo)}
                               alt="Team B Logo"
                               className="w-full h-full object-cover"
                             />
@@ -1221,12 +1260,22 @@ const handleSubmitMatchResult = async () => {
               </select>
             </div>
 
-            <Button
-              onClick={handleSubmitMatchResult}
-              className="w-full bg-green-700 hover:bg-green-800 text-white"
-            >
-              ✅ Confirm & Complete
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-3 mt-4">
+              <Button
+                onClick={handleCancelLiveMatch}
+                className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white"
+              >
+                ❌ Cancel Live
+              </Button>
+
+              <Button
+                onClick={handleSubmitMatchResult}
+                className="w-full sm:w-auto bg-green-700 hover:bg-green-800 text-white"
+              >
+                ✅ Confirm & Complete
+              </Button>
+            </div>
+
           </DialogContent>
       </Dialog>
 

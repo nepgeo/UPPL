@@ -213,6 +213,27 @@ const Schedule = () => {
     m.stage.toLowerCase().includes("final")
   );
 
+  function getProfileImageUrl(path) {
+  if (!path) return `${BASE_URL}/favicon.png`;
+
+  // 🧠 Handle Cloudinary-style objects
+  if (typeof path === "object" && path.url) return path.url;
+
+  if (typeof path !== "string") return `${BASE_URL}/favicon.png`;
+
+  if (path.startsWith("http")) return path;
+
+  let cleanPath = path
+    .replace(/\\/g, "/")
+    .replace(/\/+/g, "/")
+    .replace(/^\/uploads\/uploads\//, "/uploads/")
+    .replace(/^uploads\//, "/uploads/");
+
+  if (!cleanPath.startsWith("/")) cleanPath = "/" + cleanPath;
+  return `${BASE_URL}${cleanPath}`;
+}
+
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -400,7 +421,7 @@ const Schedule = () => {
                           <DialogTrigger asChild>
                             <div className="text-center group cursor-pointer">
                               <img
-                                src={match.teamA?.teamLogo}
+                                src={getProfileImageUrl(match.teamA?.teamLogo)}
                                 alt={match.teamA?.teamName}
                                 className="w-12 h-12 sm:w-16 sm:h-16 rounded-full mx-auto shadow-lg"
                               />
@@ -451,7 +472,7 @@ const Schedule = () => {
                             <div className="text-center group cursor-pointer">
                               {match.teamB?.teamLogo && (
                                 <img
-                                  src={match.teamB.teamLogo}
+                                  src={getProfileImageUrl(match.teamB?.teamLogo)}
                                   alt={match.teamB.teamName}
                                   className="w-12 h-12 sm:w-16 sm:h-16 rounded-full mx-auto shadow-lg"
                                 />
@@ -613,7 +634,7 @@ const Schedule = () => {
                                     >
                                       {team.teamLogo && (
                                         <img
-                                          src={team.teamLogo}
+                                          src={getProfileImageUrl(team.teamLogo)}
                                           alt={team.teamName}
                                           className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-full mb-1 sm:mb-2"
                                         />
