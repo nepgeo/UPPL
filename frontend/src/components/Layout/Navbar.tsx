@@ -82,7 +82,7 @@ useEffect(() => {
     }
   }, [user]);
 
-  const location = useLocation();
+  
 
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [passwordData, setPasswordData] = useState({
