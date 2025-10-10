@@ -33,6 +33,8 @@ interface FormDataType {
 
 
 const Navbar = () => {
+  const location = useLocation();
+
   const [isOpen, setIsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -54,6 +56,18 @@ const Navbar = () => {
     documents: [],
     playerCode: user?.playerCode || "", // Initialize player code
   });
+
+  useEffect(() => {
+  // Auto-close menu when route changes
+  setIsOpen(false);
+}, [location.pathname]);
+
+// Prevent background scroll when menu is open
+useEffect(() => {
+  if (isOpen) document.body.style.overflow = "hidden";
+  else document.body.style.overflow = "";
+}, [isOpen]);
+
 
   useEffect(() => {
     if (user) {
@@ -343,116 +357,108 @@ const Navbar = () => {
 
         {/* Mobile Navigation */}
         <AnimatePresence>
-          {isOpen && (
-            <>
-              {/* 🔹 Overlay */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 0.5 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="fixed inset-0 bg-black z-40"
-                onClick={() => setIsOpen(false)} // close when clicking outside
-              />
+  {isOpen && (
+    <>
+      {/* Overlay */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.5 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.3 }}
+        className="fixed inset-0 bg-black z-40"
+        onClick={() => setIsOpen(false)}
+      />
 
-              {/* 🔹 Sidebar Drawer (Right Side) */}
-              <motion.div
-                initial={{ x: "100%" }}
-                animate={{ x: 0 }}
-                exit={{ x: "100%" }}
-                transition={{ duration: 0.35, ease: "easeInOut" }}
-                className="fixed inset-y-0 right-0 z-50 w-72 md:w-96 
-                          bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 
-                          text-white shadow-2xl flex flex-col"
+      {/* Sidebar Drawer */}
+      <motion.div
+        initial={{ x: "100%" }}
+        animate={{ x: 0 }}
+        exit={{ x: "100%" }}
+        transition={{ duration: 0.35, ease: "easeInOut" }}
+        className="fixed inset-y-0 right-0 z-50 w-[85%] sm:w-80 md:w-96 
+                   bg-gradient-to-br from-blue-700 via-purple-700 to-pink-600 
+                   text-white shadow-2xl flex flex-col rounded-l-2xl"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-white/20 sticky top-0 bg-gradient-to-br from-blue-700 via-purple-700 to-pink-600 z-50">
+          <h2 className="text-lg font-bold tracking-wide">Menu</h2>
+          <button
+            onClick={() => setIsOpen(false)}
+            className="hover:scale-110 transition"
+          >
+            <X className="h-6 w-6" />
+          </button>
+        </div>
+
+        {/* Links */}
+        <div className="flex-1 overflow-y-auto px-4 py-6 space-y-5">
+          <nav className="space-y-2">
+            {publicLinks.map((link) => (
+              <Link
+                key={link.path}
+                to={link.path}
+                onClick={() => setIsOpen(false)}
+                className={`block px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+                  isActive(link.path)
+                    ? "bg-white text-blue-700 shadow-md"
+                    : "hover:bg-white/20 hover:translate-x-2"
+                }`}
               >
-                {/* Header with Close Button (sticky) */}
-                <div className="flex items-center justify-between p-4 border-b border-white/20 sticky top-0 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 z-50">
-                  <h2 className="text-lg font-bold">Menu</h2>
-                  <button
+                {link.name}
+              </Link>
+            ))}
+          </nav>
+
+          {(role === "admin" || role === "super-admin") && (
+            <div className="bg-white/10 rounded-xl p-4 shadow-inner">
+              <p className="text-xs font-semibold uppercase text-yellow-300 mb-3 tracking-wider">
+                Admin Panel
+              </p>
+              <div className="flex flex-col space-y-2">
+                {[
+                  { label: "Overview", tab: "overview" },
+                  { label: "Verifications", tab: "players" },
+                  { label: "Season", tab: "season" },
+                  { label: "Schedule", tab: "schedule" },
+                  { label: "Gallery", tab: "gallery" },
+                  { label: "News", tab: "news" },
+                  { label: "Sponsor", tab: "sponsor" },
+                ].map((item) => (
+                  <Link
+                    key={item.tab}
+                    to={`/admin?tab=${item.tab}`}
                     onClick={() => setIsOpen(false)}
-                    className="hover:scale-110 transition"
+                    className="px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 transition"
                   >
-                    <X className="h-6 w-6" />
-                  </button>
-                </div>
-
-                {/* Scrollable Content */}
-                <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6 custom-scrollbar">
-                  {/* Public Links */}
-                  <nav className="space-y-2">
-                    {publicLinks.map((link) => (
-                      <Link
-                        key={link.path}
-                        to={link.path}
-                        onClick={() => setIsOpen(false)}
-                        className={`block px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
-                          isActive(link.path)
-                            ? "bg-white text-blue-700 shadow-md"
-                            : "hover:bg-white/20 hover:translate-x-2"
-                        }`}
-                      >
-                        {link.name}
-                      </Link>
-                    ))}
-                  </nav>
-
-                  {/* Admin Dashboard Section */}
-                  {(role === "admin" || role === "super-admin") && (
-                    <div className="bg-white/10 rounded-xl p-4 shadow-inner">
-                      <p className="text-xs font-semibold uppercase text-yellow-300 mb-3 tracking-wider">
-                        Admin Dashboard
-                      </p>
-                      <div className="flex flex-col space-y-2">
-                        <Link
-                          to="/admin?tab=overview"
-                          onClick={() => setIsOpen(false)}
-                          className="px-4 py-2 rounded-lg bg-gradient-to-r from-yellow-400 to-orange-500 text-black font-semibold hover:scale-105 transition"
-                        >
-                          Overview
-                        </Link>
-                        <Link to="/admin?tab=players" onClick={() => setIsOpen(false)} className="px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 transition">
-                          Verifications
-                        </Link>
-                        <Link to="/admin?tab=season" onClick={() => setIsOpen(false)} className="px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 transition">
-                          Season
-                        </Link>
-                        <Link to="/admin?tab=schedule" onClick={() => setIsOpen(false)} className="px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 transition">
-                          Schedule
-                        </Link>
-                        <Link to="/admin?tab=gallery" onClick={() => setIsOpen(false)} className="px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 transition">
-                          Gallery
-                        </Link>
-                        <Link to="/admin?tab=news" onClick={() => setIsOpen(false)} className="px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 transition">
-                          News
-                        </Link>
-                        <Link to="/admin?tab=sponsor" onClick={() => setIsOpen(false)} className="px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 transition">
-                          Sponsor
-                        </Link>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* User Info + Logout */}
-                {user && (
-                  <div className="border-t border-white/20 p-4">
-                    <p className="text-sm font-medium mb-2">
-                      Logged in as <span className="font-bold">{user?.name}</span>
-                    </p>
-                    <Button
-                      onClick={logout}
-                      variant="outline"
-                      size="sm"
-                      className="w-full bg-white text-red-600 font-semibold rounded-lg hover:bg-red-500 hover:text-white transition"
-                    >
-                      Logout
-                    </Button>
-                  </div>
-                )}
-              </motion.div>
-            </>
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
           )}
-        </AnimatePresence>
+        </div>
+
+        {/* Footer with user/logout */}
+        {user && (
+          <div className="border-t border-white/20 p-4 space-y-3">
+            <p className="text-sm font-medium">
+              Logged in as <span className="font-bold">{user?.name}</span>
+            </p>
+            <Button
+              onClick={logout}
+              variant="outline"
+              size="sm"
+              className="w-full bg-white text-red-600 font-semibold rounded-lg hover:bg-red-500 hover:text-white transition"
+            >
+              Logout
+            </Button>
+          </div>
+        )}
+      </motion.div>
+    </>
+  )}
+</AnimatePresence>
+
       </div>
 
       {/* Profile Dialog */}

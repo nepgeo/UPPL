@@ -26,14 +26,7 @@ router.patch(
   ]),
   adminController.updateUser
 );
-router.patch(
-  '/users/:id',
-  upload.fields([
-    { name: 'profileImage', maxCount: 1 },
-    { name: 'documents', maxCount: 5 },
-  ]),
-  adminController.updateUser
-);
+
 router.delete('/users/:id', adminController.deleteUser);
 
 

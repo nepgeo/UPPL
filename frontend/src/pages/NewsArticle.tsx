@@ -167,9 +167,11 @@ const NewsArticle = () => {
           <img
             src={zoomedImage}
             alt="Zoomed"
-            className="max-w-5xl max-h-[90vh] object-contain rounded-lg shadow-lg"
+            className="w-auto h-auto max-w-[95vw] max-h-[95vh] object-contain rounded-lg shadow-lg"
+            style={{ objectPosition: "center" }}
             onClick={(e) => e.stopPropagation()}
           />
+
         </div>
       )}
     </>
