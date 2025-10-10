@@ -190,7 +190,7 @@ const News = () => {
                       <img
                         src={article.images?.[0]?.url || '/placeholder.svg'}
                         alt={article.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                        className="w-full h-full object-contain bg-black/5 object-center group-hover:scale-105 transition-transform duration-200"
                       />
                     </div>
                     <CardContent className="p-6">
@@ -241,12 +241,12 @@ const News = () => {
                 className="group hover:shadow-lg transition-shadow cursor-pointer"
               >
                 <Link to={`/news/${article._id}`}>
-                  <div className="aspect-video bg-gray-200 rounded-t-lg overflow-hidden">
+                  <div className="aspect-video bg-black flex items-center justify-center overflow-hidden rounded-t-lg">
                     <img
                       src={getArticleImageUrl(article.images?.[0])}
                       alt={article.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                    />
+                      className="max-w-full max-h-full object-contain transition-transform duration-200 group-hover:scale-105"
+                  />
                   </div>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-2">

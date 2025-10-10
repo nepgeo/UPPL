@@ -139,7 +139,7 @@ const Teams = () => {
             No teams registered for this season.
           </p>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
             {teams.map((team, index) => {
               const logoUrl = getImageUrl(team.teamLogo);
 
@@ -199,7 +199,7 @@ const Teams = () => {
 
       {/* Squad Dialog */}
       <Dialog open={!!selectedTeam} onOpenChange={(o) => !o && setSelectedTeam(null)}>
-        <DialogContent className="w-[90vw] h-[90vh] max-w-none p-0 max-h-screen flex flex-col">
+        <DialogContent className="w-[95vw] sm:w-[90vw] h-[90vh] max-w-none p-0 flex flex-col rounded-xl overflow-hidden">
           {selectedTeam && (
             <>
               {/* Hidden Accessible Title */}
@@ -223,11 +223,11 @@ const Teams = () => {
               <div className="flex-1 overflow-y-auto">
                 {/* Team Info */}
                 <div className="py-4 bg-white px-6">
-                  <h2 className="text-3xl font-bold text-center mb-4">
+                  <h2 className="text-2xl sm:text-3xl font-bold text-center mb-3">
                     {selectedTeam.teamName}
                   </h2>
 
-                  <div className="grid grid-cols-2 gap-6 text-lg text-gray-800 p-6 bg-gray-50 rounded-lg shadow-sm mt-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 text-sm sm:text-lg text-gray-800 p-4 sm:p-6 bg-gray-50 rounded-lg shadow-sm mt-3">
                     <div className="space-y-3">
                       <p className="flex items-center gap-2">
                         <strong className="text-gray-900">Captain:</strong> {selectedTeam.captainName || "N/A"}
@@ -249,7 +249,7 @@ const Teams = () => {
                 </div>
 
                 {/* Player List */}
-                <div className="p-4 space-y-3">
+                <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
                   {selectedTeam.players?.map((player: any, idx: number) => {
                     const normalizePath = (path: string) => path.replace(/^\/+/, "").replace(/\\/g, "/");
 
@@ -263,13 +263,13 @@ const Teams = () => {
                     return (
                       <div
                         key={idx}
-                        className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-white"
+                        className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg border border-gray-200 bg-white"
                       >
                         {pic ? (
                           <img
                             src={pic}
                             alt={player?.name}
-                            className="w-12 h-12 rounded-full object-cover border"
+                            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border"
                             onError={(e) => {
                               e.currentTarget.onerror = null;
                               e.currentTarget.src = "";
@@ -296,7 +296,7 @@ const Teams = () => {
                         </div>
 
                         {player?.jerseyNumber && (
-                          <span className="text-lg text-gray-800">
+                          <span className="text-sm sm:text-base text-gray-800">
                             Jersey No <strong>#{player.jerseyNumber}</strong>
                           </span>
                         )}

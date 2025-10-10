@@ -17,6 +17,17 @@ const NewsArticle = () => {
   const { articleId } = useParams();
   const [article, setArticle] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [zoomedImage, setZoomedImage] = useState(null);
+
+  useEffect(() => {
+  const handleEsc = (e) => {
+    if (e.key === "Escape") setZoomedImage(null);
+  };
+  window.addEventListener("keydown", handleEsc);
+  return () => window.removeEventListener("keydown", handleEsc);
+}, []);
+
+
 
   useEffect(() => {
     const fetchArticle = async () => {
@@ -118,33 +129,59 @@ const NewsArticle = () => {
 
           {/* Featured Image */}
           {/* Image Carousel */}
-          <div className="mb-8">
-            {article.images && article.images.length > 0 ? (
-              <Swiper
-                modules={[Navigation]}
-                navigation
-                spaceBetween={10}
-                slidesPerView={1}
-                className="rounded-lg overflow-hidden"
-              >
-                {article.images.map((img, index) => (
-                  <SwiperSlide key={index}>
-                    <img
-                      src={typeof img === "string" ? img : img.url}  
-                      alt={`Slide ${index + 1}`}
-                      className="w-full h-96 object-cover"
-                    />
-                  </SwiperSlide>
-                ))}
-              </Swiper>
-            ) : (
-              <img
-                src="/placeholder.svg"
-                alt="No image"
-                className="w-full h-96 object-cover rounded-lg"
-              />
-            )}
-          </div>
+          {/* Image Carousel with Zoom on Click */}
+<div className="mb-8 relative">
+  {article.images && article.images.length > 0 ? (
+    <>
+      <Swiper
+        modules={[Navigation]}
+        navigation
+        spaceBetween={10}
+        slidesPerView={1}
+        className="rounded-lg overflow-hidden"
+      >
+        {article.images.map((img, index) => (
+          <SwiperSlide key={index}>
+            <img
+              src={typeof img === "string" ? img : img.url}
+              alt={`Slide ${index + 1}`}
+              className="w-full h-96 object-cover cursor-zoom-in"
+              onClick={() => setZoomedImage(typeof img === "string" ? img : img.url)}
+            />
+          </SwiperSlide>
+        ))}
+      </Swiper>
+
+      {/* Zoomed Image Modal */}
+      {zoomedImage && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50"
+          onClick={() => setZoomedImage(null)}
+        >
+          <button
+            className="absolute top-5 right-5 text-white text-3xl font-bold z-50"
+            onClick={() => setZoomedImage(null)}
+          >
+            ✕
+          </button>
+          <img
+            src={zoomedImage}
+            alt="Zoomed"
+            className="max-w-5xl max-h-[90vh] object-contain rounded-lg shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
+    </>
+  ) : (
+    <img
+      src="/placeholder.svg"
+      alt="No image"
+      className="w-full h-96 object-cover rounded-lg"
+    />
+  )}
+</div>
+
 
 
           {/* Article Content */}
