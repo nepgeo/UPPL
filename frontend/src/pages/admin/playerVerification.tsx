@@ -19,21 +19,23 @@ import { API_BASE, BASE_URL } from '@/config';
  * Normalize file path into a full URL served by backend static /uploads route.
  * Handles backslashes, duplicate slashes and missing leading slash.
  */
-function getProfileImageUrl(path?: string | null) {
-  if (!path) return `${BASE_URL}/favicon.png`;
+const getProfileImageUrl = (img: any): string => {
+  if (!img) return `${BASE_URL}/favicon.png`;
 
-  if (path.startsWith("http")) return path;
+  // If image is a plain string
+  if (typeof img === "string") {
+    if (img.startsWith("data:")) return img; // base64
+    return `${BASE_URL}/${img.replace(/\\/g, "/")}`; // treat as relative path
+  }
 
-  let cleanPath = path
-    .replace(/\\/g, "/")
-    .replace(/\/+/g, "/")
-    .replace(/^\/uploads\/uploads\//, "/uploads/")
-    .replace(/^uploads\//, "/uploads/");
+  // If image is an object (e.g., from Cloudinary)
+  if (typeof img === "object") {
+    return img.secure_url || img.url || `${BASE_URL}/favicon.png`;
+  }
 
-  if (!cleanPath.startsWith("/")) cleanPath = "/" + cleanPath;
+  return `${BASE_URL}/favicon.png`;
+};
 
-  return `${BASE_URL}${cleanPath}`;
-}
 
 const PlayerVerification = () => {
   const { user } = useAuth();
