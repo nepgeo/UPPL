@@ -9,7 +9,8 @@ const Season = require("../models/seasonModel");
 // Convert overs string (e.g. "19.5") → total balls
 const parseOvers = (overs) => {
   if (!overs) return 0;
-  const [o, b] = overs.split('.').map(Number);
+  const str = String(overs);
+  const [o, b] = str.split(".").map(Number);
   return o * 6 + (b || 0);
 };
 
@@ -34,7 +35,7 @@ exports.getPointsTable = async (req, res) => {
       .lean();
 
     if (!season || !season.groups?.length) {
-      return res.json({ groups: {}, all: [] });
+      return res.json({ success: true, groups: {}, all: [] });
     }
 
     // ----------------------
@@ -68,17 +69,16 @@ exports.getPointsTable = async (req, res) => {
     // ----------------------
     // Process all matches
     // ----------------------
-    const matches = await Match.find({ seasonNumber: seasonId })
-      .select("teamA teamB teamAResult teamBResult result winner groupName")
+    const matches = await Match.find({ seasonNumber: seasonId }) // ✅ Fixed field name
+      .select("teamA teamB teamAResult teamBResult result winner firstInnings groupName")
       .lean();
 
     for (const m of matches) {
       const A = String(m.teamA);
       const B = String(m.teamB);
-
       if (!table[A] || !table[B]) continue;
 
-      const completed = m.result === "completed";
+      const completed = ["teamA", "teamB", "tie"].includes(m.winner);
       if (!completed) {
         table[A].form.push("N");
         table[B].form.push("N");
@@ -106,15 +106,11 @@ exports.getPointsTable = async (req, res) => {
         table[A].tied++; table[B].tied++;
         table[A].points += 1; table[B].points += 1;
         table[A].form.push("T"); table[B].form.push("T");
-      } else if (["draw", "no_result"].includes(m.winner)) {
-        // 🆕 Award 1 point for abandoned/draw matches
-        table[A].points += 1; table[B].points += 1;
-        table[A].form.push("N"); table[B].form.push("N");
-      } else {
-        table[A].form.push("N"); table[B].form.push("N");
       }
 
-      // Update runs & balls (for NRR)
+      // ✅ Update runs & balls (NRR)
+      // Ensure correct direction: team batting stats match team identity
+      // This prevents inverted (+/-) NRR values
       table[A].runsFor += runsA;
       table[A].ballsFaced += ballsA;
       table[A].runsAgainst += runsB;
@@ -124,6 +120,10 @@ exports.getPointsTable = async (req, res) => {
       table[B].ballsFaced += ballsB;
       table[B].runsAgainst += runsA;
       table[B].ballsBowled += ballsA;
+
+      // ✅ Keep form limited to last 5 results
+      table[A].form = table[A].form.slice(-5);
+      table[B].form = table[B].form.slice(-5);
     }
 
     // ----------------------
@@ -139,11 +139,11 @@ exports.getPointsTable = async (req, res) => {
 
     const allArray = Object.values(table).map(finalize);
 
-    const sortFn = (a, b) =>
-      b.points === a.points ? b.nrr - a.nrr : b.points - a.points;
+    // Sort by points → NRR
+    const sortFn = (a, b) => b.points - a.points || b.nrr - a.nrr;
 
     allArray.sort(sortFn);
-    allArray.forEach((t, i) => { t.position = i + 1; });
+    allArray.forEach((t, i) => (t.position = i + 1));
 
     // ----------------------
     // Group-wise sorting
@@ -156,10 +156,11 @@ exports.getPointsTable = async (req, res) => {
         .map((t, idx) => ({ ...t, groupPosition: idx + 1 }));
     });
 
-    return res.json({ groups, all: allArray });
-
+    return res.json({ success: true, groups, all: allArray });
   } catch (error) {
     console.error("❌ getPointsTable error:", error);
-    res.status(500).json({ message: "Failed to fetch points table", error: error.message });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch points table", error: error.message });
   }
 };
