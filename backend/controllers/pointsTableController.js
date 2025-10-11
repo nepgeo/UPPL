@@ -69,7 +69,7 @@ exports.getPointsTable = async (req, res) => {
     // ----------------------
     // Process all matches
     // ----------------------
-    const matches = await Match.find({ seasonNumber: seasonId }) // ✅ Fixed field name
+    const matches = await Match.find({ seasonNumber: seasonId })
       .select("teamA teamB teamAResult teamBResult result winner firstInnings groupName")
       .lean();
 
@@ -85,32 +85,53 @@ exports.getPointsTable = async (req, res) => {
         continue;
       }
 
-      const runsA = m.teamAResult?.runs || 0;
-      const runsB = m.teamBResult?.runs || 0;
-      const ballsA = parseOvers(m.teamAResult?.overs);
-      const ballsB = parseOvers(m.teamBResult?.overs);
+      // ✅ Handle innings alignment to prevent inverted NRR
+      let runsA, runsB, ballsA, ballsB;
+
+      if (m.firstInnings === "teamA") {
+        runsA = m.teamAResult?.runs || 0;
+        ballsA = parseOvers(m.teamAResult?.overs);
+        runsB = m.teamBResult?.runs || 0;
+        ballsB = parseOvers(m.teamBResult?.overs);
+      } else if (m.firstInnings === "teamB") {
+        runsB = m.teamBResult?.runs || 0;
+        ballsB = parseOvers(m.teamBResult?.overs);
+        runsA = m.teamAResult?.runs || 0;
+        ballsA = parseOvers(m.teamAResult?.overs);
+      } else {
+        // fallback
+        runsA = m.teamAResult?.runs || 0;
+        ballsA = parseOvers(m.teamAResult?.overs);
+        runsB = m.teamBResult?.runs || 0;
+        ballsB = parseOvers(m.teamBResult?.overs);
+      }
 
       table[A].matches++;
       table[B].matches++;
 
       // ✅ Update results & points
       if (m.winner === "teamA") {
-        table[A].won++; table[A].points += 2;
+        table[A].won++;
+        table[A].points += 2;
         table[B].lost++;
-        table[A].form.push("W"); table[B].form.push("L");
+        table[A].form.push("W");
+        table[B].form.push("L");
       } else if (m.winner === "teamB") {
-        table[B].won++; table[B].points += 2;
+        table[B].won++;
+        table[B].points += 2;
         table[A].lost++;
-        table[B].form.push("W"); table[A].form.push("L");
+        table[B].form.push("W");
+        table[A].form.push("L");
       } else if (m.winner === "tie") {
-        table[A].tied++; table[B].tied++;
-        table[A].points += 1; table[B].points += 1;
-        table[A].form.push("T"); table[B].form.push("T");
+        table[A].tied++;
+        table[B].tied++;
+        table[A].points += 1;
+        table[B].points += 1;
+        table[A].form.push("T");
+        table[B].form.push("T");
       }
 
       // ✅ Update runs & balls (NRR)
-      // Ensure correct direction: team batting stats match team identity
-      // This prevents inverted (+/-) NRR values
       table[A].runsFor += runsA;
       table[A].ballsFaced += ballsA;
       table[A].runsAgainst += runsB;
@@ -159,8 +180,10 @@ exports.getPointsTable = async (req, res) => {
     return res.json({ success: true, groups, all: allArray });
   } catch (error) {
     console.error("❌ getPointsTable error:", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to fetch points table", error: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch points table",
+      error: error.message,
+    });
   }
 };
