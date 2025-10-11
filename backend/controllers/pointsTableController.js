@@ -8,10 +8,15 @@ const Season = require("../models/seasonModel");
 
 // Convert overs string (e.g. "19.5") → total balls
 const parseOvers = (overs) => {
-  if (!overs) return 0;
+  if (!overs && overs !== 0) return 0;
   const str = String(overs);
-  const [o, b] = str.split(".").map(Number);
-  return o * 6 + (b || 0);
+  // Normalize formats like "20", "20.0", "19.5"
+  const parts = str.split(".");
+  const o = parseInt(parts[0], 10) || 0;
+  const b = parts[1] ? (parseInt(parts[1].slice(0, 2), 10) || 0) : 0;
+  // ensure balls part is not more than 5 (e.g., "19.8" -> treat 8 as 8 balls but clamp to 5 to avoid nonsense)
+  const safeBalls = Math.min(Math.max(b, 0), 5);
+  return o * 6 + safeBalls;
 };
 
 // Calculate Net Run Rate (NRR)
@@ -21,6 +26,12 @@ const calculateNRR = (runsFor, ballsFaced, runsAgainst, ballsBowled) => {
   const oversBowled = ballsBowled / 6;
   if (oversFaced === 0 || oversBowled === 0) return 0;
   return (runsFor / oversFaced) - (runsAgainst / oversBowled);
+};
+
+// Safe division for per-match run-rate (runs / overs)
+const runRate = (runs, balls) => {
+  if (!balls || balls === 0) return 0;
+  return runs / (balls / 6);
 };
 
 // ----------------------
@@ -80,32 +91,45 @@ exports.getPointsTable = async (req, res) => {
 
       const completed = ["teamA", "teamB", "tie"].includes(m.winner);
       if (!completed) {
+        // not completed — mark as N (no result / not played) for both
         table[A].form.push("N");
         table[B].form.push("N");
         continue;
       }
 
-      // ✅ Handle innings alignment to prevent inverted NRR
-      let runsA, runsB, ballsA, ballsB;
+      // Read raw stored match stats
+      let runsA = m.teamAResult?.runs ?? 0;
+      let runsB = m.teamBResult?.runs ?? 0;
+      let ballsA = parseOvers(m.teamAResult?.overs ?? "0");
+      let ballsB = parseOvers(m.teamBResult?.overs ?? "0");
 
-      if (m.firstInnings === "teamA") {
-        runsA = m.teamAResult?.runs || 0;
-        ballsA = parseOvers(m.teamAResult?.overs);
-        runsB = m.teamBResult?.runs || 0;
-        ballsB = parseOvers(m.teamBResult?.overs);
-      } else if (m.firstInnings === "teamB") {
-        runsB = m.teamBResult?.runs || 0;
-        ballsB = parseOvers(m.teamBResult?.overs);
-        runsA = m.teamAResult?.runs || 0;
-        ballsA = parseOvers(m.teamAResult?.overs);
-      } else {
-        // fallback
-        runsA = m.teamAResult?.runs || 0;
-        ballsA = parseOvers(m.teamAResult?.overs);
-        runsB = m.teamBResult?.runs || 0;
-        ballsB = parseOvers(m.teamBResult?.overs);
+      // -----------------------------
+      // Auto-detect inversion fallback:
+      // Determine per-match run-rate from stored stats.
+      // If the per-match run-rate sign is inconsistent with declared winner,
+      // we assume the stored results are innings-ordered and not team-ordered,
+      // so we swap A/B for this match before accumulating.
+      // -----------------------------
+      const rrA = runRate(runsA, ballsA);
+      const rrB = runRate(runsB, ballsB);
+      const matchRRdiffA = rrA - rrB; // positive means A outscored B in run-rate in this match
+
+      // If winner is teamA but their match run-rate < opponent's, that's suspicious -> swap
+      // If winner is teamB but their match run-rate < opponent's, that's suspicious -> swap
+      // For tie we don't swap.
+      if (m.winner === "teamA" && matchRRdiffA < 0) {
+        // swap A/B values for this match
+        [runsA, runsB] = [runsB, runsA];
+        [ballsA, ballsB] = [ballsB, ballsA];
+      } else if (m.winner === "teamB" && matchRRdiffA > 0) {
+        // A's run-rate is higher but winner says teamB -> swap
+        [runsA, runsB] = [runsB, runsA];
+        [ballsA, ballsB] = [ballsB, ballsA];
       }
+      // Note: this is a heuristic fallback — it handles the common "stored by innings" mismatch.
+      // If you have edge cases where winner legitimately has lower run-rate in a match, consider storing explicit 'firstInnings' in match docs.
 
+      // Update match counts
       table[A].matches++;
       table[B].matches++;
 
@@ -129,9 +153,17 @@ exports.getPointsTable = async (req, res) => {
         table[B].points += 1;
         table[A].form.push("T");
         table[B].form.push("T");
+      } else if (["draw", "no_result"].includes(m.winner)) {
+        table[A].points += 1;
+        table[B].points += 1;
+        table[A].form.push("N");
+        table[B].form.push("N");
+      } else {
+        table[A].form.push("N");
+        table[B].form.push("N");
       }
 
-      // ✅ Update runs & balls (NRR)
+      // ✅ Update runs & balls (NRR accumulators)
       table[A].runsFor += runsA;
       table[A].ballsFaced += ballsA;
       table[A].runsAgainst += runsB;
@@ -142,7 +174,7 @@ exports.getPointsTable = async (req, res) => {
       table[B].runsAgainst += runsA;
       table[B].ballsBowled += ballsA;
 
-      // ✅ Keep form limited to last 5 results
+      // Trim form arrays to last 5 results
       table[A].form = table[A].form.slice(-5);
       table[B].form = table[B].form.slice(-5);
     }
