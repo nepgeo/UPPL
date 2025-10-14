@@ -1,7 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 const Sponsors = () => {
-  // Sample sponsor data - replace with your actual data
   const organizationSponsors = [
     { id: 1, name: "TechCorp", logo: "/images/sponsors/techcorp.png" },
     { id: 2, name: "InnovateLab", logo: "/images/sponsors/innovatelab.png" },
@@ -24,6 +23,12 @@ const Sponsors = () => {
     { id: 8, name: "Maria Garcia", avatar: "/images/sponsors/maria.jpg", title: "Investor" },
   ];
 
+  const [zoomed, setZoomed] = useState<number | null>(null);
+
+  const handleZoomToggle = (id: number) => {
+    setZoomed((prev) => (prev === id ? null : id));
+  };
+
   return (
     <div className="min-h-screen p-6 bg-background text-foreground">
       <div className="container mx-auto">
@@ -31,20 +36,23 @@ const Sponsors = () => {
           Our Sponsors
         </h1>
 
-        {/* Organizations Section */}
+        {/* Partner Organizations */}
         <section className="mb-20">
           <h2 className="text-3xl font-semibold mb-8 text-center text-muted-foreground">
             Partner Organizations
           </h2>
-          <div className="relative overflow-hidden bg-card rounded-lg p-6 shadow-lg">
+          {/* Removed dark/black background */}
+          <div className="relative overflow-hidden bg-transparent rounded-lg p-6 shadow-none">
             <div className="flex gap-8 animate-scroll-x whitespace-nowrap">
-              {/* Triple the array for seamless infinite loop */}
               {[...organizationSponsors, ...organizationSponsors, ...organizationSponsors].map((sponsor, i) => (
                 <div
-                  key={`${sponsor.id}-${Math.floor(i / organizationSponsors.length)}-${i}`}
-                  className="flex-shrink-0 group cursor-pointer min-w-[140px]"
+                  key={`${sponsor.id}-${i}`}
+                  className={`flex-shrink-0 group cursor-pointer min-w-[140px] transition-transform duration-300 ${
+                    zoomed === sponsor.id ? 'scale-125 z-10' : 'scale-100'
+                  }`}
+                  onClick={() => handleZoomToggle(sponsor.id)}
                 >
-                  <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md group-hover:shadow-xl transition-all duration-300 group-hover:scale-105 h-24 flex flex-col justify-center">
+                  <div className="bg-white p-4 rounded-lg shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-center">
                     <img
                       src={sponsor.logo}
                       alt={sponsor.name}
@@ -53,7 +61,7 @@ const Sponsors = () => {
                         e.currentTarget.src = `https://via.placeholder.com/120x48/e5e7eb/374151?text=${sponsor.name}`;
                       }}
                     />
-                    <p className="text-xs text-center mt-2 text-muted-foreground group-hover:text-foreground transition-colors truncate">
+                    <p className="text-xs text-center mt-2 text-gray-600 group-hover:text-foreground transition-colors truncate">
                       {sponsor.name}
                     </p>
                   </div>
@@ -63,27 +71,32 @@ const Sponsors = () => {
           </div>
         </section>
 
-        {/* People Section */}
+        {/* Individual Sponsors */}
         <section>
           <h2 className="text-3xl font-semibold mb-8 text-center text-muted-foreground">
             Individual Sponsors
           </h2>
-          <div className="relative overflow-hidden bg-card rounded-lg p-6 shadow-lg">
+          <div className="relative overflow-hidden bg-transparent rounded-lg p-6 shadow-none">
             <div className="flex gap-8 animate-scroll-x-reverse whitespace-nowrap">
-              {/* Triple the array for seamless infinite loop - reverse direction */}
               {[...peopleSponsors, ...peopleSponsors, ...peopleSponsors].map((person, i) => (
                 <div
-                  key={`${person.id}-${Math.floor(i / peopleSponsors.length)}-${i}`}
-                  className="flex-shrink-0 group cursor-pointer min-w-[160px]"
+                  key={`${person.id}-${i}`}
+                  className={`flex-shrink-0 group cursor-pointer min-w-[160px] transition-transform duration-300 ${
+                    zoomed === person.id ? 'scale-125 z-10' : 'scale-100'
+                  }`}
+                  onClick={() => handleZoomToggle(person.id)}
                 >
-                  <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md group-hover:shadow-xl transition-all duration-300 group-hover:scale-105 text-center">
+                  <div className="bg-white p-4 rounded-lg shadow-md hover:shadow-xl transition-all duration-300 text-center">
                     <div className="relative mx-auto w-fit">
                       <img
                         src={person.avatar}
-                        className="w-16 h-16 rounded-full border-4 border-primary shadow-lg group-hover:scale-110 transition-transform duration-300 mx-auto"
+                        className="w-16 h-16 rounded-full border-4 border-primary shadow-lg transition-transform duration-300 mx-auto group-hover:scale-110"
                         alt={person.name}
                         onError={(e) => {
-                          e.currentTarget.src = `https://via.placeholder.com/64x64/8b5cf6/ffffff?text=${person.name.split(' ').map(n => n[0]).join('')}`;
+                          e.currentTarget.src = `https://via.placeholder.com/64x64/8b5cf6/ffffff?text=${person.name
+                            .split(' ')
+                            .map((n) => n[0])
+                            .join('')}`;
                         }}
                       />
                     </div>
@@ -91,9 +104,7 @@ const Sponsors = () => {
                       <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">
                         {person.name}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-1 truncate">
-                        {person.title}
-                      </p>
+                      <p className="text-xs text-muted-foreground mt-1 truncate">{person.title}</p>
                     </div>
                   </div>
                 </div>

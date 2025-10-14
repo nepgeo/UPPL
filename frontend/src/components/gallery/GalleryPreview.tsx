@@ -22,25 +22,22 @@ interface Image {
   tags?: string[];
 }
 
-
 // ✅ Safe universal image resolver
 const getImageUrl = (img: any): string => {
   if (!img) return "";
-
   if (typeof img === "string") {
-    if (img.startsWith("data:")) return img; // base64 preview
-    if (img.startsWith("http")) return img;  // Cloudinary/external URL ✅
-    return `${BASE_URL}/${img.replace(/\\/g, "/")}`; // Local backend ✅
+    if (img.startsWith("data:")) return img;
+    if (img.startsWith("http")) return img;
+    return `${BASE_URL}/${img.replace(/\\/g, "/")}`;
   }
-
   if (typeof img === "object") {
     return img.secure_url || img.url || "";
   }
-
   return "";
 };
 
 const GalleryPreview = () => {
+  const [allImages, setAllImages] = useState<Image[]>([]);
   const [images, setImages] = useState<Image[]>([]);
   const [activeIndex, setActiveIndex] = useState(2);
   const [previewImage, setPreviewImage] = useState<Image | null>(null);
@@ -49,14 +46,18 @@ const GalleryPreview = () => {
   const { scrollYProgress } = useScroll({ container: mainRef });
   const scale = useTransform(scrollYProgress, [0, 1], [1, 0.9]);
 
+  // 🧩 Fetch images initially
   useEffect(() => {
     const loadImages = async () => {
       try {
         const res = await fetchPublicImages();
-        const sorted = res.data
-          .sort((a: Image, b: Image) => b._id.localeCompare(a._id))
-          .slice(0, 7);
-        setImages(sorted);
+        const all = res.data || [];
+        setAllImages(all);
+
+        // pick first album as default
+        const grouped = groupByAlbum(all);
+        const firstAlbum = Object.keys(grouped)[0];
+        if (firstAlbum) setImages(grouped[firstAlbum].slice(0, 7));
       } catch (err) {
         console.error("Error fetching images", err);
       }
@@ -64,30 +65,58 @@ const GalleryPreview = () => {
     loadImages();
   }, []);
 
+  // 🧩 Group images by album
+  const groupByAlbum = (images: Image[]) => {
+    return images.reduce((acc: any, img: Image) => {
+      if (!acc[img.album]) acc[img.album] = [];
+      acc[img.album].push(img);
+      return acc;
+    }, {});
+  };
+
+  // 🧠 Shuffle albums every 5 seconds
+  useEffect(() => {
+    if (allImages.length === 0) return;
+
+    const grouped = groupByAlbum(allImages);
+    const albumKeys = Object.keys(grouped);
+    if (albumKeys.length === 0) return;
+
+    const interval = setInterval(() => {
+      const randomAlbum = albumKeys[Math.floor(Math.random() * albumKeys.length)];
+      const albumImages = grouped[randomAlbum] || [];
+      if (albumImages.length > 0) {
+        const shuffled = [...albumImages].sort(() => 0.5 - Math.random());
+        setImages(shuffled.slice(0, 7));
+        setActiveIndex(2);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [allImages]);
+
+  // 🧭 Navigation
+  const handlePrev = () => {
+    setActiveIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
+  const handleNext = () => {
+    setActiveIndex((prev) => (prev + 1) % images.length);
+  };
+
   const getCardStyle = (index: number) => {
     const position = index - activeIndex;
     const absPos = Math.abs(position);
-
     const scale = 1 - absPos * 0.2;
     const translateX = position * 220;
     const zIndex = 5 - absPos;
     const rotateY = position * 15;
     const opacity = absPos > 3 ? 0 : 0.7 + (1 - absPos * 0.15);
-
     return {
       transform: `translateX(${translateX}px) scale(${scale}) rotateY(${rotateY}deg)`,
       zIndex,
       opacity,
       filter: `brightness(${1 - absPos * 0.15})`,
     };
-  };
-
-  const handlePrev = () => {
-    setActiveIndex((prev) => (prev - 1 + images.length) % images.length);
-  };
-
-  const handleNext = () => {
-    setActiveIndex((prev) => (prev + 1) % images.length);
   };
 
   return (
@@ -102,7 +131,7 @@ const GalleryPreview = () => {
               Memorable Moments
             </h2>
             <p className="text-gray-600 max-w-2xl mx-auto text-base sm:text-lg mt-2">
-              Explore our curated collection of tournament highlights and behind-the-scenes moments
+              Shuffling highlights from our various albums every few seconds — enjoy the memories!
             </p>
           </div>
 
@@ -156,29 +185,17 @@ const GalleryPreview = () => {
                 </button>
               </>
             )}
-
-            {images.length === 0 && (
-              <div className="text-center text-gray-500">
-                <div className="animate-pulse flex space-x-4">
-                  <div className="rounded-full bg-gray-300 h-10 w-10 sm:h-12 sm:w-12" />
-                  <div className="flex-1 space-y-4 py-1">
-                    <div className="h-4 bg-gray-300 rounded w-3/4" />
-                    <div className="h-4 bg-gray-300 rounded w-5/6" />
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </motion.div>
 
-        {/* Decorative elements */}
+        {/* Decorative gradients */}
         <div className="absolute left-0 right-0 top-0 bottom-0 pointer-events-none">
-          <div className="absolute -top-20 -left-20 sm:-top-40 sm:-left-40 w-48 h-48 sm:w-96 sm:h-96 bg-gradient-to-r from-purple-200 to-indigo-200 rounded-full blur-2xl sm:blur-3xl opacity-40 sm:opacity-50" />
-          <div className="absolute -bottom-20 -right-20 sm:-bottom-40 sm:-right-40 w-48 h-48 sm:w-96 sm:h-96 bg-gradient-to-r from-purple-200 to-indigo-200 rounded-full blur-2xl sm:blur-3xl opacity-40 sm:opacity-50" />
+          <div className="absolute -top-20 -left-20 sm:-top-40 sm:-left-40 w-48 h-48 sm:w-96 sm:h-96 bg-gradient-to-r from-purple-200 to-indigo-200 rounded-full blur-3xl opacity-40" />
+          <div className="absolute -bottom-20 -right-20 sm:-bottom-40 sm:-right-40 w-48 h-48 sm:w-96 sm:h-96 bg-gradient-to-r from-purple-200 to-indigo-200 rounded-full blur-3xl opacity-40" />
         </div>
       </div>
 
-      {/* Preview Modal */}
+      {/* Image Preview Modal */}
       <AnimatePresence>
         {previewImage && (
           <motion.div
