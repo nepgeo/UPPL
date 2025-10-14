@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 
 const Sponsors = () => {
   const organizationSponsors = [
@@ -41,32 +41,35 @@ const Sponsors = () => {
           <h2 className="text-3xl font-semibold mb-8 text-center text-muted-foreground">
             Partner Organizations
           </h2>
-          {/* Removed dark/black background */}
-          <div className="relative overflow-hidden bg-transparent rounded-lg p-6 shadow-none">
+
+          {/* No dark background */}
+          <div className="relative overflow-hidden bg-transparent rounded-lg p-6">
             <div className="flex gap-8 animate-scroll-x whitespace-nowrap">
-              {[...organizationSponsors, ...organizationSponsors, ...organizationSponsors].map((sponsor, i) => (
-                <div
-                  key={`${sponsor.id}-${i}`}
-                  className={`flex-shrink-0 group cursor-pointer min-w-[140px] transition-transform duration-300 ${
-                    zoomed === sponsor.id ? 'scale-125 z-10' : 'scale-100'
-                  }`}
-                  onClick={() => handleZoomToggle(sponsor.id)}
-                >
-                  <div className="bg-white p-4 rounded-lg shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-center">
-                    <img
-                      src={sponsor.logo}
-                      alt={sponsor.name}
-                      className="h-12 w-auto object-contain mx-auto filter grayscale group-hover:grayscale-0 transition-all duration-300"
-                      onError={(e) => {
-                        e.currentTarget.src = `https://via.placeholder.com/120x48/e5e7eb/374151?text=${sponsor.name}`;
-                      }}
-                    />
-                    <p className="text-xs text-center mt-2 text-gray-600 group-hover:text-foreground transition-colors truncate">
-                      {sponsor.name}
-                    </p>
+              {[...organizationSponsors, ...organizationSponsors, ...organizationSponsors].map(
+                (sponsor, i) => (
+                  <div
+                    key={`${sponsor.id}-${i}`}
+                    onClick={() => handleZoomToggle(sponsor.id)}
+                    className={`flex-shrink-0 group cursor-pointer min-w-[140px] transition-transform duration-300 ease-in-out transform origin-center ${
+                      zoomed === sponsor.id ? "scale-125 z-20" : "scale-100"
+                    }`}
+                  >
+                    <div className="bg-white p-4 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-center items-center">
+                      <img
+                        src={sponsor.logo}
+                        alt={sponsor.name}
+                        className="h-12 w-auto object-contain mx-auto transition-all duration-300 group-hover:scale-110"
+                        onError={(e) => {
+                          e.currentTarget.src = `https://via.placeholder.com/120x48/e5e7eb/374151?text=${sponsor.name}`;
+                        }}
+                      />
+                      <p className="text-xs text-center mt-2 text-gray-600 group-hover:text-foreground transition-colors truncate">
+                        {sponsor.name}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              )}
             </div>
           </div>
         </section>
@@ -76,17 +79,17 @@ const Sponsors = () => {
           <h2 className="text-3xl font-semibold mb-8 text-center text-muted-foreground">
             Individual Sponsors
           </h2>
-          <div className="relative overflow-hidden bg-transparent rounded-lg p-6 shadow-none">
+          <div className="relative overflow-hidden bg-transparent rounded-lg p-6">
             <div className="flex gap-8 animate-scroll-x-reverse whitespace-nowrap">
               {[...peopleSponsors, ...peopleSponsors, ...peopleSponsors].map((person, i) => (
                 <div
                   key={`${person.id}-${i}`}
-                  className={`flex-shrink-0 group cursor-pointer min-w-[160px] transition-transform duration-300 ${
-                    zoomed === person.id ? 'scale-125 z-10' : 'scale-100'
-                  }`}
                   onClick={() => handleZoomToggle(person.id)}
+                  className={`flex-shrink-0 group cursor-pointer min-w-[160px] transition-transform duration-300 ease-in-out transform origin-center ${
+                    zoomed === person.id ? "scale-125 z-20" : "scale-100"
+                  }`}
                 >
-                  <div className="bg-white p-4 rounded-lg shadow-md hover:shadow-xl transition-all duration-300 text-center">
+                  <div className="bg-white p-4 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 text-center">
                     <div className="relative mx-auto w-fit">
                       <img
                         src={person.avatar}
@@ -94,9 +97,9 @@ const Sponsors = () => {
                         alt={person.name}
                         onError={(e) => {
                           e.currentTarget.src = `https://via.placeholder.com/64x64/8b5cf6/ffffff?text=${person.name
-                            .split(' ')
+                            .split(" ")
                             .map((n) => n[0])
-                            .join('')}`;
+                            .join("")}`;
                         }}
                       />
                     </div>
@@ -113,12 +116,12 @@ const Sponsors = () => {
           </div>
         </section>
 
-        {/* Call to Action */}
+        {/* CTA Section */}
         <section className="mt-20 text-center">
           <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg p-8">
             <h3 className="text-2xl font-semibold mb-4">Become a Sponsor</h3>
             <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
-              Join our amazing community of sponsors and help us continue building incredible experiences. 
+              Join our amazing community of sponsors and help us continue building incredible experiences.
               Your support makes all the difference.
             </p>
             <button className="bg-primary text-primary-foreground px-8 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors duration-300 shadow-lg hover:shadow-xl">
