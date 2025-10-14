@@ -3,7 +3,12 @@ import api from "@/lib/api";
 import getProfileImageUrl from "@/utils/getProfileImageUrl";
 import { BASE_URL } from "@/config";
 
-const Sponsors = () => {
+interface SponsorsProps {
+  className?: string;
+  style?: React.CSSProperties;
+}
+
+const Sponsors: React.FC<SponsorsProps> = ({ className = "", style }) => {
   const [organizationSponsors, setOrganizationSponsors] = useState<any[]>([]);
   const [peopleSponsors, setPeopleSponsors] = useState<any[]>([]);
   const [zoomedId, setZoomedId] = useState<string | null>(null);
@@ -37,7 +42,10 @@ const Sponsors = () => {
   };
 
   return (
-    <div className="min-h-screen px-4 py-8 bg-background text-foreground bg-opacity-90">
+    <div
+      className={`min-h-screen px-4 py-8 bg-background text-foreground bg-opacity-90 ${className}`}
+      style={style}
+    >
       <style>{`
         .sponsor-card {
           transition: transform 0.4s ease, box-shadow 0.4s ease;

@@ -347,14 +347,16 @@ const Home = () => {
       
 
       <GalleryPreview />
-      <Sponsor />
+      <div className="pb-0 mb-0">
+        <Sponsor />
+      </div>
 
        
 
 
 
       {/* Quick Actions */}
-      <section className="py-8">
+      <section className="pt-4 md:pt-8 pb-8">
         <div className="container mx-auto px-4">
           <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-8 text-white">
             <div className="grid md:grid-cols-2 gap-10 items-center">
