@@ -1,14 +1,12 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
-
-import { BASE_URL} from "@/config";
 import api from "@/lib/api";
 import getProfileImageUrl from "@/utils/getProfileImageUrl";
-
+import { BASE_URL } from "@/config";
 
 const Sponsors = () => {
   const [organizationSponsors, setOrganizationSponsors] = useState<any[]>([]);
   const [peopleSponsors, setPeopleSponsors] = useState<any[]>([]);
+  const [zoomedId, setZoomedId] = useState<string | null>(null);
 
   const shadowClasses = [
     "shadow-[0_4px_16px_rgba(0,0,0,0.12),0_0_16px_rgba(59,130,246,0.35)]",
@@ -34,6 +32,10 @@ const Sponsors = () => {
     fetchSponsors();
   }, []);
 
+  const handleZoom = (id: string) => {
+    setZoomedId((prev) => (prev === id ? null : id));
+  };
+
   return (
     <div className="min-h-screen px-4 py-8 bg-background text-foreground bg-opacity-90">
       <style>{`
@@ -42,7 +44,10 @@ const Sponsors = () => {
         }
         .sponsor-card:hover {
           transform: scale(1.08);
-          box-shadow: 0 6px 20px rgba(255,255,255,0.5), 0 0 25px rgba(255,255,255,0.4);
+        }
+        .zoomed {
+          transform: scale(1.4);
+          z-index: 20;
         }
         @keyframes scroll-x {
           0% { transform: translateX(0); }
@@ -65,7 +70,7 @@ const Sponsors = () => {
           Our Sponsors
         </h1>
 
-        {/* Organizations */}
+        {/* Partner Organizations */}
         <section className="mb-12">
           <h2 className="text-xl sm:text-2xl font-semibold mb-6 text-center text-muted-foreground">
             Partner Organizations
@@ -77,20 +82,21 @@ const Sponsors = () => {
                   <div
                     key={`${sponsor._id}-${i}`}
                     className={`sponsor-card flex-shrink-0 cursor-pointer 
-                      min-w-[90px] min-h-[120px] sm:min-w-[120px] sm:min-h-[160px] 
-                      rounded-lg bg-white dark:bg-gray-800 p-2 sm:p-3 
-                      flex flex-col justify-between items-center 
-                      ${shadowClasses[i % shadowClasses.length]}`}
+                      min-w-[100px] sm:min-w-[140px] rounded-lg bg-white dark:bg-gray-800 p-3 sm:p-4 
+                      flex flex-col justify-between items-center transition-transform duration-300 
+                      ${shadowClasses[i % shadowClasses.length]} 
+                      ${zoomedId === sponsor._id ? "zoomed" : ""}`}
+                    onClick={() => handleZoom(sponsor._id)}
                   >
                     <img
                       src={getProfileImageUrl(sponsor.logo)}
                       alt={sponsor.name}
-                      className="h-[70px] sm:h-[100px] w-auto object-contain mx-auto filter grayscale hover:grayscale-0 transition-all duration-300"
+                      className="h-[80px] sm:h-[100px] w-auto object-contain mx-auto transition-all duration-300"
                       onError={(e) => {
-                        e.currentTarget.src = `https://via.placeholder.com/90x70/e5e7eb/374151?text=${sponsor.name}`;
+                        e.currentTarget.src = `https://via.placeholder.com/120x80/e5e7eb/374151?text=${sponsor.name}`;
                       }}
                     />
-                    <p className="text-[10px] sm:text-xs text-center mt-2 text-muted-foreground truncate">
+                    <p className="text-[11px] sm:text-xs text-center mt-2 text-gray-700 truncate">
                       {sponsor.name}
                     </p>
                   </div>
@@ -100,7 +106,7 @@ const Sponsors = () => {
           </div>
         </section>
 
-        {/* Individuals */}
+        {/* Individual Sponsors */}
         <section>
           <h2 className="text-xl sm:text-2xl font-semibold mb-6 text-center text-muted-foreground">
             Individual Sponsors
@@ -111,24 +117,24 @@ const Sponsors = () => {
                 <div
                   key={`${person._id}-${i}`}
                   className={`sponsor-card flex-shrink-0 cursor-pointer 
-                    min-w-[90px] min-h-[120px] sm:min-w-[120px] sm:min-h-[160px] 
-                    rounded-lg bg-white dark:bg-gray-800 p-2 sm:p-3 
-                    flex flex-col justify-between items-center 
-                    ${shadowClasses[i % shadowClasses.length]}`}
+                    min-w-[100px] sm:min-w-[140px] rounded-lg bg-white dark:bg-gray-800 p-3 sm:p-4 
+                    flex flex-col justify-between items-center transition-transform duration-300 
+                    ${shadowClasses[i % shadowClasses.length]} 
+                    ${zoomedId === person._id ? "zoomed" : ""}`}
+                  onClick={() => handleZoom(person._id)}
                 >
                   <img
                     src={getProfileImageUrl(person.avatar)}
-
-                    className="w-[65px] h-[65px] sm:w-[90px] sm:h-[90px] rounded-full mx-auto object-cover"
+                    className="w-[70px] h-[70px] sm:w-[90px] sm:h-[90px] rounded-full mx-auto object-cover transition-transform duration-300"
                     alt={person.name}
                     onError={(e) => {
-                      e.currentTarget.src = `https://via.placeholder.com/65x65/8b5cf6/ffffff?text=${person.name
+                      e.currentTarget.src = `https://via.placeholder.com/70x70/8b5cf6/ffffff?text=${person.name
                         .split(" ")
                         .map((n: string) => n[0])
                         .join("")}`;
                     }}
                   />
-                  <p className="text-[10px] sm:text-xs font-semibold truncate mt-2">
+                  <p className="text-[11px] sm:text-xs font-semibold truncate mt-2">
                     {person.name}
                   </p>
                 </div>
