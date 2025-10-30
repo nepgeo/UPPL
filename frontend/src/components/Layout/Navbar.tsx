@@ -116,42 +116,48 @@ useEffect(() => {
   const isActive = (path: string) => location.pathname === path;
 
   const handleSave = async () => {
-    if (!user) return;
+  if (!user) return;
 
-    try {
-      const fd = new FormData();
-      fd.append("name", formData.name);
-      fd.append("email", formData.email);
+  try {
+    const fd = new FormData();
+    fd.append("name", formData.name);
+    fd.append("email", formData.email);
 
-      if (formData.profileImage) {
-        fd.append("profileImage", formData.profileImage);
-      }
-
-      if (role === "player" && formData.documents.length > 0) {
-        formData.documents.forEach((doc) => fd.append("documents", doc));
-      }
-
-      
-      let endpoint = `/user/users/${user.id}`;
-      if (role === "admin" || role === "super-admin") {
-        endpoint = `/admin/users/${user.id}`;
-      }
-
-      const res = await api.patch(endpoint, fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      if (typeof setUser === "function") setUser(res.data.user);
-      localStorage.setItem("pplt20_user", JSON.stringify(res.data.user));
-
-      setIsProfileOpen(false);
-      setEditMode(false);
-      console.log("Profile updated successfully");
-    } catch (err: any) {
-      console.error("Error updating profile:", err.message || err);
-      alert("Error updating profile: " + (err.message || err));
+    if (formData.profileImage) {
+      fd.append("profileImage", formData.profileImage);
     }
-  };
+
+    if (role === "player" && formData.documents.length > 0) {
+      formData.documents.forEach((doc) => fd.append("documents", doc));
+    }
+
+    // ✅ Get token from localStorage
+    const token = localStorage.getItem("pplt20_token");
+
+    let endpoint = `/user/users/${user.id}`;
+    if (role === "admin" || role === "super-admin") {
+      endpoint = `/admin/users/${user.id}`;
+    }
+
+    const res = await api.patch(endpoint, fd, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        Authorization: `Bearer ${token}`, // ✅ Important line
+      },
+    });
+
+    if (typeof setUser === "function") setUser(res.data.user);
+    localStorage.setItem("pplt20_user", JSON.stringify(res.data.user));
+
+    setIsProfileOpen(false);
+    setEditMode(false);
+    console.log("Profile updated successfully");
+  } catch (err: any) {
+    console.error("Error updating profile:", err.message || err);
+    alert("Error updating profile: " + (err.message || err));
+  }
+};
+
 
 
 
