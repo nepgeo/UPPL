@@ -11,7 +11,10 @@ const bcrypt = require("bcryptjs");
 router.use(protect);
 router.patch(
   "/users/:id",
-  upload.single("profileImage"),
+  upload.fields([
+    { name: "profileImage", maxCount: 1 },
+    { name: "documents", maxCount: 10 }
+  ]),
   userController.updateUser
 );
 
