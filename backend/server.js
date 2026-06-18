@@ -110,50 +110,35 @@ const bcrypt = require('bcryptjs');
 
 const seedSuperAdmin = async () => {
   try {
+    const existing = await User.findOne({ role: 'super-admin' });
+    if (existing) return;
+
     const email = process.env.SUPER_ADMIN_EMAIL || 'superadmin@pplt20.com';
     const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || 'supersecurepassword';
-
     const hashed = await bcrypt.hash(superAdminPassword, 10);
 
-    const existing = await User.findOne({ email });
-    if (existing) {
-      await User.updateOne(
-        { email },
-        {
-          $set: {
-            name: 'Super Admin',
-            password: hashed,
-            role: 'super-admin',
-            verified: true,
-          }
-        }
-      );
-    } else {
-      await User.create({
-        name: 'Super Admin',
-        email,
-        password: hashed,
-        role: 'super-admin',
-        verified: true,
-        phone: 'N/A',
-        bio: '',
-        dateOfBirth: '',
-        position: '',
-        battingStyle: '',
-        bowlingStyle: '',
-        profileImage: { url: '', public_id: '' },
-        documents: []
-      });
-    }
+    await User.create({
+      name: 'Super Admin',
+      email,
+      password: hashed,
+      role: 'super-admin',
+      verified: true,
+      phone: 'N/A',
+      bio: '',
+      dateOfBirth: '',
+      position: '',
+      battingStyle: '',
+      bowlingStyle: '',
+      profileImage: { url: '', public_id: '' },
+      documents: []
+    });
 
-    if (process.env.NODE_ENV !== 'production') {
-      console.log(`✅ Super Admin created/updated: ${email} (password from env or default)`);
-    }
+    console.log(`✅ Super Admin created: ${email}`);
   } catch (err) {
     console.error('❌ Failed to seed super admin:', err?.message || err);
   }
 };
-seedSuperAdmin().catch(() => {/* ignore top-level seed errors */});
+seedSuperAdmin();
 
 // Default route / health
 app.get('/', (req, res) => {
