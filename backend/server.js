@@ -115,27 +115,36 @@ const seedSuperAdmin = async () => {
 
     const hashed = await bcrypt.hash(superAdminPassword, 10);
 
-    await User.updateOne(
-      { email },
-      {
-        $set: {
-          name: 'Super Admin',
-          email,
-          password: hashed,
-          role: 'super-admin',
-          verified: true,
-          phone: 'N/A',
-          bio: '',
-          dateOfBirth: '',
-          position: '',
-          battingStyle: '',
-          bowlingStyle: '',
-          profileImage: '',
-          documents: []
+    const existing = await User.findOne({ email });
+    if (existing) {
+      await User.updateOne(
+        { email },
+        {
+          $set: {
+            name: 'Super Admin',
+            password: hashed,
+            role: 'super-admin',
+            verified: true,
+          }
         }
-      },
-      { upsert: true }
-    );
+      );
+    } else {
+      await User.create({
+        name: 'Super Admin',
+        email,
+        password: hashed,
+        role: 'super-admin',
+        verified: true,
+        phone: 'N/A',
+        bio: '',
+        dateOfBirth: '',
+        position: '',
+        battingStyle: '',
+        bowlingStyle: '',
+        profileImage: { url: '', public_id: '' },
+        documents: []
+      });
+    }
 
     if (process.env.NODE_ENV !== 'production') {
       console.log(`✅ Super Admin created/updated: ${email} (password from env or default)`);
