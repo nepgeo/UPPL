@@ -49,6 +49,8 @@ const UserSchema = new mongoose.Schema(
     position: { type: String, default: '' },
     battingStyle: { type: String, default: '' },
     bowlingStyle: { type: String, default: '' },
+    rejectionReason: { type: String, default: '' },
+    rejectedAt: { type: Date, default: null },
 
     // ✅ Cloudinary media
     profileImage: {

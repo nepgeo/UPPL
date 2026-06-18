@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, LogIn, Eye, EyeOff } from "lucide-react";
+import { Menu, X, LogIn, Eye, EyeOff, Camera, Loader2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { API_BASE, BASE_URL } from '@/config';
@@ -12,6 +12,12 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
+import { toast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 
 import Logo from "@/assets/images/lg-removebg-preview.png";
@@ -91,6 +97,19 @@ useEffect(() => {
     confirmPassword: "",
   });
 
+  const [loading, setLoading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  const profileStrength = (() => {
+    let score = 0;
+    if (user?.name) score += 25;
+    if (user?.email) score += 15;
+    if (user?.profileImage) score += 30;
+    const docs = (user as any)?.documents;
+    if (docs && Array.isArray(docs) && docs.length > 0) score += 15;
+    if ((user as any)?.playerCode) score += 15;
+    return Math.min(score, 100);
+  })();
 
   // 🚀 Auto-open profile dialog if user has no profile image
   // useEffect(() => {
@@ -107,8 +126,9 @@ useEffect(() => {
     { name: "Schedule", path: "/schedule" },
     { name: "Teams", path: "/teams" },
     { name: "Players", path: "/players" },
-    // { name: "Live Scores", path: "/live-scores" },
+    { name: "Live Scores", path: "/live-scores" },
     { name: "Points Table", path: "/points-table" },
+    { name: "Watch Live", path: "/watch-live" },
     { name: "News", path: "/news" },
     { name: "Gallery", path: "/gallery" },
   ];
@@ -117,7 +137,12 @@ useEffect(() => {
 
   const handleSave = async () => {
   if (!user) return;
+  if (!formData.name.trim()) {
+    toast({ title: "Validation Error", description: "Name is required", variant: "destructive" });
+    return;
+  }
 
+  setLoading(true);
   try {
     const fd = new FormData();
     fd.append("name", formData.name);
@@ -131,18 +156,20 @@ useEffect(() => {
       formData.documents.forEach((doc) => fd.append("documents", doc));
     }
 
-    // ✅ Get token from localStorage
     const token = localStorage.getItem("pplt20_token");
 
-    let endpoint = `/user/users/${user.id}`;
+    const userId = user.id || (user as any)._id;
+    if (!userId) { toast({ title: "Error", description: "User ID missing", variant: "destructive" }); setLoading(false); return; }
+
+    let endpoint = `/user/users/${userId}`;
     if (role === "admin" || role === "super-admin") {
-      endpoint = `/admin/users/${user.id}`;
+      endpoint = `/admin/users/${userId}`;
     }
 
     const res = await api.patch(endpoint, fd, {
       headers: {
         "Content-Type": "multipart/form-data",
-        Authorization: `Bearer ${token}`, // ✅ Important line
+        Authorization: `Bearer ${token}`,
       },
     });
 
@@ -151,10 +178,17 @@ useEffect(() => {
 
     setIsProfileOpen(false);
     setEditMode(false);
-    console.log("Profile updated successfully");
+    setPreviewUrl(null);
+    toast({ title: "Profile updated successfully" });
   } catch (err: any) {
-    console.error("Error updating profile:", err.message || err);
-    alert("Error updating profile: " + (err.message || err));
+    console.error("Error updating profile:", err);
+    toast({
+      title: "Error updating profile",
+      description: err.response?.data?.message || err.message || "Something went wrong",
+      variant: "destructive",
+    });
+  } finally {
+    setLoading(false);
   }
 };
 
@@ -164,27 +198,40 @@ useEffect(() => {
 
 
   const handleChangePassword = async () => {
+    if (!passwordData.oldPassword.trim()) {
+      toast({ title: "Validation Error", description: "Old password is required", variant: "destructive" });
+      return;
+    }
+    if (passwordData.newPassword.length < 6) {
+      toast({ title: "Validation Error", description: "New password must be at least 6 characters", variant: "destructive" });
+      return;
+    }
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      alert("New passwords do not match");
+      toast({ title: "Validation Error", description: "New passwords do not match", variant: "destructive" });
       return;
     }
 
-    if (!user?.id) {
-      alert("User not found");
+    const userId = user?.id || (user as any)?._id;
+    if (!userId) {
+      toast({ title: "Error", description: "User not found", variant: "destructive" });
       return;
     }
 
     try {
-      const res = await api.patch(`/user/${user.id}/change-password`, {
+      await api.patch(`/user/${userId}/change-password`, {
         oldPassword: passwordData.oldPassword,
         newPassword: passwordData.newPassword,
       });
 
-      alert("Password updated successfully ✅");
+      toast({ title: "Password updated successfully" });
       setChangePasswordOpen(false);
       setPasswordData({ oldPassword: "", newPassword: "", confirmPassword: "" });
     } catch (err: any) {
-      alert("Error updating password: " + (err.message || err));
+      toast({
+        title: "Error updating password",
+        description: err.response?.data?.message || err.message || "Something went wrong",
+        variant: "destructive",
+      });
     }
   };
 
@@ -252,7 +299,7 @@ useEffect(() => {
                     to="/admin"
                     className="hidden md:inline text-sm font-medium text-gray-700 hover:text-blue-600"
                   >
-                    Admin Dashboard
+                    <span className="uppercase">Admin Dashboard</span>
                   </Link>
                 )}
 
@@ -262,7 +309,7 @@ useEffect(() => {
                     to="/player-profile"
                     className="text-sm font-medium text-gray-700 hover:text-blue-600"
                   >
-                    My Profile
+                    <span className="uppercase">My Profile</span>
                   </Link>
                 )}
 
@@ -271,12 +318,12 @@ useEffect(() => {
                   className="flex items-center space-x-2 cursor-pointer"
                   onClick={() => setIsProfileOpen(true)}
                 >
-                  <img
-                    src={getProfileImageUrl(user?.profileImage)}
-                    // src={user?.profileImage ? `BASE_URL${user.profileImage}` : "/default-avatar.png"}
-                    alt={user?.name}
-                    className="h-8 w-8 rounded-full object-cover"
-                  />
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={getProfileImageUrl(user?.profileImage)} alt={user?.name} />
+                    <AvatarFallback className="text-xs font-bold bg-primary/10 text-primary">
+                      {user?.name?.charAt(0)?.toUpperCase() || "U"}
+                    </AvatarFallback>
+                  </Avatar>
                   <span className="text-sm font-medium">
                     {user?.name || "Unnamed"}
                   </span>
@@ -311,7 +358,7 @@ useEffect(() => {
                   variant="outline"
                 >
                   <LogIn className="h-3 w-3 mr-1 md:h-4 md:w-4" />
-                  Login
+                  <span className="uppercase">Login</span>
                 </Button>
               </Link>
 
@@ -323,7 +370,7 @@ useEffect(() => {
                     md:px-4 md:py-2 md:text-sm
                   "
                 >
-                  Register
+                  <span className="uppercase">Register</span>
                 </Button>
               </Link>
             </div>
@@ -353,12 +400,12 @@ useEffect(() => {
                   : "text-blue-100"
               }`}
             >
-              {link.name}
-            </Link>
-          ))}
-        </div>
+               <span className="uppercase">{link.name}</span>
+             </Link>
+           ))}
+         </div>
 
-        {/* Mobile Navigation */}
+         {/* Mobile Navigation */}
         <AnimatePresence>
         {isOpen && (
           <>
@@ -401,7 +448,7 @@ useEffect(() => {
                       key={link.path}
                       to={link.path}
                       onClick={() => setIsOpen(false)}
-                      className={`block px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
+                      className={`block px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 uppercase ${
                         isActive(link.path)
                           ? "bg-white text-blue-700 shadow-md"
                           : "hover:bg-white/20 hover:translate-x-2"
@@ -431,7 +478,7 @@ useEffect(() => {
                           key={item.tab}
                           to={`/admin?tab=${item.tab}`}
                           onClick={() => setIsOpen(false)}
-                          className="px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 transition"
+                          className="px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 transition uppercase"
                         >
                           {item.label}
                         </Link>
@@ -465,40 +512,72 @@ useEffect(() => {
       </div>
 
       {/* Profile Dialog */}
-      <Dialog open={isProfileOpen} onOpenChange={setIsProfileOpen}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      <Dialog open={isProfileOpen} onOpenChange={(open) => { setIsProfileOpen(open); if (!open) setPreviewUrl(null); }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl font-semibold text-center">
+            <DialogTitle className="text-xl font-semibold text-center uppercase">
               My Profile
             </DialogTitle>
           </DialogHeader>
 
-
-      {/* Profile Image */}
-          <div className="flex justify-center mb-4">
-            <div
-              className="
-                relative
-                w-36 h-24
-                rounded-xl
-                overflow-hidden
-                shadow-lg
-                cursor-pointer
-                transition-transform duration-300 ease-in-out
-                hover:scale-105
-                hover:shadow-[0_0_25px_rgba(164,0,255,0.5)]
-              "
-              onClick={() => setImageZoomOpen(true)}
-            >
-              <img
-                src={getProfileImageUrl(user?.profileImage)}
-                alt={user?.name}
-                className="w-full h-full object-cover"
-              />
+          {/* Avatar */}
+          <div className="flex flex-col items-center mb-6">
+            <div className="relative group">
+              <Avatar
+                className="w-28 h-28 ring-4 ring-primary/20 cursor-pointer"
+                onClick={() => setImageZoomOpen(true)}
+              >
+                <AvatarImage src={previewUrl || getProfileImageUrl(user?.profileImage)} alt={user?.name} />
+                <AvatarFallback className="text-3xl font-bold bg-primary/10 text-primary">
+                  {user?.name?.charAt(0)?.toUpperCase() || "U"}
+                </AvatarFallback>
+              </Avatar>
+              {editMode && (
+                <label
+                  htmlFor="profile-upload"
+                  className="
+                    absolute inset-0 rounded-full bg-black/50
+                    flex items-center justify-center
+                    opacity-0 group-hover:opacity-100
+                    transition-opacity cursor-pointer
+                  "
+                >
+                  <Camera className="text-white" size={24} />
+                  <input
+                    id="profile-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setFormData({ ...formData, profileImage: file });
+                        setPreviewUrl(URL.createObjectURL(file));
+                      }
+                    }}
+                  />
+                </label>
+              )}
             </div>
+            {!editMode && (
+              <div className="mt-3 flex items-center gap-2">
+                <Badge variant={user?.verified ? "default" : "secondary"}>
+                  {user?.verified ? "Verified" : "Unverified"}
+                </Badge>
+                <Badge variant={
+                  role === "super-admin" ? "destructive" :
+                  role === "admin" ? "default" :
+                  "secondary"
+                }>
+                  {role === "super-admin" ? "Super Admin" :
+                   role === "admin" ? "Admin" :
+                   role === "player" ? "Player" : role}
+                </Badge>
+              </div>
+            )}
           </div>
 
-          {/* Fullscreen Zoom Modal */}
+          {/* Zoom Modal */}
           <AnimatePresence>
             {imageZoomOpen && (
               <motion.div
@@ -521,145 +600,202 @@ useEffect(() => {
             )}
           </AnimatePresence>
 
-
-          {editMode ? (
-            <>
-              {/* Player Code (read-only in edit mode for players) */}
-              {role === "player" && (
-                <div className="mb-3">
-                  <label className="block text-sm font-medium mb-1">Player Code</label>
-                  <Input value={user?.playerCode} readOnly />
-                </div>
-              )}
-
-              {/* Name */}
-              <div className="mb-3">
-                <label className="block text-sm font-medium mb-1">Name</label>
-                <Input
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  placeholder="Name"
-                />
+          {/* Profile Strength (view mode) */}
+          {!editMode && (
+            <div className="mb-5 px-1">
+              <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
+                <span>Profile Strength</span>
+                <span>{profileStrength}%</span>
               </div>
-
-              {/* Email */}
-              <div className="mb-3">
-                <label className="block text-sm font-medium mb-1">Email</label>
-                <Input value={formData.email} readOnly placeholder="Email" />
-              </div>
-
-              {/* Upload Image */}
-              <div className="mb-3">
-                <label className="block text-sm font-medium mb-1">
-                  Profile Image
-                </label>
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      profileImage: e.target.files ? e.target.files[0] : null,
-                    })
-                  }
-                />
-              </div>
-
-              {/* Documents */}
-              <div className="mb-3">
-                <label className="block text-sm font-medium mb-1">Documents</label>
-                <Input
-                  type="file"
-                  accept="image/*,application/pdf"
-                  multiple
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      documents: e.target.files ? Array.from(e.target.files) : [],
-                    })
-                  }
-                />
-              </div>
-            </>
-          ) : (
-            <>
-              {/* Player Code in view mode */}
-              {role === "player" && (
-                <div className="mb-4">
-                <p className="text-sm font-medium text-gray-700">Player Code</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  <span
-                    className="
-                      inline-block 
-                      transition-all duration-300 ease-in-out
-                      hover:scale-110 hover:text-purple-600
-                      hover:shadow-[4px_0_20px_rgba(164,0,255,0.6)]
-                      px-1 rounded
-                    "
-                  >
-                    {user?.playerCode}
-                  </span>
-                </p>
-              </div>
-              )}
-
-              <div className="mb-2">
-                <p className="text-sm font-medium text-gray-700">Name</p>
-                <p className="text-gray-900">{user?.name}</p>
-              </div>
-
-              <div className="mb-2">
-                <p className="text-sm font-medium text-gray-700">Email</p>
-                <p className="text-gray-900">{user?.email}</p>
-              </div>
-            </>
+              <Progress
+                value={profileStrength}
+                className={profileStrength === 100 ? "bg-green-100" : ""}
+              />
+            </div>
           )}
 
-          <DialogFooter className="flex justify-between mt-4">
-            {editMode ? (
-              <Button
-                onClick={handleSave}
-                className="
-                  bg-black text-white 
-                  hover:bg-gray-800 
-                  transition-all duration-300 ease-in-out 
-                  w-40 py-2 
-                  rounded-xl shadow-md
-                "
-              >
-                Save
-              </Button>
-            ) : (
-              <Button
-                onClick={() => setEditMode(true)}
-                className="
-                  bg-black text-white 
-                  hover:bg-gray-800 
-                  transition-all duration-300 ease-in-out 
-                  w-40 py-2 
-                  rounded-xl shadow-md
-                "
-              >
-                Edit
-              </Button>
-            )}
+          {editMode ? (
+            <div className="space-y-4">
+              {/* Info Card */}
+              <Card>
+                <CardContent className="p-4 space-y-3">
+                  <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                    Basic Information
+                  </h4>
+                  {role === "player" && (
+                    <div>
+                      <label className="block text-xs font-medium mb-1 text-muted-foreground">Player Code</label>
+                      <Input value={user?.playerCode || ""} readOnly />
+                    </div>
+                  )}
+                  <div>
+                    <label className="block text-xs font-medium mb-1 text-muted-foreground">Name</label>
+                    <Input
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      placeholder="Your name"
+                    />
+                    {!formData.name.trim() && (
+                      <p className="text-xs text-destructive mt-1">Name is required</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium mb-1 text-muted-foreground">Email</label>
+                    <Input value={formData.email} readOnly />
+                  </div>
+                </CardContent>
+              </Card>
 
-            {/* Change Password Button */}
-            <Button
-              variant="outline"
-              className="
-                transition-all duration-300 ease-in-out 
-                hover:scale-105 hover:text-white
-                hover:bg-gradient-to-r hover:from-[#A23CCF] hover:to-[#D4429D]
-                hover:shadow-[0_0_15px_#D4429D]
-              "
-              onClick={() => setChangePasswordOpen(true)}
-            >
-              Change Password
-            </Button>
-          </DialogFooter>
+              {/* Documents Card */}
+              {role === "player" && (
+                <Card>
+                  <CardContent className="p-4 space-y-2">
+                    <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                      Documents
+                    </h4>
+                    <Input
+                      type="file"
+                      accept="image/*,application/pdf"
+                      multiple
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          documents: e.target.files ? Array.from(e.target.files) : [],
+                        })
+                      }
+                    />
+                    {(user as any)?.documents?.length > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        Existing documents will be replaced on save.
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-2">
+                <Button
+                  onClick={handleSave}
+                  disabled={loading}
+                  className="flex-1"
+                >
+                  {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  {loading ? "Saving..." : "Save Changes"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setEditMode(false);
+                    setPreviewUrl(null);
+                    setFormData({
+                      name: user?.name || "",
+                      email: user?.email || "",
+                      profileImage: null,
+                      documents: [],
+                      playerCode: (user as any)?.playerCode || "",
+                    });
+                  }}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Info Card */}
+              <Card>
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Name</span>
+                    <span className="font-medium text-right">{user?.name}</span>
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Email</span>
+                    <span className="font-medium text-right truncate max-w-[200px]">{user?.email}</span>
+                  </div>
+                  {role === "player" && (user as any)?.playerCode && (
+                    <>
+                      <Separator />
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Player Code</span>
+                        <span className="font-mono font-bold text-lg tracking-wider">{(user as any).playerCode}</span>
+                      </div>
+                    </>
+                  )}
+                  {(user as any)?.team && (
+                    <>
+                      <Separator />
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Team</span>
+                        <Badge variant="outline">{(user as any).team}</Badge>
+                      </div>
+                    </>
+                  )}
+                  {(user as any)?.createdAt && (
+                    <>
+                      <Separator />
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Member Since</span>
+                        <span className="font-medium text-sm">
+                          {new Date((user as any).createdAt).toLocaleDateString("en-US", {
+                            year: "numeric", month: "long", day: "numeric",
+                          })}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Documents Card */}
+              {(user as any)?.documents?.length > 0 && (
+                <Card>
+                  <CardContent className="p-4">
+                    <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-3">
+                      Documents ({Array.isArray((user as any).documents) ? (user as any).documents.length : 0})
+                    </h4>
+                    <div className="space-y-2">
+                      {(user as any).documents.map((doc: any, i: number) => (
+                        <div
+                          key={i}
+                          className="flex items-center justify-between p-2.5 bg-muted/50 rounded-lg border border-border/50 hover:bg-muted transition-colors"
+                        >
+                          <span className="text-sm truncate flex-1">
+                            {doc.name || `Document ${i + 1}`}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="shrink-0"
+                            onClick={() => window.open(doc.url, "_blank")}
+                          >
+                            <ExternalLink size={16} />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-2">
+                <Button onClick={() => { setEditMode(true); setPreviewUrl(null); }} className="flex-1">
+                  Edit Profile
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setChangePasswordOpen(true)}
+                  className="flex-1"
+                >
+                  Change Password
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -671,64 +807,78 @@ useEffect(() => {
               <DialogTitle className="text-xl font-semibold text-center">Change Password</DialogTitle>
             </DialogHeader>
 
-            <div className="mb-3 relative">
-              <label className="block text-sm font-medium mb-1">Old Password</label>
-              <Input
-                type={showOldPassword ? "text" : "password"}
-                value={passwordData.oldPassword}
-                onChange={(e) =>
-                  setPasswordData({ ...passwordData, oldPassword: e.target.value })
-                }
-                placeholder="Enter old password"
-                className="pr-10"
-              />
-              <span
-                className="absolute top-9 right-3 cursor-pointer"
-                onClick={() => setShowOldPassword(!showOldPassword)}
-              >
-                {showOldPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </span>
+            <div className="space-y-4">
+              <div className="relative">
+                <label className="block text-sm font-medium mb-1">Old Password</label>
+                <Input
+                  type={showOldPassword ? "text" : "password"}
+                  value={passwordData.oldPassword}
+                  onChange={(e) =>
+                    setPasswordData({ ...passwordData, oldPassword: e.target.value })
+                  }
+                  placeholder="Enter old password"
+                  className="pr-10"
+                  onKeyDown={(e) => { if (e.key === "Enter") handleChangePassword(); }}
+                />
+                <span
+                  className="absolute top-9 right-3 cursor-pointer"
+                  onClick={() => setShowOldPassword(!showOldPassword)}
+                >
+                  {showOldPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </span>
+              </div>
+
+              <div className="relative">
+                <label className="block text-sm font-medium mb-1">New Password</label>
+                <Input
+                  type={showNewPassword ? "text" : "password"}
+                  value={passwordData.newPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                  placeholder="Enter new password"
+                  className="pr-10"
+                  onKeyDown={(e) => { if (e.key === "Enter") handleChangePassword(); }}
+                />
+                <span
+                  className="absolute top-9 right-3 cursor-pointer"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                >
+                  {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </span>
+                {passwordData.newPassword && passwordData.newPassword.length < 6 && (
+                  <p className="text-xs text-destructive mt-1">Minimum 6 characters</p>
+                )}
+                {passwordData.newPassword && passwordData.newPassword.length >= 6 && (
+                  <Progress
+                    value={Math.min((passwordData.newPassword.length / 12) * 100, 100)}
+                    className="mt-1.5 h-1.5"
+                  />
+                )}
+              </div>
+
+              <div className="relative">
+                <label className="block text-sm font-medium mb-1">Confirm Password</label>
+                <Input
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={passwordData.confirmPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                  placeholder="Confirm new password"
+                  className="pr-10"
+                  onKeyDown={(e) => { if (e.key === "Enter") handleChangePassword(); }}
+                />
+                <span
+                  className="absolute top-9 right-3 cursor-pointer"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </span>
+                {passwordData.confirmPassword && passwordData.newPassword !== passwordData.confirmPassword && (
+                  <p className="text-xs text-destructive mt-1">Passwords do not match</p>
+                )}
+              </div>
             </div>
 
-
-
-            <div className="mb-3 relative">
-              <label className="block text-sm font-medium mb-1">New Password</label>
-              <Input
-                type={showNewPassword ? "text" : "password"}
-                value={passwordData.newPassword}
-                onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                placeholder="Enter new password"
-                className="pr-10"
-              />
-              <span
-                className="absolute top-9 right-3 cursor-pointer"
-                onClick={() => setShowNewPassword(!showNewPassword)}
-              >
-                {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </span>
-            </div>
-
-            <div className="mb-3 relative">
-              <label className="block text-sm font-medium mb-1">Confirm Password</label>
-              <Input
-                type={showConfirmPassword ? "text" : "password"}
-                value={passwordData.confirmPassword}
-                onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                placeholder="Confirm new password"
-                className="pr-10"
-              />
-              <span
-                className="absolute top-9 right-3 cursor-pointer"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              >
-                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </span>
-            </div>
-
-
-            <DialogFooter>
-              <Button onClick={handleChangePassword}>Save Password</Button>
+            <DialogFooter className="mt-4">
+              <Button onClick={handleChangePassword} className="w-full">Save Password</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

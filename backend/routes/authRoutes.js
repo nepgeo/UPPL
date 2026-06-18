@@ -16,6 +16,8 @@ router.post(
 router.post('/login', authController.login);
 
 
+router.post('/firebase', authController.firebaseLogin);
+
 router.post('/forgot-password', authController.forgotPassword);
 router.post('/forgot-password/verify', authController.verifyResetOtp);   // optional
 router.post('/forgot-password/resend', authController.resendResetOtp);   // optional

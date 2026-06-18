@@ -1,12 +1,8 @@
 // frontend/src/components/TeamMembers.tsx
 import React, { useEffect, useState } from "react";
 import api from "@/lib/api";
-import { BASE_URL } from "@/config";
+import { getProfileImageUrl } from "@/utils/getProfileImageUrl";
 import photo from "@/assets/images/photo.jpg";
-
-// ✅ Helper to build profile image URL
-
-
 
 const TeamMembers: React.FC = () => {
   const [team, setTeam] = useState<any[]>([]);
@@ -33,45 +29,6 @@ const TeamMembers: React.FC = () => {
 
   // ✅ Append fixed member to fetched team
   const teamWithFixed = [...team, fixedMember];
-
-  const getProfileImageUrl = (
-  path: string | null | { url?: string; secure_url?: string }
-): string => {
-  if (!path) {
-    return `${BASE_URL}/uploads/teamMembers/default-avatar.png`;
-  }
-
-  // Case 1: Cloudinary object
-  if (typeof path === "object") {
-    if (path.url) return path.url;
-    if (path.secure_url) return path.secure_url;
-    return `${BASE_URL}/uploads/teamMembers/default-avatar.png`;
-  }
-
-  // Case 2: String
-  if (typeof path === "string") {
-    // ✅ Local frontend asset (already bundled by Vite/CRA)
-    if (path.includes("/assets/") || path.startsWith("/src/")) {
-      return path; // don’t prepend BASE_URL
-    }
-
-    if (path.startsWith("http")) {
-      return path; // Already a URL
-    }
-
-    // ✅ Backend local path
-    let cleanPath = path
-      .replace(/\\/g, "/")
-      .replace(/\/+/g, "/")
-      .replace(/^uploads\//, "/uploads/");
-    if (!cleanPath.startsWith("/")) cleanPath = "/" + cleanPath;
-    return `${BASE_URL}${cleanPath}`;
-  }
-
-  // Fallback
-  return `${BASE_URL}/uploads/teamMembers/default-avatar.png`;
-};
-
 
   return (
     <section className="bg-gray-50 py-10 relative">
@@ -104,6 +61,7 @@ const TeamMembers: React.FC = () => {
                     src={getProfileImageUrl(member.avatar)}
                     alt={member.name}
                     className="w-20 h-20 rounded-full object-cover border transition-transform duration-300 group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-blue-400/40"
+                    onError={(e) => { e.currentTarget.src = "/placeholder.svg"; }}
                   />
                   <p className="text-sm font-semibold mt-2 truncate w-full">
                     {member.name}

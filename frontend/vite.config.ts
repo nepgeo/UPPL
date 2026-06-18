@@ -6,8 +6,8 @@ import { componentTagger } from "lovable-tagger";
 export default defineConfig(({ mode }) => ({
   base: "/", // ✅ Required for Vercel deployment
   server: {
-    host: "::",
-    port: 8080,
+    host: "0.0.0.0",
+    port: 5173,
     proxy: {
       // ✅ Proxy for local dev only
       "/uploads": {

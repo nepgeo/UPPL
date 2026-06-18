@@ -34,6 +34,7 @@ interface AuthContextType {
 
   // ✅ Added functions
   forgotPassword: (email: string) => Promise<boolean>;
+  socialLogin: (email: string, name: string, provider: string) => Promise<{ success: boolean; role?: string }>;
 }
 
 // Create Context
@@ -113,7 +114,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return true;
     } catch (error) {
       console.error("Registration failed:", error);
-      return false;
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -130,18 +131,33 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  // ✅ Google Login (redirects to backend OAuth route)
-  // const googleLogin = async (): Promise<void> => {
-  //   try {
-  //     window.location.href = `${import.meta.env.VITE_API_URL}/auth/google`;
-  //   } catch (error) {
-  //     console.error("Google login failed:", error);
-  //   }
-  // };
+  // ✅ Social Login (Google / Facebook)
+  const socialLogin = async (
+    email: string,
+    name: string,
+    provider: string
+  ): Promise<{ success: boolean; role?: string }> => {
+    setLoading(true);
+    try {
+      const response = await api.post("/auth/firebase", { email, name, provider });
+      const { token, user } = response.data;
+
+      localStorage.setItem("pplt20_user", JSON.stringify(user));
+      localStorage.setItem("pplt20_token", token);
+      setUser(user);
+
+      return { success: true, role: user.role };
+    } catch (error: any) {
+      console.error("Social login failed:", error);
+      return { success: false };
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <AuthContext.Provider
-      value={{ user, setUser, login, logout, register, loading, forgotPassword,  }}
+      value={{ user, setUser, login, logout, register, loading, forgotPassword, socialLogin }}
     >
       {children}
     </AuthContext.Provider>

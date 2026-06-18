@@ -1,507 +1,522 @@
-
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
-import { Clock, Play, Pause, Calendar, MapPin, Users, Target, TrendingUp, Activity } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Clock, MapPin, Activity, ArrowRight, Zap, Trophy, ChevronRight, Eye, Calendar, Play } from 'lucide-react';
+import api from '@/lib/api';
+import { API_BASE, BASE_URL } from '@/config';
 
-interface LiveMatch {
-  id: number;
-  teamA: string;
-  teamB: string;
-  teamALogo: string;
-  teamBLogo: string;
-  status: 'live' | 'upcoming' | 'completed';
-  venue: string;
-  date: string;
-  time: string;
-  format: string;
-  scoreA: {
-    runs: number;
-    wickets: number;
-    overs: number;
-    balls: number;
-  };
-  scoreB: {
-    runs: number;
-    wickets: number;
-    overs: number;
-    balls: number;
-  };
-  currentBatting: 'A' | 'B';
-  target?: number;
-  currentOver: string[];
-  recentOvers: string[][];
-  commentary: {
-    time: string;
-    text: string;
-    type: 'wicket' | 'boundary' | 'dot' | 'run';
-  }[];
-  keyPlayers: {
-    batsmen: { name: string; runs: number; balls: number; fours: number; sixes: number; }[];
-    bowlers: { name: string; overs: number; runs: number; wickets: number; economy: number; }[];
-  };
+interface TeamInfo {
+  _id: string;
+  teamName: string;
+  teamLogo?: string | { url?: string };
+  short?: string;
 }
 
-const LiveScores = () => {
-  const [matches, setMatches] = useState<LiveMatch[]>([]);
-  const [selectedMatch, setSelectedMatch] = useState<LiveMatch | null>(null);
+interface MatchScore {
+  runs: number;
+  wickets: number;
+  balls: number;
+  overs: number;
+  extras: number;
+  runRate: number;
+  fours: number;
+  sixes: number;
+}
+
+interface BallEvent {
+  over: number;
+  ball: number;
+  runs: number;
+  wicket?: boolean;
+  isFour?: boolean;
+  isSix?: boolean;
+  extras?: { type: string | null; runs: number };
+}
+
+interface UpcomingMatch {
+  _id: string;
+  result: string;
+  stage: string;
+  teamA: TeamInfo;
+  teamB: TeamInfo;
+  matchTime: string;
+  matchNumber?: number;
+  venue?: string;
+}
+
+interface CompletedMatch {
+  _id: string;
+  result: string;
+  teamA: TeamInfo & { runs?: number; wickets?: number };
+  teamB: TeamInfo & { runs?: number; wickets?: number };
+  matchTime: string;
+  winner?: string;
+  margin?: string;
+}
+
+function getTeamLogo(logo: any): string {
+  if (!logo) return '';
+  if (typeof logo === 'string') return logo;
+  return logo.url || logo.secure_url || '';
+}
+
+function formatOvers(balls: number) {
+  return `${Math.floor(balls / 6)}.${balls % 6}`;
+}
+
+export default function LiveScores() {
+  const navigate = useNavigate();
+  const [liveMatches, setLiveMatches] = useState<any[]>([]);
+  const [upcomingMatches, setUpcomingMatches] = useState<UpcomingMatch[]>([]);
+  const [recentMatches, setRecentMatches] = useState<CompletedMatch[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('live');
 
-  // Mock data for live matches
-  useEffect(() => {
-    const mockMatches: LiveMatch[] = [
-      {
-        id: 1,
-        teamA: "Mumbai Mavericks",
-        teamB: "Delhi Dragons",
-        teamALogo: "/placeholder.svg",
-        teamBLogo: "/placeholder.svg",
-        status: 'live',
-        venue: "Wankhede Stadium",
-        date: "2024-01-20",
-        time: "19:30",
-        format: "T20",
-        scoreA: { runs: 178, wickets: 6, overs: 20, balls: 0 },
-        scoreB: { runs: 145, wickets: 4, overs: 16, balls: 3 },
-        currentBatting: 'B',
-        target: 179,
-        currentOver: ['4', '1', '6', '.', '2'],
-        recentOvers: [
-          ['1', '4', '.', '2', '1', '6'],
-          ['4', '.', '1', '.', '2', '4'],
-          ['.', '6', '1', '4', '.', '1']
-        ],
-        commentary: [
-          { time: '16.3', text: 'FOUR! Beautiful cover drive by Sharma', type: 'boundary' },
-          { time: '16.2', text: 'Dot ball, good bowling by Patel', type: 'dot' },
-          { time: '16.1', text: 'SIX! What a shot! Goes over long-on', type: 'boundary' },
-          { time: '15.6', text: 'Single taken, easy run', type: 'run' },
-          { time: '15.5', text: 'WICKET! Caught behind! What a delivery!', type: 'wicket' }
-        ],
-        keyPlayers: {
-          batsmen: [
-            { name: 'R. Sharma', runs: 45, balls: 28, fours: 6, sixes: 2 },
-            { name: 'V. Kohli', runs: 32, balls: 21, fours: 4, sixes: 1 }
-          ],
-          bowlers: [
-            { name: 'J. Bumrah', overs: 3.3, runs: 28, wickets: 2, economy: 8.0 },
-            { name: 'R. Ashwin', overs: 4, runs: 35, wickets: 1, economy: 8.75 }
-          ]
-        }
-      },
-      {
-        id: 2,
-        teamA: "Chennai Champions",
-        teamB: "Bangalore Blasters",
-        teamALogo: "/placeholder.svg",
-        teamBLogo: "/placeholder.svg",
-        status: 'upcoming',
-        venue: "M. A. Chidambaram Stadium",
-        date: "2024-01-21",
-        time: "15:30",
-        format: "T20",
-        scoreA: { runs: 0, wickets: 0, overs: 0, balls: 0 },
-        scoreB: { runs: 0, wickets: 0, overs: 0, balls: 0 },
-        currentBatting: 'A',
-        currentOver: [],
-        recentOvers: [],
-        commentary: [],
-        keyPlayers: { batsmen: [], bowlers: [] }
-      },
-      {
-        id: 3,
-        teamA: "Kolkata Kings",
-        teamB: "Hyderabad Hawks",
-        teamALogo: "/placeholder.svg",
-        teamBLogo: "/placeholder.svg",
-        status: 'completed',
-        venue: "Eden Gardens",
-        date: "2024-01-19",
-        time: "19:30",
-        format: "T20",
-        scoreA: { runs: 165, wickets: 8, overs: 20, balls: 0 },
-        scoreB: { runs: 168, wickets: 6, overs: 19, balls: 4 },
-        currentBatting: 'B',
-        currentOver: [],
-        recentOvers: [],
-        commentary: [
-          { time: '19.4', text: 'MATCH WON! Hyderabad Hawks win by 4 wickets', type: 'boundary' }
-        ],
-        keyPlayers: {
-          batsmen: [
-            { name: 'D. Warner', runs: 68, balls: 45, fours: 8, sixes: 3 },
-            { name: 'K. Williamson', runs: 42, balls: 31, fours: 5, sixes: 1 }
-          ],
-          bowlers: [
-            { name: 'P. Cummins', overs: 4, runs: 32, wickets: 3, economy: 8.0 },
-            { name: 'S. Narine', overs: 4, runs: 28, wickets: 2, economy: 7.0 }
-          ]
-        }
+  const fetchAll = async () => {
+    try {
+      const [matchesRes, liveRes, recentRes] = await Promise.all([
+        api.get('/matches'),
+        api.get('/matches/live/now').catch(() => ({ data: { matches: [] } })),
+        api.get('/matches/recent/completed').catch(() => ({ data: { matches: [] } })),
+      ]);
+
+      const allMatches = matchesRes.data.matches || [];
+      const live = liveRes.data.matches || [];
+      const recent = recentRes.data.matches || [];
+
+      setLiveMatches(live);
+
+      // Upcoming: matches that are not live or completed
+      const upcoming = allMatches.filter((m: any) =>
+        m.result === 'upcoming' || (!m.result || m.result === 'pending')
+      );
+      setUpcomingMatches(upcoming);
+      setRecentMatches(recent);
+
+      // Auto-switch to live tab if there are live matches
+      if (live.length > 0 && activeTab === 'live') {
+        // keep on live
+      } else if (live.length > 0) {
+        setActiveTab('live');
       }
-    ];
-    setMatches(mockMatches);
-    setSelectedMatch(mockMatches[0]);
-  }, []);
-
-  // Simulate live updates
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (selectedMatch && selectedMatch.status === 'live') {
-        setSelectedMatch(prev => {
-          if (!prev) return null;
-          const newRuns = Math.floor(Math.random() * 7);
-          const newBalls = prev.currentBatting === 'B' ? prev.scoreB.balls + 1 : prev.scoreA.balls + 1;
-          
-          if (prev.currentBatting === 'B') {
-            return {
-              ...prev,
-              scoreB: {
-                ...prev.scoreB,
-                runs: prev.scoreB.runs + newRuns,
-                balls: newBalls > 5 ? 0 : newBalls,
-                overs: newBalls > 5 ? prev.scoreB.overs + 1 : prev.scoreB.overs
-              },
-              currentOver: [...prev.currentOver, newRuns.toString()].slice(-6)
-            };
-          }
-          return prev;
-        });
-      }
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [selectedMatch]);
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'live':
-        return <Badge className="bg-red-500 animate-pulse">● LIVE</Badge>;
-      case 'upcoming':
-        return <Badge variant="outline">Upcoming</Badge>;
-      case 'completed':
-        return <Badge variant="secondary">Completed</Badge>;
-      default:
-        return null;
+    } catch (err) {
+      console.error('Failed to fetch scores', err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const formatScore = (score: LiveMatch['scoreA']) => {
-    if (score.runs === 0 && score.wickets === 0) return 'Yet to bat';
-    return `${score.runs}/${score.wickets} (${score.overs}.${score.balls})`;
+  useEffect(() => {
+    fetchAll();
+    const interval = setInterval(fetchAll, 20000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const formatDateTime = (d: string) => {
+    const date = new Date(d);
+    return {
+      date: date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+      time: date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+      day: date.toLocaleDateString('en-US', { weekday: 'short' }),
+    };
   };
 
-  const liveMatches = matches.filter(m => m.status === 'live');
-  const upcomingMatches = matches.filter(m => m.status === 'upcoming');
-  const completedMatches = matches.filter(m => m.status === 'completed');
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800">
+        <div className="container mx-auto px-4 py-8">
+          <Skeleton className="h-12 w-64 mb-8 bg-white/10" />
+          <div className="grid gap-4">
+            {[1, 2, 3].map(i => (
+              <Skeleton key={i} className="h-32 w-full bg-white/10" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Live Scores</h1>
-        <p className="text-gray-600">Real-time updates from PPLT20 matches</p>
-      </div>
-
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Match List */}
-        <div className="lg:col-span-1">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="live">Live ({liveMatches.length})</TabsTrigger>
-              <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-              <TabsTrigger value="completed">Recent</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="live" className="space-y-4">
-              {liveMatches.map((match) => (
-                <Card 
-                  key={match.id} 
-                  className={`cursor-pointer transition-all hover:shadow-md ${selectedMatch?.id === match.id ? 'ring-2 ring-blue-500' : ''}`}
-                  onClick={() => setSelectedMatch(match)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-center mb-2">
-                      {getStatusBadge(match.status)}
-                      <span className="text-sm text-gray-500">{match.format}</span>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium">{match.teamA}</span>
-                        <span className="font-mono">{formatScore(match.scoreA)}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium">{match.teamB}</span>
-                        <span className="font-mono">{formatScore(match.scoreB)}</span>
-                      </div>
-                    </div>
-                    {match.target && (
-                      <div className="mt-2 text-sm text-gray-600">
-                        Target: {match.target} | Need: {match.target - (match.currentBatting === 'B' ? match.scoreB.runs : match.scoreA.runs)} runs
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </TabsContent>
-
-            <TabsContent value="upcoming" className="space-y-4">
-              {upcomingMatches.map((match) => (
-                <Card key={match.id} className="cursor-pointer hover:shadow-md">
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-center mb-2">
-                      {getStatusBadge(match.status)}
-                      <span className="text-sm text-gray-500">{match.time}</span>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="font-medium">{match.teamA}</div>
-                      <div className="text-sm text-gray-500">vs</div>
-                      <div className="font-medium">{match.teamB}</div>
-                    </div>
-                    <div className="mt-2 text-sm text-gray-600 flex items-center">
-                      <MapPin className="h-4 w-4 mr-1" />
-                      {match.venue}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </TabsContent>
-
-            <TabsContent value="completed" className="space-y-4">
-              {completedMatches.map((match) => (
-                <Card key={match.id} className="cursor-pointer hover:shadow-md">
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-center mb-2">
-                      {getStatusBadge(match.status)}
-                      <span className="text-sm text-gray-500">{match.date}</span>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium">{match.teamA}</span>
-                        <span className="font-mono">{formatScore(match.scoreA)}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium">{match.teamB}</span>
-                        <span className="font-mono">{formatScore(match.scoreB)}</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </TabsContent>
-          </Tabs>
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-blue-900 via-purple-900 to-indigo-900">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-10 left-10 w-72 h-72 bg-blue-500 rounded-full blur-3xl" />
+          <div className="absolute bottom-10 right-10 w-96 h-96 bg-purple-500 rounded-full blur-3xl" />
         </div>
-
-        {/* Match Details */}
-        <div className="lg:col-span-2">
-          {selectedMatch ? (
-            <div className="space-y-6">
-              {/* Match Header */}
-              <Card>
-                <CardHeader>
-                  <div className="flex justify-between items-center">
-                    <CardTitle className="flex items-center gap-2">
-                      {getStatusBadge(selectedMatch.status)}
-                      <span>{selectedMatch.format} Match</span>
-                    </CardTitle>
-                    <div className="flex items-center text-sm text-gray-500">
-                      <MapPin className="h-4 w-4 mr-1" />
-                      {selectedMatch.venue}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="text-center">
-                      <h3 className="font-semibold text-lg mb-2">{selectedMatch.teamA}</h3>
-                      <div className="text-3xl font-bold text-blue-600">
-                        {formatScore(selectedMatch.scoreA)}
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <h3 className="font-semibold text-lg mb-2">{selectedMatch.teamB}</h3>
-                      <div className="text-3xl font-bold text-blue-600">
-                        {formatScore(selectedMatch.scoreB)}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {selectedMatch.target && selectedMatch.status === 'live' && (
-                    <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                      <div className="flex justify-between text-sm mb-2">
-                        <span>Target: {selectedMatch.target}</span>
-                        <span>Required Rate: {((selectedMatch.target - (selectedMatch.currentBatting === 'B' ? selectedMatch.scoreB.runs : selectedMatch.scoreA.runs)) / ((20 - (selectedMatch.currentBatting === 'B' ? selectedMatch.scoreB.overs : selectedMatch.scoreA.overs)))).toFixed(2)}</span>
-                      </div>
-                      <Progress 
-                        value={((selectedMatch.currentBatting === 'B' ? selectedMatch.scoreB.runs : selectedMatch.scoreA.runs) / selectedMatch.target) * 100} 
-                        className="h-2"
-                      />
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Live Updates */}
-              {selectedMatch.status === 'live' && (
-                <div className="grid md:grid-cols-2 gap-6">
-                  {/* Current Over */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg flex items-center">
-                        <Activity className="h-5 w-5 mr-2" />
-                        Current Over
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex gap-2 mb-4">
-                        {selectedMatch.currentOver.map((ball, index) => (
-                          <div 
-                            key={index}
-                            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                              ball === '4' || ball === '6' ? 'bg-green-500 text-white' : 
-                              ball === 'W' ? 'bg-red-500 text-white' : 
-                              'bg-gray-200 text-gray-700'
-                            }`}
-                          >
-                            {ball}
-                          </div>
-                        ))}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        Over {selectedMatch.currentBatting === 'B' ? selectedMatch.scoreB.overs : selectedMatch.scoreA.overs}.{selectedMatch.currentBatting === 'B' ? selectedMatch.scoreB.balls : selectedMatch.scoreA.balls}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Recent Overs */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Recent Overs</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        {selectedMatch.recentOvers.map((over, overIndex) => (
-                          <div key={overIndex} className="flex items-center gap-2">
-                            <span className="text-sm font-medium w-12">Over {20 - selectedMatch.recentOvers.length + overIndex}:</span>
-                            <div className="flex gap-1">
-                              {over.map((ball, ballIndex) => (
-                                <span 
-                                  key={ballIndex}
-                                  className={`w-6 h-6 rounded text-xs flex items-center justify-center ${
-                                    ball === '4' || ball === '6' ? 'bg-green-100 text-green-700' : 
-                                    ball === 'W' ? 'bg-red-100 text-red-700' : 
-                                    'bg-gray-100 text-gray-600'
-                                  }`}
-                                >
-                                  {ball}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
-
-              {/* Key Players */}
-              {selectedMatch.keyPlayers.batsmen.length > 0 && (
-                <div className="grid md:grid-cols-2 gap-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Key Batsmen</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        {selectedMatch.keyPlayers.batsmen.map((batsman, index) => (
-                          <div key={index} className="flex justify-between items-center">
-                            <div>
-                              <div className="font-medium">{batsman.name}</div>
-                              <div className="text-sm text-gray-500">
-                                {batsman.runs} ({batsman.balls}) - {batsman.fours}x4s, {batsman.sixes}x6s
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="font-bold text-lg">{batsman.runs}</div>
-                              <div className="text-sm text-gray-500">SR: {((batsman.runs / batsman.balls) * 100).toFixed(1)}</div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Key Bowlers</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        {selectedMatch.keyPlayers.bowlers.map((bowler, index) => (
-                          <div key={index} className="flex justify-between items-center">
-                            <div>
-                              <div className="font-medium">{bowler.name}</div>
-                              <div className="text-sm text-gray-500">
-                                {bowler.overs} overs, {bowler.runs} runs
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="font-bold text-lg">{bowler.wickets}W</div>
-                              <div className="text-sm text-gray-500">Eco: {bowler.economy}</div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
-
-              {/* Commentary */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Live Commentary</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {selectedMatch.commentary.map((comment, index) => (
-                      <div 
-                        key={index} 
-                        className={`p-3 rounded-lg border-l-4 ${
-                          comment.type === 'wicket' ? 'border-red-500 bg-red-50' :
-                          comment.type === 'boundary' ? 'border-green-500 bg-green-50' :
-                          'border-gray-300 bg-gray-50'
-                        }`}
-                      >
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <span className="font-medium text-sm">{comment.time}</span>
-                            <p className="mt-1">{comment.text}</p>
-                          </div>
-                          {comment.type === 'wicket' && <span className="text-red-500 font-bold">W</span>}
-                          {comment.type === 'boundary' && <span className="text-green-500 font-bold">●</span>}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+        <div className="container mx-auto px-4 py-10 md:py-16 relative">
+          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
+            <div className="flex items-center gap-3 mb-2">
+              <Zap className="h-6 w-6 text-yellow-400" />
+              <span className="text-yellow-400 font-semibold text-sm uppercase tracking-widest">
+                {liveMatches.length > 0 ? `${liveMatches.length} Match${liveMatches.length > 1 ? 'es' : ''} Live` : 'Cricket Action'}
+              </span>
             </div>
-          ) : (
-            <Card>
-              <CardContent className="p-12 text-center">
-                <Clock className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Select a Match</h3>
-                <p className="text-gray-500">Choose a match from the list to view live scores and details</p>
-              </CardContent>
-            </Card>
+            <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-3 tracking-tight">
+              {liveMatches.length > 0 ? '🏏 Live Scores' : 'UPPL Scores'}
+            </h1>
+            <p className="text-gray-300 text-lg max-w-xl">
+              {liveMatches.length > 0
+                ? 'Real-time ball-by-ball updates from the ongoing matches'
+                : 'Follow all the action from the Udaydev Patan Premier League'}
+            </p>
+          </motion.div>
+
+          {liveMatches.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="mt-6 flex flex-wrap gap-3"
+            >
+              {liveMatches.map(m => (
+                <Badge key={m._id} className="bg-white/10 text-white border border-white/20 px-4 py-2 text-sm cursor-pointer hover:bg-white/20"
+                  onClick={() => navigate(`/match/${m._id}`)}
+                >
+                  <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse mr-2 inline-block" />
+                  {m.teamA?.teamName || 'TBD'} vs {m.teamB?.teamName || 'TBD'}
+                </Badge>
+              ))}
+            </motion.div>
           )}
         </div>
       </div>
+
+      <div className="container mx-auto px-4 py-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <div className="flex justify-center mb-8">
+            <TabsList className="bg-white/5 border border-white/10 p-1 rounded-xl">
+              <TabsTrigger value="live" className="data-[state=active]:bg-red-600 data-[state=active]:text-white rounded-lg px-6">
+                🔴 Live {liveMatches.length > 0 && `(${liveMatches.length})`}
+              </TabsTrigger>
+              <TabsTrigger value="upcoming" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white rounded-lg px-6">
+                📅 Upcoming ({upcomingMatches.length})
+              </TabsTrigger>
+              <TabsTrigger value="recent" className="data-[state=active]:bg-green-600 data-[state=active]:text-white rounded-lg px-6">
+                ✅ Recent
+              </TabsTrigger>
+              <Button
+                onClick={() => navigate('/watch-live')}
+                className="ml-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white border-0 rounded-lg px-4 h-9 text-sm font-semibold shadow-lg shadow-red-600/20"
+              >
+                <Play className="h-4 w-4 mr-1.5" /> Watch Live
+              </Button>
+            </TabsList>
+          </div>
+
+          {/* ===== LIVE TAB ===== */}
+          <TabsContent value="live">
+            {liveMatches.length === 0 ? (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <Card className="bg-white/5 border-white/10 backdrop-blur">
+                  <CardContent className="p-16 text-center">
+                    <Activity className="h-16 w-16 mx-auto mb-4 text-gray-500" />
+                    <h3 className="text-2xl font-bold text-white mb-2">No Live Matches</h3>
+                    <p className="text-gray-400 mb-6">There are no matches currently in progress. Check the upcoming matches.</p>
+                    <Button onClick={() => setActiveTab('upcoming')} variant="outline" className="border-white/20 text-white">
+                      View Upcoming Matches <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ) : (
+              <div className="grid gap-6">
+                {liveMatches.map((match, idx) => {
+                  const teamAScore = match.score?.teamA || { runs: 0, wickets: 0, balls: 0, overs: 0, runRate: 0 };
+                  const teamBScore = match.score?.teamB || { runs: 0, wickets: 0, balls: 0, overs: 0, runRate: 0 };
+                  return (
+                    <motion.div key={match._id} initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.1 }}>
+                      <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700/50 text-white overflow-hidden hover:border-blue-500/50 transition-all group">
+                        <CardContent className="p-0">
+                          {/* Live Banner */}
+                          <div className="bg-gradient-to-r from-red-600 to-red-800 px-4 py-1.5 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                              <span className="text-xs font-bold uppercase tracking-widest">Live</span>
+                              <span className="text-xs text-red-200">| {match.stage || 'League'} Match</span>
+                            </div>
+                            <span className="text-xs text-red-200">
+                              RR: {match.battingFirst === 'teamA' ? teamAScore.runRate?.toFixed(2) : teamBScore.runRate?.toFixed(2)}
+                            </span>
+                          </div>
+
+                          <div className="p-5">
+                            {/* Team A */}
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-3 flex-1">
+                                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center overflow-hidden">
+                                  {getTeamLogo(match.teamA?.teamLogo) ? (
+                                    <img src={getTeamLogo(match.teamA?.teamLogo)} alt="" className="w-full h-full object-contain p-1" />
+                                  ) : (
+                                    <span className="text-xs font-bold text-gray-400">
+                                      {match.teamA?.teamName?.split(' ').map((w: string) => w[0]).join('').slice(0, 2)}
+                                    </span>
+                                  )}
+                                </div>
+                                <div>
+                                  <p className="font-bold text-sm md:text-base">{match.teamA?.teamName || 'Team A'}</p>
+                                  <p className="text-xs text-gray-400">
+                                    {match.battingFirst === 'teamA' ? 'Batting' : ''}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-2xl md:text-3xl font-extrabold tracking-tight">
+                                  {teamAScore.runs}<span className="text-gray-400">/{teamAScore.wickets}</span>
+                                </p>
+                                <p className="text-xs text-gray-400">
+                                  {formatOvers(teamAScore.balls)} Overs | RR: {teamAScore.runRate?.toFixed(2)}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Divider */}
+                            <div className="border-t border-gray-700/50 my-3" />
+
+                            {/* Team B */}
+                            <div className="flex items-center justify-between mb-4">
+                              <div className="flex items-center gap-3 flex-1">
+                                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center overflow-hidden">
+                                  {getTeamLogo(match.teamB?.teamLogo) ? (
+                                    <img src={getTeamLogo(match.teamB?.teamLogo)} alt="" className="w-full h-full object-contain p-1" />
+                                  ) : (
+                                    <span className="text-xs font-bold text-gray-400">
+                                      {match.teamB?.teamName?.split(' ').map((w: string) => w[0]).join('').slice(0, 2)}
+                                    </span>
+                                  )}
+                                </div>
+                                <div>
+                                  <p className="font-bold text-sm md:text-base">{match.teamB?.teamName || 'Team B'}</p>
+                                  <p className="text-xs text-gray-400">
+                                    {match.battingFirst === 'teamB' ? 'Batting' : ''}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-2xl md:text-3xl font-extrabold tracking-tight">
+                                  {teamBScore.runs}<span className="text-gray-400">/{teamBScore.wickets}</span>
+                                </p>
+                                <p className="text-xs text-gray-400">
+                                  {formatOvers(teamBScore.balls)} Overs | RR: {teamBScore.runRate?.toFixed(2)}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Current Over Display */}
+                            {match.currentOver && match.currentOver.length > 0 && (
+                              <div className="mb-4">
+                                <p className="text-xs text-gray-500 mb-1">Over {match.currentOverNumber}:</p>
+                                <div className="flex gap-1.5">
+                                  {match.currentOver.map((ev: BallEvent, i: number) => (
+                                    <span key={i}
+                                      className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold
+                                        ${ev.wicket ? 'bg-red-600 text-white' :
+                                          ev.isSix ? 'bg-purple-600 text-white' :
+                                          ev.isFour ? 'bg-emerald-500 text-white' :
+                                          ev.runs === 0 ? 'bg-gray-700 text-gray-300' :
+                                          'bg-blue-600 text-white'}`}
+                                    >
+                                      {ev.wicket ? 'W' : ev.runs + (ev.extras?.runs || 0)}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            <Button
+                              onClick={() => navigate(`/match/${match._id}`)}
+                              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white border-0 mt-1"
+                            >
+                              <Eye className="h-4 w-4 mr-2" /> View Live Score
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* ===== UPCOMING TAB ===== */}
+          <TabsContent value="upcoming">
+            {upcomingMatches.length === 0 ? (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <Card className="bg-white/5 border-white/10 backdrop-blur">
+                  <CardContent className="p-16 text-center">
+                    <Calendar className="h-16 w-16 mx-auto mb-4 text-gray-500" />
+                    <h3 className="text-2xl font-bold text-white mb-2">No Upcoming Matches</h3>
+                    <p className="text-gray-400">No matches have been scheduled yet.</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {upcomingMatches.map((match, idx) => {
+                  const dt = formatDateTime(match.matchTime);
+                  return (
+                    <motion.div key={match._id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}>
+                      <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700/50 text-white h-full hover:border-blue-500/30 transition-all group">
+                        <CardContent className="p-5 flex flex-col h-full">
+                          <div className="flex items-center justify-between mb-3">
+                            <Badge variant="outline" className="border-gray-600 text-gray-300 text-xs">
+                              {match.stage || 'League'} Match{match.matchNumber ? ` #${match.matchNumber}` : ''}
+                            </Badge>
+                            <Badge className="bg-blue-600/20 text-blue-300 border border-blue-500/30 text-xs">
+                              Upcoming
+                            </Badge>
+                          </div>
+
+                          {/* Teams */}
+                          <div className="flex items-center justify-between gap-2 mb-4">
+                            <div className="text-center flex-1">
+                              <div className="w-12 h-12 rounded-full bg-white/10 mx-auto mb-2 flex items-center justify-center overflow-hidden">
+                                {getTeamLogo(match.teamA?.teamLogo) ? (
+                                  <img src={getTeamLogo(match.teamA?.teamLogo)} alt="" className="w-full h-full object-contain p-1" />
+                                ) : (
+                                  <span className="text-lg font-bold text-gray-500">
+                                    {match.teamA?.teamName?.charAt(0) || 'A'}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-sm font-semibold leading-tight">{match.teamA?.teamName || 'TBD'}</p>
+                            </div>
+                            <div className="text-center px-2">
+                              <p className="text-lg font-extrabold text-yellow-400">VS</p>
+                            </div>
+                            <div className="text-center flex-1">
+                              <div className="w-12 h-12 rounded-full bg-white/10 mx-auto mb-2 flex items-center justify-center overflow-hidden">
+                                {getTeamLogo(match.teamB?.teamLogo) ? (
+                                  <img src={getTeamLogo(match.teamB?.teamLogo)} alt="" className="w-full h-full object-contain p-1" />
+                                ) : (
+                                  <span className="text-lg font-bold text-gray-500">
+                                    {match.teamB?.teamName?.charAt(0) || 'B'}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-sm font-semibold leading-tight">{match.teamB?.teamName || 'TBD'}</p>
+                            </div>
+                          </div>
+
+                          {/* Date/Time */}
+                          <div className="text-center mb-4 text-sm text-gray-400 space-y-1">
+                            <div className="flex items-center justify-center gap-1">
+                              <Calendar className="h-3.5 w-3.5" />
+                              <span>{dt.day}, {dt.date}</span>
+                            </div>
+                            <div className="flex items-center justify-center gap-1">
+                              <Clock className="h-3.5 w-3.5" />
+                              <span>{dt.time}</span>
+                            </div>
+                          </div>
+
+                          {/* Spacer */}
+                          <div className="flex-1" />
+
+                          {/* Button */}
+                          <Button
+                            onClick={() => navigate(`/match/${match._id}`)}
+                            className="w-full bg-white/10 hover:bg-white/20 text-white border border-white/20"
+                          >
+                            <Eye className="h-4 w-4 mr-2" /> Match Details
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* ===== RECENT TAB ===== */}
+          <TabsContent value="recent">
+            {recentMatches.length === 0 ? (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <Card className="bg-white/5 border-white/10 backdrop-blur">
+                  <CardContent className="p-16 text-center">
+                    <Trophy className="h-16 w-16 mx-auto mb-4 text-gray-500" />
+                    <h3 className="text-2xl font-bold text-white mb-2">No Completed Matches</h3>
+                    <p className="text-gray-400">Completed match results will appear here.</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ) : (
+              <div className="grid gap-4">
+                {recentMatches.map((match, idx) => {
+                  const dt = formatDateTime(match.matchTime);
+                  const winnerName = match.winner === 'teamA'
+                    ? match.teamA?.teamName
+                    : match.winner === 'teamB'
+                    ? match.teamB?.teamName
+                    : match.winner === 'tie' ? 'Match Tied' : match.winner;
+                  return (
+                    <motion.div key={match._id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.05 }}>
+                      <Card className="bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700/50 text-white hover:border-green-500/30 transition-all group">
+                        <CardContent className="p-4">
+                          <div className="flex flex-col md:flex-row md:items-center gap-3">
+                            {/* Teams */}
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <Trophy className="h-4 w-4 text-yellow-500" />
+                                  <span className="text-xs text-gray-400">{dt.date}</span>
+                                </div>
+                                <Badge className="bg-green-600/20 text-green-300 border-green-500/30 text-xs">Completed</Badge>
+                              </div>
+                              <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                                  <div className="w-8 h-8 rounded-full bg-white/10 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                                    {getTeamLogo(match.teamA?.teamLogo) ? (
+                                      <img src={getTeamLogo(match.teamA?.teamLogo)} alt="" className="w-full h-full object-contain" />
+                                    ) : <span className="text-xs text-gray-500">A</span>}
+                                  </div>
+                                  <span className="font-semibold text-sm truncate">{match.teamA?.teamName}</span>
+                                  <span className="font-mono font-bold text-lg ml-auto">
+                                    {match.teamA?.runs ?? 0}/{match.teamA?.wickets ?? 0}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-4 mt-1">
+                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                                  <div className="w-8 h-8 rounded-full bg-white/10 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                                    {getTeamLogo(match.teamB?.teamLogo) ? (
+                                      <img src={getTeamLogo(match.teamB?.teamLogo)} alt="" className="w-full h-full object-contain" />
+                                    ) : <span className="text-xs text-gray-500">B</span>}
+                                  </div>
+                                  <span className="font-semibold text-sm truncate">{match.teamB?.teamName}</span>
+                                  <span className="font-mono font-bold text-lg ml-auto">
+                                    {match.teamB?.runs ?? 0}/{match.teamB?.wickets ?? 0}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="md:text-right md:border-l md:border-gray-700/50 md:pl-4">
+                              {winnerName && (
+                                <p className="text-sm font-semibold text-green-400 mb-2">{winnerName} won{ match.margin ? ` by ${match.margin}` : '' }</p>
+                              )}
+                              <Button variant="ghost" size="sm" onClick={() => navigate(`/match/${match._id}`)}
+                                className="text-gray-400 hover:text-white w-full md:w-auto">
+                                Recap <ArrowRight className="h-3 w-3 ml-1" />
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
-};
-
-export default LiveScores;
+}

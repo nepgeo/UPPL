@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from "react";
 import {
   Calendar,
-  MapPin,
   Clock,
   Filter,
   Trophy,
 } from "lucide-react";
-import axios from "axios";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,6 +24,8 @@ import {
 } from "@/components/ui/dialog";
 import api from '@/lib/api';
 import { BASE_URL } from "@/config";
+import { getProfileImageUrl } from "@/utils/getProfileImageUrl";
+import MatchDetailsDialog from "@/components/matches/MatchDetailsDialog";
 
 import { motion } from "framer-motion";
 interface Team {
@@ -77,93 +77,98 @@ interface Match {
 
 const Schedule = () => {
   const [selectedFilter, setSelectedFilter] = useState("all");
-  const [selectedMonth, setSelectedMonth] = useState("january-2024");
   const [matches, setMatches] = useState<Match[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
+  const [currentSeason, setCurrentSeason] = useState<any>(null);
+  const [seasons, setSeasons] = useState<any[]>([]);
+  const [selectedSeasonId, setSelectedSeasonId] = useState<string>("");
+  const [loading, setLoading] = useState(true);
   const token = localStorage.getItem("pplt20_token");
 
   const [teamPlayers, setTeamPlayers] = useState<{ [teamId: string]: any[] }>({});
   const [loadingTeamId, setLoadingTeamId] = useState<string | null>(null);
 
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+  // Fetch current season + all seasons on mount
   useEffect(() => {
-    fetchMatches();
-    fetchGroups();
-    fetchPlayers();
+    const init = async () => {
+      try {
+        const [seasonRes, allSeasonsRes] = await Promise.all([
+          api.get("/seasons/current", { headers }),
+          api.get("/seasons", { headers }).catch(() => ({ data: [] })),
+        ]);
+        const season = seasonRes.data;
+        setCurrentSeason(season);
+        setSeasons(allSeasonsRes.data || []);
+        setSelectedSeasonId(season?._id || "");
+      } catch (err) {
+        console.error("❌ Failed to load season data", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    init();
   }, []);
 
-  function getProfileImageUrl(path?: string | null) {
-    if (!path) return `${BASE_URL}/favicon.png`;
-    if (path.startsWith("http")) return path;
+  // Reload data whenever selected season changes
+  useEffect(() => {
+    if (!selectedSeasonId) return;
+    const load = async () => {
+      setLoading(true);
+      await Promise.all([
+        fetchMatches(selectedSeasonId),
+        fetchGroups(selectedSeasonId),
+        fetchPlayers(selectedSeasonId),
+      ]);
+      setLoading(false);
+    };
+    load();
+  }, [selectedSeasonId]);
 
-    let cleanPath = path
-      .replace(/\\/g, "/")
-      .replace(/\/+/g, "/")
-      .replace(/^\/uploads\/uploads\//, "/uploads/")
-      .replace(/^uploads\//, "/uploads/");
-
-    if (!cleanPath.startsWith("/")) cleanPath = "/" + cleanPath;
-    return `${BASE_URL}${cleanPath}`;
-  }
-
-  const fetchMatches = async () => {
+  const fetchMatches = async (seasonId: string) => {
     try {
-      const res = await api.get("/matches", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await api.get("/matches", { params: { seasonNumber: seasonId }, headers });
       setMatches(res.data.matches || []);
     } catch (err) {
       console.error("❌ Failed to fetch matches", err);
     }
   };
 
-  const fetchGroups = async () => {
+  const fetchGroups = async (seasonId: string) => {
     try {
-    
-      const res = await api.get("/groups/schedule", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      console.log("✅ Raw API response:", res);          // full Axios response
-    console.log("✅ Response data:", res.data);        // just the response body
-    console.log("✅ Groups received:", res.data.groups); 
+      const res = await api.get("/groups/schedule", { params: { seasonId }, headers });
       setGroups(res.data.schedule?.groups || []);
     } catch (err) {
       console.error("❌ Failed to fetch groups", err);
     }
   };
 
-  const fetchPlayers = async () => {
-  try {
-    setLoadingTeamId("all"); 
-    const token = localStorage.getItem("pplt20_token");
+  const fetchPlayers = async (seasonId: string) => {
+    try {
+      setLoadingTeamId("all");
+      const res = await fetch(`${BASE_URL}/api/teams/with-players`, {
+        headers: {
+          ...headers,
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to fetch teams with players");
 
-    const res = await fetch(`${BASE_URL}/api/teams/with-players`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data.message || "Failed to fetch teams with players");
+      const playersByTeam: { [teamId: string]: any[] } = {};
+      (data.teams || []).forEach((team: any) => {
+        playersByTeam[team._id] = Array.isArray(team.players) ? team.players : [];
+      });
+      setTeamPlayers(playersByTeam);
+    } catch (err) {
+      console.error("❌ Failed to fetch teams with players", err);
+      setTeamPlayers({});
+    } finally {
+      setLoadingTeamId(null);
     }
-
-    // Store per-team players
-    const playersByTeam: { [teamId: string]: any[] } = {};
-    (data.teams || []).forEach((team: any) => {
-      playersByTeam[team._id] = Array.isArray(team.players) ? team.players : [];
-    });
-
-    setTeamPlayers(playersByTeam);
-  } catch (err) {
-    console.error("❌ Failed to fetch teams with players", err);
-    setTeamPlayers({});
-  } finally {
-    setLoadingTeamId(null);
-  }
-};
+  };
 
 
 
@@ -212,27 +217,6 @@ const Schedule = () => {
   const finalMatch = matches.find((m) =>
     m.stage.toLowerCase().includes("final")
   );
-
-  function getProfileImageUrl(path) {
-  if (!path) return `${BASE_URL}/favicon.png`;
-
-  // 🧠 Handle Cloudinary-style objects
-  if (typeof path === "object" && path.url) return path.url;
-
-  if (typeof path !== "string") return `${BASE_URL}/favicon.png`;
-
-  if (path.startsWith("http")) return path;
-
-  let cleanPath = path
-    .replace(/\\/g, "/")
-    .replace(/\/+/g, "/")
-    .replace(/^\/uploads\/uploads\//, "/uploads/")
-    .replace(/^uploads\//, "/uploads/");
-
-  if (!cleanPath.startsWith("/")) cleanPath = "/" + cleanPath;
-  return `${BASE_URL}${cleanPath}`;
-}
-
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -372,7 +356,7 @@ const Schedule = () => {
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-4 mb-8">          
+        <div className="flex flex-col md:flex-row gap-4 mb-8 justify-between items-start md:items-center">
           <div className="flex items-center space-x-2">
             <Filter className="h-5 w-5 text-gray-500" />
             <Select value={selectedFilter} onValueChange={setSelectedFilter}>
@@ -386,6 +370,25 @@ const Schedule = () => {
               </SelectContent>
             </Select>
           </div>
+
+          {/* Season Selector */}
+          {seasons.length > 0 && (
+            <div className="flex items-center space-x-2">
+              <Trophy className="h-5 w-5 text-gray-500" />
+              <Select value={selectedSeasonId} onValueChange={setSelectedSeasonId}>
+                <SelectTrigger className="w-56">
+                  <SelectValue placeholder="Select season" />
+                </SelectTrigger>
+                <SelectContent>
+                  {seasons.map((s: any) => (
+                    <SelectItem key={s._id} value={s._id}>
+                      Season {s.seasonNumber}{s.isCurrent ? " (Current)" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
 
         {/* Match Cards */}
@@ -397,122 +400,116 @@ const Schedule = () => {
             .map((match, index) => (
               <Card
                 key={match._id}
-                className="hover:shadow-2xl transition-transform transform hover:scale-[1.02] rounded-2xl overflow-hidden bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800"
+                className="overflow-hidden border border-gray-200/80 hover:border-gray-300 transition-all duration-300 rounded-2xl shadow-sm hover:shadow-md"
               >
-                <CardContent className="p-4 sm:p-6 text-white">
-                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-6 lg:space-y-0">
+                <CardContent className="p-0">
+                  {/* Top accent bar based on status */}
+                  <div className={`h-1 w-full ${match.result === 'live' ? 'bg-red-500' : match.result === 'completed' ? 'bg-green-500' : 'bg-blue-500'}`} />
 
-                    {/* LEFT: Match Info + Teams */}
-                    <div className="flex flex-col space-y-4 w-full">
-                      {/* Match number + stage */}
-                      <div className="flex items-center justify-center lg:justify-start gap-2 sm:gap-3 text-xs sm:text-sm font-semibold">
-                        <span className="bg-white/20 px-2 sm:px-3 py-1 rounded-lg shadow">
-                          Match {index + 1}
-                        </span>
-                        <span className="uppercase tracking-wide bg-black/30 px-2 sm:px-3 py-1 rounded-lg">
-                          {match.stage}
-                        </span>
-                      </div>
+                  <div className="p-4 sm:p-5">
+                    <div className="flex flex-col lg:flex-row lg:items-center gap-4">
 
-                      {/* Teams row */}
-                      <div className="flex items-center justify-center space-x-6 sm:space-x-10">
+                      {/* LEFT: Teams */}
+                      <div className="flex-1 flex items-center justify-center lg:justify-start gap-4 sm:gap-8">
                         {/* Team A */}
                         <Dialog onOpenChange={(open) => open && fetchPlayers(match.teamA._id)}>
                           <DialogTrigger asChild>
-                            <div className="text-center group cursor-pointer">
-                              <img
-                                src={getProfileImageUrl(match.teamA?.teamLogo)}
-                                alt={match.teamA?.teamName}
-                                className="w-12 h-12 sm:w-16 sm:h-16 rounded-full mx-auto shadow-lg"
-                              />
-                              <div className="mt-2 font-bold text-sm sm:text-lg">{match.teamA?.teamName}</div>
+                            <div className="flex flex-col items-center min-w-0 cursor-pointer group">
+                              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gray-50 border-2 border-gray-100 flex items-center justify-center overflow-hidden group-hover:border-blue-300 transition-colors">
+                                <img
+                                  src={getProfileImageUrl(match.teamA?.teamLogo)}
+                                  alt={match.teamA?.teamName}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => { e.currentTarget.src = "/placeholder.svg"; }}
+                                />
+                              </div>
+                              <span className="mt-1.5 font-semibold text-xs sm:text-sm text-gray-800 text-center truncate max-w-[90px] sm:max-w-[120px]">
+                                {match.teamA?.teamName || "TBD"}
+                              </span>
+                              {(match.result === 'live' || match.result === 'completed') && (
+                                <span className="text-sm sm:text-base font-bold text-gray-900 mt-0.5">
+                                  {match.teamAResult?.runs ?? match.teamA?.runs ?? 0}
+                                  <span className="text-gray-400">/</span>
+                                  {match.teamAResult?.wickets ?? match.teamA?.wickets ?? 0}
+                                </span>
+                              )}
                             </div>
                           </DialogTrigger>
-                          
-                          <DialogContent className="max-w-lg bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 text-white rounded-2xl shadow-xl">
+                          <DialogContent className="max-w-md">
                             <DialogHeader>
-                              <DialogTitle className="text-xl font-bold text-center">
-                                {match.teamA?.teamName} - Players
-                              </DialogTitle>
+                              <DialogTitle className="text-lg font-bold">{match.teamA?.teamName} - Players</DialogTitle>
                             </DialogHeader>
-
                             {loadingTeamId === match.teamA._id ? (
-                              <p className="text-center text-gray-200">Loading players...</p>
+                              <p className="text-center text-gray-500 py-4">Loading players...</p>
                             ) : (
-                              <ul className="mt-4 space-y-2">
-                                {teamPlayers[match.teamA._id]?.length > 0 ? (
+                              <ul className="space-y-2 max-h-80 overflow-y-auto">
+                                {(teamPlayers[match.teamA._id] || []).length > 0 ? (
                                   teamPlayers[match.teamA._id].map((player, i) => (
-                                    <li
-                                      key={i}
-                                      className="bg-white/10 p-2 rounded-lg flex items-center gap-3"
-                                    >
-                                      <img
-                                        src={getProfileImageUrl(player.profileImage)}
-                                        alt={player.name}
-                                        className="w-8 h-8 rounded-full"
-                                      />
-                                      <span className="font-medium">{player.name}</span>
-                                      <span className="ml-auto text-xs text-gray-300">{player.position}</span>
+                                    <li key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                                      <img src={getProfileImageUrl(player.profileImage)} alt={player.name} className="w-8 h-8 rounded-full object-cover" onError={(e) => { e.currentTarget.src = "/placeholder.svg"; }} />
+                                      <span className="font-medium text-sm text-gray-800">{player.name}</span>
+                                      <span className="ml-auto text-xs text-gray-400">{player.position}</span>
                                     </li>
                                   ))
                                 ) : (
-                                  <li className="text-center text-gray-200">No players found</li>
+                                  <li className="text-center text-gray-400 py-4">No players found</li>
                                 )}
                               </ul>
                             )}
                           </DialogContent>
                         </Dialog>
 
-
-                        <div className="text-lg sm:text-2xl font-extrabold text-gray-200">VS</div>
+                        {/* Score / VS */}
+                        <div className="flex flex-col items-center gap-1">
+                          <div className="text-sm sm:text-base font-bold text-gray-300 tracking-widest">VS</div>
+                          {match.result === 'live' && (
+                            <span className="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded-full animate-pulse font-bold">LIVE</span>
+                          )}
+                        </div>
 
                         {/* Team B */}
                         <Dialog onOpenChange={(open) => open && fetchPlayers(match.teamB._id)}>
                           <DialogTrigger asChild>
-                            <div className="text-center group cursor-pointer">
-                              {match.teamB?.teamLogo && (
+                            <div className="flex flex-col items-center min-w-0 cursor-pointer group">
+                              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gray-50 border-2 border-gray-100 flex items-center justify-center overflow-hidden group-hover:border-blue-300 transition-colors">
                                 <img
                                   src={getProfileImageUrl(match.teamB?.teamLogo)}
-                                  alt={match.teamB.teamName}
-                                  className="w-12 h-12 sm:w-16 sm:h-16 rounded-full mx-auto shadow-lg"
+                                  alt={match.teamB?.teamName}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => { e.currentTarget.src = "/placeholder.svg"; }}
                                 />
-                              )}
-                              <div className="mt-2 font-bold text-sm sm:text-lg">
-                                {match.teamB?.teamName || "TBD"}
                               </div>
+                              <span className="mt-1.5 font-semibold text-xs sm:text-sm text-gray-800 text-center truncate max-w-[90px] sm:max-w-[120px]">
+                                {match.teamB?.teamName || "TBD"}
+                              </span>
+                              {(match.result === 'live' || match.result === 'completed') && (
+                                <span className="text-sm sm:text-base font-bold text-gray-900 mt-0.5">
+                                  {match.teamBResult?.runs ?? match.teamB?.runs ?? 0}
+                                  <span className="text-gray-400">/</span>
+                                  {match.teamBResult?.wickets ?? match.teamB?.wickets ?? 0}
+                                </span>
+                              )}
                             </div>
                           </DialogTrigger>
-
-                          <DialogContent className="max-w-lg bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 text-white rounded-2xl shadow-xl">
+                          <DialogContent className="max-w-md">
                             <DialogHeader>
-                              <DialogTitle className="text-xl font-bold text-center">
-                                {match.teamB?.teamName} - Players
-                              </DialogTitle>
+                              <DialogTitle className="text-lg font-bold">{match.teamB?.teamName} - Players</DialogTitle>
                             </DialogHeader>
-
                             {loadingTeamId === match.teamB._id ? (
-                              <p className="text-center text-gray-200">Loading players...</p>
+                              <p className="text-center text-gray-500 py-4">Loading players...</p>
                             ) : (
-                              <ul className="mt-4 space-y-2">
-                                {teamPlayers[match.teamB._id]?.length > 0 ? (
+                              <ul className="space-y-2 max-h-80 overflow-y-auto">
+                                {(teamPlayers[match.teamB._id] || []).length > 0 ? (
                                   teamPlayers[match.teamB._id].map((player, i) => (
-                                    <li
-                                      key={i}
-                                      className="bg-white/10 p-2 rounded-lg flex items-center gap-3"
-                                    >
-
-                                      <span className="font-semibold w-6 text-center">{i + 1}.</span>
-                                      <img
-                                        src={getProfileImageUrl(player.profileImage)}
-                                        alt={player.name}
-                                        className="w-8 h-8 rounded-full"
-                                      />
-                                      <span className="font-medium">{player.name}</span>
-                                      <span className="ml-auto text-xs text-gray-300">{player.position}</span>
+                                    <li key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                                      <span className="text-xs font-semibold text-gray-400 w-5 text-center">{i + 1}.</span>
+                                      <img src={getProfileImageUrl(player.profileImage)} alt={player.name} className="w-8 h-8 rounded-full object-cover" onError={(e) => { e.currentTarget.src = "/placeholder.svg"; }} />
+                                      <span className="font-medium text-sm text-gray-800">{player.name}</span>
+                                      <span className="ml-auto text-xs text-gray-400">{player.position}</span>
                                     </li>
                                   ))
                                 ) : (
-                                  <li className="text-center text-gray-200">No players found</li>
+                                  <li className="text-center text-gray-400 py-4">No players found</li>
                                 )}
                               </ul>
                             )}
@@ -520,161 +517,69 @@ const Schedule = () => {
                         </Dialog>
                       </div>
 
-                      {/* Date, Time, Venue */}
-                      <div className="flex flex-wrap justify-center gap-4 sm:gap-6 text-xs sm:text-sm text-gray-200 mt-2">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
-                          {new Date(match.matchTime).toLocaleDateString()}
+                      {/* RIGHT: Info + Button */}
+                      <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-5 lg:ml-auto">
+                        {/* Match meta */}
+                        <div className="flex flex-col items-center sm:items-end gap-1 text-xs text-gray-500">
+                          <div className="flex items-center gap-1.5">
+                            <Calendar className="w-3.5 h-3.5" />
+                            {new Date(match.matchTime).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5" />
+                            {new Date(match.matchTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className={`inline-block w-1.5 h-1.5 rounded-full ${match.result === 'live' ? 'bg-red-500 animate-pulse' : match.result === 'completed' ? 'bg-green-500' : 'bg-blue-500'}`} />
+                            <span className="capitalize">{match.result || "upcoming"}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-4 h-4" />
-                          {new Date(match.matchTime).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+
+                        {/* Stage badge + Details button */}
+                        <div className="flex items-center gap-2">
+                          <span className="hidden sm:inline-block text-[11px] font-semibold uppercase tracking-wider text-gray-400 bg-gray-100 px-2.5 py-1 rounded-md">
+                            {match.stage === "league" ? "League" : match.stage}
+                          </span>
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                onClick={() => setSelectedMatch(match)}
+                                className={`whitespace-nowrap text-xs font-semibold rounded-lg px-3.5 py-2 h-auto shadow-sm transition-all hover:scale-105 ${
+                                  match.result === 'live'
+                                    ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse'
+                                    : 'bg-gray-900 hover:bg-gray-800 text-white'
+                                }`}
+                              >
+                                {match.result === 'live' ? 'Live Score' : 'Details'}
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                              <DialogHeader>
+                                <DialogTitle className="sr-only">Match Details</DialogTitle>
+                              </DialogHeader>
+                              <MatchDetailsDialog match={match} matchIndex={index} />
+                            </DialogContent>
+                          </Dialog>
                         </div>
-                        {/* <div className="flex items-center gap-1">
-                          <MapPin className="w-4 h-4" />
-                          {match.venue}
-                        </div> */}
-                      </div>
-
-                      {/* Winner Info */}
-                      {match.winner && match.margin && (
-                        <div className="mt-3 sm:mt-4 bg-yellow-500 text-black px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold shadow text-center">
-                          {match.winner === "teamA" && match.teamA?.teamName
-                            ? match.teamA.teamName
-                            : match.winner === "teamB" && match.teamB?.teamName
-                            ? match.teamB.teamName
-                            : match.winner === "tie" || match.winner === "draw"
-                            ? "Match tied"
-                            : match.winner === "no_result"
-                            ? "No result"
-                            : ""
-                          }
-                          {(match.winner === "teamA" || match.winner === "teamB") && match.margin
-                            ? ` won by ${match.margin}`
-                            : ""
-                          }
-                        </div>
-                      )}
-
-
-
-                      {/* View Details Button (centered on small screens) */}
-                      <div
-                        className="
-                          flex justify-center mt-3   /* 📱 Small: below winner */
-                          lg:absolute lg:top-1/2 lg:right-4 lg:-translate-y-1/2 lg:mt-0 /* 💻 Large: middle right */
-                        "
-                      >
-                        <Dialog>
-                           <DialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setSelectedMatch(match)}
-                              className="
-                                relative 
-                                overflow-hidden 
-                                px-4 sm:px-5 py-2 
-                                text-xs sm:text-sm font-semibold
-                                text-black
-                                border border-yellow-500 
-                                rounded-xl
-                                shadow-md
-                                transition-all 
-                                duration-300 
-                                ease-in-out
-                                hover:scale-105 
-                                hover:shadow-lg 
-                                hover:text-white 
-                                hover:border-transparent
-                                bg-yellow-400 
-                                hover:bg-yellow-500
-                              "
-                            >
-                              <span className="relative z-10">View Details</span>
-                              <span
-                                className="absolute inset-0 bg-white opacity-0 hover:opacity-10 transition-opacity duration-300"
-                              />
-                            </Button>
-                          </DialogTrigger>
-
-
-                          <DialogContent className="w-full max-w-xs sm:max-w-md md:max-w-xl bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 text-white rounded-2xl shadow-xl p-3 sm:p-6">
-                            <DialogHeader>
-                              <DialogTitle className="text-lg sm:text-xl md:text-2xl font-bold text-center">
-                                Match {index + 1} - {match.stage}
-                              </DialogTitle>
-                            </DialogHeader>
-
-                            <div className="space-y-3 sm:space-y-4 md:space-y-6 mt-3 sm:mt-4">
-                              {/* Match Info */}
-                              <div className="text-center space-y-1 sm:space-y-2 text-xs sm:text-sm md:text-base">
-                                <p className="flex items-center justify-center gap-1 sm:gap-2">
-                                  <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
-                                  {new Date(match.matchTime).toLocaleDateString()}
-                                  <Clock className="w-4 h-4 sm:w-5 sm:h-5 mx-1" />
-                                  {new Date(match.matchTime).toLocaleTimeString([], {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  })}
-                                </p>
-                              </div>
-
-                              {/* Teams Summary */}
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 md:gap-4">
-                                {["teamA", "teamB"].map((t) => {
-                                  const team = match[t as "teamA" | "teamB"];
-                                  return (
-                                    <div
-                                      key={team.teamName}
-                                      className="bg-white/10 p-2 sm:p-3 md:p-4 rounded-xl shadow flex flex-col items-center"
-                                    >
-                                      {team.teamLogo && (
-                                        <img
-                                          src={getProfileImageUrl(team.teamLogo)}
-                                          alt={team.teamName}
-                                          className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-full mb-1 sm:mb-2"
-                                        />
-                                      )}
-                                      <h3 className="font-bold text-sm sm:text-base md:text-lg mb-1 sm:mb-2 text-center">
-                                        {team.teamName}
-                                      </h3>
-                                      <div className="flex justify-between w-full text-gray-200 text-xs sm:text-sm md:text-sm">
-                                        <span>Runs: {team.runs ?? "-"}</span>
-                                        <span>Wickets: {team.wickets ?? "-"}</span>
-                                        <span>Overs: {team.overs ?? "-"}</span>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-
-                              {/* Winner Info */}
-                              {match.winner && match.margin && (
-                              <div className="mt-3 sm:mt-4 bg-yellow-500 text-black px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold shadow text-center">
-                                {match.winner === "teamA"
-                                  ? match.teamA?.teamName
-                                  : match.winner === "teamB"
-                                  ? match.teamB?.teamName
-                                  : match.winner === "tie" || match.winner === "draw"
-                                  ? "Match tied"
-                                  : match.winner === "no_result"
-                                  ? "No result"
-                                  : ""
-                                } 
-                                {(match.winner === "teamA" || match.winner === "teamB") && match.margin
-                                  ? ` won by ${match.margin}`
-                                  : ""}
-                              </div>
-                            )}
-                            </div>
-                          </DialogContent>
-                        </Dialog>
                       </div>
                     </div>
+
+                    {/* Winner banner */}
+                    {match.winner && match.margin && (
+                      <div className="mt-3 pt-3 border-t border-gray-100">
+                        <div className="flex items-center gap-2 text-xs sm:text-sm">
+                          <Trophy className="w-4 h-4 text-yellow-500 flex-shrink-0" />
+                          <span className="font-medium text-gray-700">
+                            {match.winner === "teamA" ? match.teamA?.teamName
+                              : match.winner === "teamB" ? match.teamB?.teamName
+                              : match.winner === "tie" || match.winner === "draw" ? "Match Tied"
+                              : "No Result"}
+                            {match.margin ? ` won by ${match.margin}` : ""}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>

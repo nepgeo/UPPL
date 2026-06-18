@@ -1,4 +1,3 @@
-// backend/routes/newsRoutes.js
 const express = require("express");
 const router = express.Router();
 const {
@@ -7,17 +6,22 @@ const {
   createNews,
   updateNews,
   deleteNews,
+  incrementView,
+  bulkUpdateStatus,
+  bulkDelete,
 } = require("../controllers/newsController");
 const { protect } = require("../middleware/authMiddleware");
-const { multiple } = require("../middleware/upload"); // ✅ use central upload.js
+const { multiple } = require("../middleware/upload");
 
-// 🔓 Public Routes
 router.get("/", getAllNews);
 router.get("/:id", getNewsById);
 
-// 🔐 Protected Routes (with file upload)
 router.post("/", protect, multiple("images", 10), createNews);
 router.put("/:id", protect, multiple("images", 10), updateNews);
 router.delete("/:id", protect, deleteNews);
+
+router.patch("/:id/view", incrementView);
+router.patch("/bulk/status", protect, bulkUpdateStatus);
+router.post("/bulk/delete", protect, bulkDelete);
 
 module.exports = router;

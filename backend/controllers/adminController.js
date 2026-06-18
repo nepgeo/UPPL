@@ -1,6 +1,11 @@
 const Team = require('../models/teamModel');
 const Match = require('../models/matchModel');
 const User = require('../models/User');
+const Player = require('../models/Player');
+const News = require('../models/newsModel');
+const { OrganizationSponsor, IndividualSponsor } = require('../models/sponsorModel');
+const GalleryImage = require('../models/galleryImage');
+const Video = require('../models/Video');
 const mailer = require('../config/mailer'); 
 const generatePlayerCode = require('../utils/generatePlayerCode');
 const { uploadFileToCloudinary, destroyPublicId } = require("../utils/cloudinaryService");
@@ -54,6 +59,14 @@ exports.addPlayer = async (req, res) => {
 
     await newUser.save();
 
+    await Player.create({
+      userId: newUser._id,
+      position: position || '',
+      battingStyle: battingStyle || '',
+      bowlingStyle: bowlingStyle || '',
+      verified: true,
+    });
+
     res.status(201).json({
       message: "Player added successfully",
       player: newUser,
@@ -92,9 +105,19 @@ exports.getAllUsers = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
+    const { search, role } = req.query;
 
-    const users = await User.find().skip(skip).limit(limit);
-    const totalUsers = await User.countDocuments();
+    const filter = {};
+    if (role && role !== 'all') filter.role = role;
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    const users = await User.find(filter).skip(skip).limit(limit).sort({ createdAt: -1 });
+    const totalUsers = await User.countDocuments(filter);
 
     const formattedUsers = users.map(user => ({
       id: user._id,
@@ -118,7 +141,12 @@ exports.getAllUsers = async (req, res) => {
         : "N/A",
     }));
 
-    res.status(200).json({ users: formattedUsers, totalUsers });
+    // Unfiltered counts for stats cards
+    const totalAdmins = await User.countDocuments({ role: 'admin' });
+    const totalPlayers = await User.countDocuments({ role: 'player' });
+    const pendingPlayers = await User.countDocuments({ role: 'player', $or: [{ verified: false }, { verified: { $exists: false } }] });
+
+    res.status(200).json({ users: formattedUsers, totalUsers, totalAdmins, totalPlayers, pendingPlayers });
   } catch (err) {
     console.error("❌ Error in getAllUsers:", err);
     res.status(500).json({ error: "Failed to fetch users" });
@@ -140,6 +168,94 @@ exports.getAdminDashboardStats = async (req, res) => {
       $or: [{ verified: false }, { verified: { $exists: false } }]
     });
 
+    const totalTeams = await Team.countDocuments();
+    const totalMatches = await Match.countDocuments();
+    const completedMatches = await Match.countDocuments({ result: 'completed' });
+    const upcomingMatches = await Match.countDocuments({ result: 'upcoming' });
+    const activeMatches = await Match.countDocuments({ result: 'live' }) || 0;
+
+    // Content stats
+    const totalNews = await News.countDocuments();
+    const draftNews = await News.countDocuments({ status: 'draft' });
+    const publishedNews = await News.countDocuments({ status: 'published' });
+    const totalGalleryImages = await GalleryImage.countDocuments();
+    const totalSponsors = await OrganizationSponsor.countDocuments() + await IndividualSponsor.countDocuments();
+    const totalVideos = await Video.countDocuments();
+
+    // Player role distribution
+    const batsmen = await User.countDocuments({ role: 'player', position: 'batsman' });
+    const bowlers = await User.countDocuments({ role: 'player', position: 'bowler' });
+    const allRounders = await User.countDocuments({ role: 'player', position: 'all-rounder' });
+    const wicketKeepers = await User.countDocuments({ role: 'player', position: { $in: ['wicketkeeper', 'wicket-keeper', 'wk'] } });
+
+    // Recent user registrations
+    const recentUsers = await User.find()
+      .sort({ createdAt: -1 })
+      .limit(6)
+      .select('name email role profileImage createdAt')
+      .lean();
+
+    const recentMatches = await Match.find()
+      .sort({ updatedAt: -1 })
+      .limit(5)
+      .populate('teamA', 'teamName')
+      .populate('teamB', 'teamName')
+      .select('teamA teamB result matchTime updatedAt')
+      .lean();
+
+    // Build activity feed from real data
+    const recentRegistrations = await User.find()
+      .sort({ createdAt: -1 })
+      .limit(3)
+      .select('name createdAt')
+      .lean();
+
+    const recentMatchUpdates = await Match.find({ result: { $ne: 'upcoming' } })
+      .sort({ updatedAt: -1 })
+      .limit(3)
+      .populate('teamA', 'teamName')
+      .populate('teamB', 'teamName')
+      .select('teamA teamB result updatedAt')
+      .lean();
+
+    const recentVerifications = await User.find({ role: 'player', verified: true })
+      .sort({ updatedAt: -1 })
+      .limit(3)
+      .select('name updatedAt')
+      .lean();
+
+    const activityFeed = [];
+
+    recentMatchUpdates.forEach(m => {
+      activityFeed.push({
+        action: m.result === 'completed' ? 'Match Completed' : 'Match went Live',
+        details: `${m.teamA?.teamName || 'Team A'} vs ${m.teamB?.teamName || 'Team B'}`,
+        time: m.updatedAt,
+        type: m.result === 'completed' ? 'success' : 'info',
+      });
+    });
+
+    recentRegistrations.forEach(u => {
+      activityFeed.push({
+        action: 'New Registration',
+        details: u.name || 'Unknown user',
+        time: u.createdAt,
+        type: 'user',
+      });
+    });
+
+    recentVerifications.forEach(u => {
+      activityFeed.push({
+        action: 'Player Verified',
+        details: u.name || 'Unknown player',
+        time: u.updatedAt,
+        type: 'verification',
+      });
+    });
+
+    activityFeed.sort((a, b) => new Date(b.time) - new Date(a.time));
+    activityFeed.splice(8);
+
     const pendingPlayersList = pendingPlayersRaw.map(player => ({
       id: player._id,
       name: player.name || 'Unknown',
@@ -160,9 +276,28 @@ exports.getAdminDashboardStats = async (req, res) => {
       totalUsers,
       verifiedPlayers,
       pendingPlayers,
-      recentActivity: [
-        { action: 'System Init', details: 'Dashboard initialized', time: 'Just now', type: 'info' }
-      ],
+      activeMatches,
+      totalTeams,
+      totalMatches,
+      completedMatches,
+      upcomingMatches,
+      contentStats: {
+        totalNews,
+        draftNews,
+        publishedNews,
+        totalGalleryImages,
+        totalSponsors,
+        totalVideos,
+      },
+      playerRoles: {
+        batsmen,
+        bowlers,
+        allRounders,
+        wicketKeepers,
+      },
+      recentUsers,
+      recentMatches,
+      activityFeed,
       pendingPlayersList
     });
   } catch (err) {
@@ -279,11 +414,24 @@ exports.updateUser = async (req, res) => {
 
     res.status(200).json({
       message: 'User updated successfully',
-      user: updatedUser,
+      user: {
+        id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        verified: updatedUser.verified,
+        profileImage: updatedUser.profileImage || null,
+        documents: updatedUser.documents || [],
+        playerCode: updatedUser.playerCode || null,
+        team: updatedUser.team || null,
+      },
     });
   } catch (err) {
-    console.error('Update user error:', err);
-    res.status(500).json({ error: 'Failed to update user' });
+    console.error('Update user error:', err.message || err);
+    console.error('Stack:', err.stack);
+    console.error('Req body:', JSON.stringify(req.body));
+    console.error('Req files keys:', req.files ? Object.keys(req.files) : 'none');
+    res.status(500).json({ error: 'Failed to update user', details: err.message || 'Unknown error' });
   }
 };
 
@@ -324,6 +472,17 @@ exports.verifyPlayer = async (req, res) => {
     player.playerCode = await generatePlayerCode();
     await player.save();
 
+    const existingPlayer = await Player.findOne({ userId: player._id });
+    if (!existingPlayer) {
+      await Player.create({
+        userId: player._id,
+        position: player.position || '',
+        battingStyle: player.battingStyle || '',
+        bowlingStyle: player.bowlingStyle || '',
+        verified: true,
+      });
+    }
+
     await mailer.sendMail({
       from: process.env.EMAIL_USER,
       to: player.email,
@@ -342,14 +501,9 @@ exports.verifyPlayer = async (req, res) => {
 exports.rejectPlayer = async (req, res) => {
   try {
     const { playerId } = req.params;
+    const { reason } = req.body;
     const user = await User.findById(playerId);
     if (!user) return res.status(404).json({ message: 'User not found' });
-
-    user.role = 'user';
-    user.verified = false;
-    user.position = undefined;
-    user.battingStyle = undefined;
-    user.bowlingStyle = undefined;
 
     if (user.profileImage?.public_id) {
       await destroyPublicId(user.profileImage.public_id);
@@ -359,15 +513,28 @@ exports.rejectPlayer = async (req, res) => {
         if (doc.public_id) await destroyPublicId(doc.public_id);
       }
     }
+
+    user.rejectionReason = reason || '';
+    user.rejectedAt = new Date();
+    user.role = 'user';
+    user.verified = false;
+    user.position = undefined;
+    user.battingStyle = undefined;
+    user.bowlingStyle = undefined;
     user.documents = [];
+    user.profileImage = { url: '', public_id: '' };
 
     await user.save();
+
+    const emailText = reason
+      ? `Hi ${user.name},\n\nUnfortunately your player verification request has been rejected.\n\nReason: ${reason}\n\nYou can sign up again and submit a new request at any time.`
+      : `Hi ${user.name}, unfortunately your player verification request has been rejected. You can sign up again and submit a new request at any time.`;
 
     await mailer.sendMail({
       from: process.env.EMAIL_USER,
       to: user.email,
       subject: "Your Player Verification Request Was Rejected",
-      text: `Hi ${user.name}, unfortunately your player verification request has been rejected.`,
+      text: emailText,
     });
 
     res.json({ message: 'Player rejected and email sent' });

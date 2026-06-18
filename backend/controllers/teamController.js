@@ -56,9 +56,16 @@ const createTeam = async (req, res) => {
       );
     }
 
-    if (!paymentReceipt?.url || !teamLogo?.url) {
+    if (!teamLogo?.url) {
       return res.status(400).json({
-        message: "❌ Both paymentReceipt and teamLogo are required",
+        message: "❌ Team logo is required",
+      });
+    }
+
+    const paymentMethod = req.body.paymentMethod || "esewa";
+    if (paymentMethod !== "esewa" && !paymentReceipt?.url) {
+      return res.status(400).json({
+        message: "❌ Payment receipt is required for this payment method",
       });
     }
 
@@ -101,6 +108,8 @@ const createTeam = async (req, res) => {
       })
     );
 
+    const isEsewa = paymentMethod === "esewa";
+
     // ✅ Create the team
     const newTeam = new Team({
       teamName: req.body.teamName,
@@ -108,6 +117,9 @@ const createTeam = async (req, res) => {
       coachName: req.body.coachName || "",
       managerName: req.body.managerName || "",
       contactNumber: req.body.contactNumber || "",
+      email: req.body.email || "",
+      paymentMethod,
+      status: isEsewa ? "pending_payment" : "pending",
       seasonNumber: new mongoose.Types.ObjectId(seasonNumber),
       groupName: req.body.groupName || null,
       createdBy: req.user?.id,
@@ -206,13 +218,15 @@ const updateTeam = async (req, res) => {
     const team = await Team.findById(req.params.id);
     if (!team) return res.status(404).json({ message: "Team not found" });
 
-    const { teamName, captainName, coachName, managerName, contactNumber, players } = req.body;
+    const { teamName, captainName, coachName, managerName, contactNumber, email, paymentMethod, players } = req.body;
 
     if (teamName) team.teamName = teamName;
     if (captainName) team.captainName = captainName;
     if (coachName) team.coachName = coachName;
     if (managerName) team.managerName = managerName;
     if (contactNumber) team.contactNumber = contactNumber;
+    if (email) team.email = email;
+    if (paymentMethod) team.paymentMethod = paymentMethod;
 
     if (players) {
       let parsedPlayers = typeof players === "string" ? JSON.parse(players) : players;

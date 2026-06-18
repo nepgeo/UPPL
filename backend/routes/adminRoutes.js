@@ -7,11 +7,12 @@ const { isAdmin } = require('../middleware/roleMiddleware');
 
 const { upload } = require('../middleware/upload');
 
-router.get('/users', adminController.getAllUsers);
-// 🔐 Apply middleware to all admin routes
+// 🔐 Protect ALL admin routes
 router.use(protect);
 router.use(isAdmin);
 router.use(requireAdminOrSuperAdmin );
+
+router.get('/users', adminController.getAllUsers);
 
 // 📊 Admin Dashboard
 router.get('/admin-dashboard', adminController.getAdminDashboardStats);

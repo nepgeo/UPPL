@@ -144,25 +144,22 @@ exports.getImages = async (req, res) => {
       season,
       sortBy = "createdAt",
       order = "desc",
+      public: isPublic,
     } = req.query;
 
     const match = {};
     if (tag) match.tags = tag;
+    if (isPublic !== undefined) match.isPublic = isPublic === "true";
 
     const sortOption = {};
     sortOption[sortBy] = order === "asc" ? 1 : -1;
 
     const images = await GalleryImage.find(match)
-      .populate({
-        path: "album",
-        match: season ? { isPublic: true, season } : { isPublic: true },
-      })
+      .populate("album")
       .sort(sortOption)
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
-
-    const filtered = images.filter((img) => img.album !== null);
-    res.json(filtered.map(normalizeImage));
+    res.json(images.map(normalizeImage));
   } catch (err) {
     console.error("❌ Fetch images error:", err);
     res.status(500).json({ message: "Failed to fetch images" });

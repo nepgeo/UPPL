@@ -1,442 +1,494 @@
-import React, { useState, useEffect } from 'react';
-import { Trophy, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { API_BASE, BASE_URL } from '@/config';
+import { useState, useEffect, useMemo } from "react";
+import { Trophy, TrendingUp, TrendingDown, Minus, Loader2 } from "lucide-react";
+import { motion } from "framer-motion";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { getProfileImageUrl } from "@/utils/getProfileImageUrl";
 
 
 
+const TEAM_COLORS = [
+  "#2563eb", "#7c3aed", "#059669", "#d97706",
+  "#dc2626", "#0891b2", "#ca8a04", "#9333ea",
+  "#16a34a", "#e11d48", "#0d9488", "#f97316",
+];
 
-/**
- * A small map of known teams — used only for aesthetics (short name + color).
- * You can expand this or load it from the backend in future.
- */
-const teamsInfo = {
-  'Lumbini Lions': { short: 'LL', color: '#ff9800' },
-  'Pokhara Patriots': { short: 'PP', color: '#3f51b5' },
-  'Kathmandu Kings': { short: 'KK', color: '#4caf50' },
-  'Biratnagar Blasters': { short: 'BB', color: '#f44336' },
-  'Janakpur Royals': { short: 'JR', color: '#9c27b0' },
-  'Butwal Tigers': { short: 'BT', color: '#009688' }
-};
-
-// ✅ New function to handle team logo/profile image
-function getProfileImageUrl(path) {
-  if (!path) return `${BASE_URL}/favicon.png`;
-
-  // 🧠 Handle Cloudinary-style objects
-  if (typeof path === "object" && path.url) return path.url;
-
-  if (typeof path !== "string") return `${BASE_URL}/favicon.png`;
-
-  if (path.startsWith("http")) return path;
-
-  let cleanPath = path
-    .replace(/\\/g, "/")
-    .replace(/\/+/g, "/")
-    .replace(/^\/uploads\/uploads\//, "/uploads/")
-    .replace(/^uploads\//, "/uploads/");
-
-  if (!cleanPath.startsWith("/")) cleanPath = "/" + cleanPath;
-  return `${BASE_URL}${cleanPath}`;
+function hashColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return TEAM_COLORS[Math.abs(hash) % TEAM_COLORS.length];
 }
 
+function getInitials(name: string): string {
+  return name
+    .split(/\s+/)
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
 
-// Types are loose here to keep the file as plain JS-friendly; but shape normalization is done below.
+function formatNrr(nrr: number): string {
+  if (nrr === 0) return "0.000";
+  const sign = nrr > 0 ? "+" : "";
+  return `${sign}${nrr.toFixed(3)}`;
+}
+
+function safeArray<T>(arr: T[] | undefined | null): T[] {
+  return Array.isArray(arr) ? arr : [];
+}
+
+interface TeamRow {
+  teamId?: string;
+  team: string;
+  teamCode?: string;
+  teamLogo?: string;
+  matches: number;
+  won: number;
+  lost: number;
+  tied: number;
+  nrr: number;
+  points: number;
+  form: string[];
+  groupName?: string;
+  position: number;
+  qualified?: string | null;
+}
+
+interface PointsData {
+  groups: Record<string, TeamRow[]>;
+  all: TeamRow[];
+}
+
+function normalizeTeamRow(row: any, idx: number): TeamRow {
+  const teamName = row.team || row.teamName || row.name || (row.teamObj && (row.teamObj.teamName || row.teamObj.name)) || "";
+  const nrrVal = (() => {
+    let v = row.nrr ?? row.nrrSum ?? row.netRunRate;
+    if (v === undefined || v === null) {
+      const s = row.nrrString || row.netRunRateString;
+      if (typeof s === "string") { const p = parseFloat(s); if (!isNaN(p)) v = p; }
+      v = v ?? 0;
+    }
+    return typeof v === "number" ? v : parseFloat(v) || 0;
+  })();
+  let form: string[] = [];
+  if (Array.isArray(row.form)) form = row.form;
+  else if (typeof row.form === "string") form = row.form.includes(",") ? row.form.split(",").map((s: string) => s.trim()).filter(Boolean) : row.form.split("").map((s: string) => s.trim()).filter(Boolean);
+  else if (Array.isArray(row.lastResults)) form = row.lastResults;
+  const position = row.groupPosition ?? row.group_pos ?? row.position ?? row.pos ?? idx + 1;
+  const qualified = row.qualified ?? row.status ?? row.qualification ?? null;
+  const groupName = row.groupName ?? row.group ?? row.group_label ?? row.groupLabel ?? "Group";
+  return {
+    teamId: row.teamId || row._id || (row.teamObj && row.teamObj._id) || row.id || null,
+    team: teamName,
+    teamCode: row.teamCode || row.code || (row.teamObj && row.teamObj.teamCode) || "",
+    teamLogo: row.teamLogo || row.logo || (row.teamObj && row.teamObj.teamLogo) || null,
+    matches: row.matches ?? row.played ?? row.playedMatches ?? 0,
+    won: row.won ?? row.wins ?? 0,
+    lost: row.lost ?? row.losses ?? 0,
+    tied: row.tied ?? row.ties ?? 0,
+    nrr: nrrVal,
+    points: typeof row.points === "number" ? row.points : parseInt(row.points, 10) || 0,
+    form,
+    groupName,
+    position: typeof position === "number" ? position : parseInt(position, 10) || idx + 1,
+    qualified,
+  };
+}
+
+const Skeleton = () => (
+  <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 pb-12">
+    <div className="bg-gradient-to-r from-slate-900 via-blue-900 to-slate-800 text-white py-14 mb-8" />
+    <div className="container mx-auto px-4">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden animate-pulse">
+        <div className="h-14 bg-gray-100" />
+        {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+          <div key={i} className="flex items-center gap-4 px-6 py-4 border-b border-gray-50">
+            <div className="w-8 h-8 rounded-full bg-gray-100" />
+            <div className="w-8 h-8 rounded-full bg-gray-100" />
+            <div className="h-4 bg-gray-100 rounded w-48" />
+            <div className="flex-1" />
+            <div className="h-4 bg-gray-100 rounded w-12" />
+            <div className="h-4 bg-gray-100 rounded w-12" />
+            <div className="h-4 bg-gray-100 rounded w-12" />
+            <div className="h-4 bg-gray-100 rounded w-12" />
+            <div className="h-4 bg-gray-100 rounded w-16" />
+            <div className="h-4 bg-gray-100 rounded w-12" />
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+);
+
 const PointsTable = () => {
-  const [viewType, setViewType] = useState('current'); // 'current' | 'form'
-  const [pointsTable, setPointsTable] = useState({ groups: {}, all: [] });
+  const [viewType, setViewType] = useState<"current" | "form">("current");
   const [loading, setLoading] = useState(true);
-  const [teams, setTeams] = useState([]);
-  const [matches, setMatches] = useState([]);
-  const [previousRanks, setPreviousRanks] = useState({});
+  const [pointsTable, setPointsTable] = useState<PointsData>({ groups: {}, all: [] });
+  const [seasonLabel, setSeasonLabel] = useState("");
+  const [allSeasons, setAllSeasons] = useState<any[]>([]);
+  const [selectedSeasonId, setSelectedSeasonId] = useState<string>("");
 
-  
+  const fetchPointsTable = async (seasonId: string, headers: Record<string, string>) => {
+    if (!seasonId) {
+      setPointsTable({ groups: {}, all: [] });
+      return;
+    }
+    const ptRes = await fetch(`/api/points-table/${encodeURIComponent(seasonId)}`, { headers });
+    let raw: any = {};
+    try { raw = await ptRes.json(); } catch { raw = {}; }
 
+    const normalized: PointsData = { groups: {}, all: [] };
+    const src = raw?.groups || raw?.all ? raw : Array.isArray(raw) ? { all: raw } : raw?.teams ? { all: raw.teams } : normalized;
+    if (src.groups) normalized.groups = src.groups;
+    if (src.all) normalized.all = Array.isArray(src.all) ? src.all : [];
+
+    const finalGroups: Record<string, TeamRow[]> = {};
+    const finalAll: TeamRow[] = [];
+
+    if (Object.keys(normalized.groups).length) {
+      Object.entries(normalized.groups).forEach(([gName, arr]) => {
+        if (!Array.isArray(arr)) return;
+        const norm = arr.map((r: any, i: number) => normalizeTeamRow(r, i));
+        norm.sort((a, b) => {
+          if (a.position !== b.position) return a.position - b.position;
+          if (b.points !== a.points) return b.points - a.points;
+          return b.nrr - a.nrr;
+        });
+        norm.forEach((t, i) => (t.position = i + 1));
+        finalGroups[gName] = norm;
+        finalAll.push(...norm);
+      });
+    }
+
+    if (!finalAll.length && Array.isArray(normalized.all) && normalized.all.length) {
+      const allNorm = normalized.all.map((r: any, i: number) => normalizeTeamRow(r, i));
+      const grouped: Record<string, TeamRow[]> = {};
+      allNorm.forEach((t) => {
+        const g = t.groupName?.trim() || "Ungrouped";
+        if (!grouped[g]) grouped[g] = [];
+        grouped[g].push(t);
+      });
+      Object.values(grouped).forEach((arr) => {
+        arr.sort((a, b) => { if (a.position !== b.position) return a.position - b.position; if (b.points !== a.points) return b.points - a.points; return b.nrr - a.nrr; });
+        arr.forEach((t, i) => (t.position = i + 1));
+      });
+      Object.assign(finalGroups, grouped);
+      finalAll.push(...allNorm);
+    }
+
+    setPointsTable({ groups: finalGroups, all: finalAll });
+  };
 
   useEffect(() => {
-    const fetchSeasonData = async () => {
+    const fetchData = async () => {
       setLoading(true);
       try {
-        const token = localStorage.getItem('pplt20_token') || '';
+        const token = localStorage.getItem("pplt20_token") || "";
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-        // 1) Current season
-        const seasonRes = await fetch('/api/seasons/current', { headers });
+        const [seasonRes, allSeasonsRes] = await Promise.all([
+          fetch("/api/seasons/current", { headers }),
+          fetch("/api/seasons", { headers }),
+        ]);
+
         const currentSeason = await seasonRes.json();
+        let allSeasonsData: any[] = [];
+        try { allSeasonsData = await allSeasonsRes.json(); } catch { allSeasonsData = []; }
+        if (!Array.isArray(allSeasonsData)) allSeasonsData = [];
+        setAllSeasons(allSeasonsData);
+
         const currentSeasonId = currentSeason?._id || currentSeason?.id || currentSeason?.seasonNumber;
-        
-        if (!currentSeasonId) {
-          console.warn('No current season found from /api/seasons/current');
-          setPointsTable({ groups: {}, all: [] });
-          setTeams([]);
-          setMatches([]);
-          setLoading(false);
-          return;
-        }
+        setSelectedSeasonId(currentSeasonId || "");
+        setSeasonLabel(currentSeason?.seasonLabel || currentSeason?.name || `Season ${currentSeason?.seasonNumber || ""}` || "");
 
-        // 2) Points table
-        const ptRes = await fetch(`/api/points-table/${encodeURIComponent(currentSeasonId)}`, {
-          headers
-        });
-        let rawPointsData = {};
-        try {
-          rawPointsData = await ptRes.json();
-        } catch (e) {
-          console.error('Failed to parse points table response', e);
-          rawPointsData = {};
-        }
-
-        const normalizePoints = (raw) => {
-          const normalized = { groups: {}, all: [] };
-          if (!raw) return normalized;
-          if (typeof raw === 'object' && (raw.groups || raw.all)) {
-            normalized.groups = raw.groups || {};
-            normalized.all = Array.isArray(raw.all) ? raw.all : [];
-            return normalized;
-          }
-          if (Array.isArray(raw)) {
-            normalized.all = raw;
-            return normalized;
-          }
-          if (Array.isArray(raw.teams)) {
-            normalized.all = raw.teams;
-            return normalized;
-          }
-          return normalized;
-        };
-
-        const normalizedPoints = normalizePoints(rawPointsData);
-
-        const normalizeTeamRow = (row, idxInList = 0) => {
-          const teamName =
-            row.team ||
-            row.teamName ||
-            row.name ||
-            (row.teamObj && (row.teamObj.teamName || row.teamObj.name)) ||
-            '';
-
-          const teamId = row.teamId || row._id || (row.teamObj && row.teamObj._id) || row.id || null;
-          const teamCode = row.teamCode || row.code || (row.teamObj && row.teamObj.teamCode) || '';
-          const matchesPlayed = row.matches ?? row.played ?? row.playedMatches ?? 0;
-          const won = row.won ?? row.wins ?? 0;
-          const lost = row.lost ?? row.losses ?? 0;
-          const tied = row.tied ?? row.ties ?? 0;
-
-          let nrr = row.nrr ?? row.nrrSum ?? row.netRunRate;
-          if (nrr === undefined || nrr === null) {
-            const maybe = row.nrrString || row.netRunRateString;
-            if (typeof maybe === 'string') {
-              const parsed = parseFloat(maybe);
-              if (!isNaN(parsed)) nrr = parsed;
-            }
-            nrr = nrr ?? 0;
-          }
-
-          const points = row.points ?? row.pts ?? row.totalPoints ?? 0;
-
-          let form = [];
-          if (Array.isArray(row.form)) {
-            form = row.form;
-          } else if (typeof row.form === 'string') {
-            if (row.form.includes(',')) {
-              form = row.form.split(',').map((s) => s.trim()).filter(Boolean);
-            } else {
-              form = row.form.split('').map((s) => s.trim()).filter(Boolean);
-            }
-          } else if (row.lastResults && Array.isArray(row.lastResults)) {
-            form = row.lastResults;
-          }
-
-          const groupName = row.groupName ?? row.group ?? row.group_label ?? row.groupLabel ?? 'Group';
-          const position = row.groupPosition ?? row.group_pos ?? row.position ?? row.pos ?? idxInList + 1;
-          const qualified = row.qualified ?? row.status ?? row.qualification ?? null;
-
-          return {
-            teamId,
-            team: teamName,
-            teamCode,
-            teamLogo: getProfileImageUrl(row.teamLogo || row.logo || (row.teamObj && row.teamObj.teamLogo) || ''),
-            matches: matchesPlayed,
-            won,
-            lost,
-            tied,
-            nrr: typeof nrr === 'number' ? nrr : parseFloat(nrr) || 0,
-            points: typeof points === 'number' ? points : parseInt(points, 10) || 0,
-            form,
-            groupName,
-            position,
-            qualified
-          };
-        };
-
-        const finalGroups = {};
-        const finalAll = [];
-
-        if (normalizedPoints.groups && Object.keys(normalizedPoints.groups).length) {
-          Object.entries(normalizedPoints.groups).forEach(([gName, arr]) => {
-            if (!Array.isArray(arr)) return;
-            const norm = arr.map((r, idx) => normalizeTeamRow(r, idx));
-            norm.sort((a, b) => {
-              if ((a.position || 0) !== (b.position || 0)) return (a.position || 0) - (b.position || 0);
-              if (b.points !== a.points) return b.points - a.points;
-              return b.nrr - a.nrr;
-            });
-            norm.forEach((t, i) => (t.position = i + 1));
-            finalGroups[gName] = norm;
-            finalAll.push(...norm);
-          });
-        }
-
-        if (finalAll.length === 0 && Array.isArray(normalizedPoints.all) && normalizedPoints.all.length) {
-          const normAll = normalizedPoints.all.map((r, idx) => normalizeTeamRow(r, idx));
-          const groupsFromAll = {};
-normAll.forEach((t) => {
-  let g = t.groupName?.trim();
-  if (!g || g.toLowerCase() === 'group' || g.toLowerCase() === 'ungrouped') {
-    g = 'Ungrouped';
-  }
-  if (!groupsFromAll[g]) groupsFromAll[g] = [];
-  groupsFromAll[g].push(t);
-});
-
-          Object.keys(groupsFromAll).forEach((g) => {
-            groupsFromAll[g].sort((a, b) => {
-              if ((a.position || 0) !== (b.position || 0)) return (a.position || 0) - (b.position || 0);
-              if (b.points !== a.points) return b.points - a.points;
-              return b.nrr - a.nrr;
-            });
-            groupsFromAll[g].forEach((t, i) => (t.position = i + 1));
-            finalGroups[g] = groupsFromAll[g];
-          });
-          finalAll.push(...normAll);
-        }
-
-        const finalNormalized = { groups: finalGroups, all: finalAll };
-        setPointsTable(finalNormalized);
-
-        try {
-          const teamsRes = await fetch(`/api/teams?seasonId=${encodeURIComponent(currentSeasonId)}`, {
-            headers
-          });
-          const teamsJson = await teamsRes.json();
-          if (Array.isArray(teamsJson)) setTeams(teamsJson);
-        } catch (e) {
-          console.debug('teams fetch failed or not present', e);
-        }
-
-        try {
-          const matchesRes = await fetch(`/api/matches?seasonId=${encodeURIComponent(currentSeasonId)}`, {
-            headers
-          });
-          const matchesJson = await matchesRes.json();
-          if (Array.isArray(matchesJson)) setMatches(matchesJson);
-        } catch (e) {
-          console.debug('matches fetch failed or not present', e);
-        }
-
+        await fetchPointsTable(currentSeasonId, headers);
       } catch (err) {
-        console.error('Error fetching season data:', err);
+        console.error("Error fetching points table:", err);
         setPointsTable({ groups: {}, all: [] });
       } finally {
         setLoading(false);
       }
     };
-
-    fetchSeasonData();
+    fetchData();
   }, []);
 
-  const getQualificationBadge = (status) => {
-    if (!status) return <Badge variant="outline">TBD</Badge>;
-    const lower = String(status).toLowerCase();
-    if (lower.includes('playoff') || lower.includes('qualified') || lower.includes('q')) {
-      return <Badge className="bg-green-500 text-white">Qualified</Badge>;
+  const handleSeasonChange = async (season: any) => {
+    const seasonId = season?._id || season?.id || season?.seasonNumber;
+    if (!seasonId || seasonId === selectedSeasonId) return;
+    setLoading(true);
+    setSelectedSeasonId(seasonId);
+    setSeasonLabel(season?.seasonLabel || season?.name || `Season ${season?.seasonNumber || ""}` || "");
+    try {
+      const token = localStorage.getItem("pplt20_token") || "";
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      await fetchPointsTable(seasonId, headers);
+    } catch (err) {
+      console.error("Error fetching points table:", err);
+      setPointsTable({ groups: {}, all: [] });
+    } finally {
+      setLoading(false);
     }
-    if (lower.includes('elim') || lower.includes('eliminated') || lower.includes('out')) {
-      return <Badge className="bg-red-500 text-white">Eliminated</Badge>;
-    }
-    return <Badge variant="outline">{String(status)}</Badge>;
   };
 
-  const getFormBadge = (result) => (
-    <span
-      className={`inline-block w-5 h-5 rounded-full text-xs text-white font-bold flex items-center justify-center ${
-        result === 'W' || result === 'w'
-          ? 'bg-green-500'
-          : result === 'L' || result === 'l'
-          ? 'bg-red-500'
-          : 'bg-gray-500'
-      }`}
-    >
-      {String(result).toUpperCase()}
-    </span>
-  );
+  const groupEntries = useMemo(() => Object.entries(pointsTable.groups || {}), [pointsTable]);
 
-  const getNRRColor = (nrr) => {
-    if (nrr > 0) return 'text-green-600';
-    if (nrr < 0) return 'text-red-600';
-    return 'text-gray-600';
-  };
-
-  if (loading) {
+  const getFormBadge = (result: string) => {
+    const r = result.toUpperCase();
+    const styles =
+      r === "W" ? "bg-emerald-500 text-white" :
+      r === "L" ? "bg-red-500 text-white" :
+      "bg-gray-400 text-white";
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500 text-lg">Loading points table...</p>
-      </div>
+      <span className={`inline-flex items-center justify-center w-7 h-7 md:w-8 md:h-8 rounded-md text-xs md:text-sm font-bold ${styles}`}>
+        {r}
+      </span>
     );
-  }
+  };
 
-  const groupEntries = Object.entries(pointsTable.groups || {});
+  const renderQualification = (status: string | null | undefined) => {
+    if (!status) return null;
+    const s = String(status).toLowerCase();
+    if (s.includes("playoff") || s.includes("qualified") || s.includes("q"))
+      return <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white border-0 text-[10px] px-2 py-0.5">Qualified</Badge>;
+    if (s.includes("elim") || s.includes("out"))
+      return <Badge className="bg-red-500 hover:bg-red-600 text-white border-0 text-[10px] px-2 py-0.5">Eliminated</Badge>;
+    return <Badge variant="outline" className="text-[10px] px-2 py-0.5">{String(status)}</Badge>;
+  };
+
+  if (loading) return <Skeleton />;
+
+  const hasData = groupEntries.length > 0 && groupEntries.some(([, t]) => safeArray(t).length);
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-12">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-12 md:py-16 mb-8">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2 md:mb-4">Points Table</h1>
-          <p className="text-lg md:text-xl opacity-90">Current standings by group</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 pb-12">
+      {/* Hero Header */}
+      <div className="relative bg-gradient-to-r from-slate-900 via-blue-900 to-slate-800 text-white overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(59,130,246,0.15),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(139,92,246,0.1),transparent_50%)]" />
+        <div className="container mx-auto px-4 py-12 sm:py-16 relative">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2.5 bg-white/10 rounded-xl backdrop-blur-sm">
+              <Trophy className="w-6 h-6 text-yellow-400" />
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Points Table</h1>
+          </div>
+          <p className="text-blue-200/80 max-w-xl text-sm sm:text-base">
+            {seasonLabel ? `Current standings for ${seasonLabel}` : "Current standings by group"}
+          </p>
         </div>
       </div>
 
-      <div className="container mx-auto px-2 md:px-4 space-y-8 md:space-y-12">
-        {/* Toggle Buttons */}
-        <div className="flex justify-center mb-4 md:mb-8">
-          <div className="bg-white rounded-lg p-1 shadow-sm border">
-            <Button
-              variant={viewType === 'current' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewType('current')}
+      <div className="container mx-auto px-4 -mt-7 relative z-10">
+        {/* Toggle + Meta Bar */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100/80 p-2 mb-6 flex items-center justify-between">
+          <div className="flex bg-gray-100 rounded-lg p-0.5">
+            <button
+              onClick={() => setViewType("current")}
+              className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                viewType === "current" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
+              }`}
             >
-              Current Table
-            </Button>
-            <Button
-              variant={viewType === 'form' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewType('form')}
+              Standings
+            </button>
+            <button
+              onClick={() => setViewType("form")}
+              className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                viewType === "form" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
+              }`}
             >
               Form Guide
-            </Button>
+            </button>
           </div>
+          {allSeasons.length > 1 && (
+            <Select
+              value={selectedSeasonId}
+              onValueChange={(val) => {
+                const season = allSeasons.find(
+                  (s) => (s?._id || s?.id || s?.seasonNumber) === val
+                );
+                if (season) handleSeasonChange(season);
+              }}
+            >
+              <SelectTrigger className="w-[180px] h-9 text-xs font-semibold bg-gray-50 border-gray-200">
+                <SelectValue placeholder="Select season" />
+              </SelectTrigger>
+              <SelectContent>
+                {allSeasons.map((s) => {
+                  const sid = s?._id || s?.id || s?.seasonNumber;
+                  const label = s?.seasonLabel || s?.name || `Season ${s?.seasonNumber || ""}`;
+                  return (
+                    <SelectItem key={sid} value={sid} className="text-sm">
+                      {label}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          )}
         </div>
 
-        {/* Render tables */}
-        {groupEntries.length === 0 && (
-          <Card className="shadow-lg border border-gray-200">
-            <CardHeader className="bg-gray-100 border-b">
-              <CardTitle>No standings available</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600">Points table not found for the current season.</p>
-            </CardContent>
-          </Card>
-        )}
-
-        {groupEntries.map(([groupName, groupTeams]) => (
-          <Card key={groupName} className="shadow-lg border border-gray-200">
-            <CardHeader className="bg-gray-100 border-b">
-              <CardTitle className="flex items-center">
-                <Trophy className="h-5 w-5 mr-2 text-yellow-500" />
-                {groupName === 'Ungrouped'
-  ? 'Ungrouped Teams - Standings'
-  : `Group ${groupName} - Standings`}
-
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm md:text-base">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-2 px-1 md:py-3 md:px-2">Pos</th>
-                      <th className="text-left py-2 px-1 md:py-3 md:px-2">Team</th>
-                      <th className="text-center py-2 px-1 md:py-3 md:px-2">M</th>
-                      <th className="text-center py-2 px-1 md:py-3 md:px-2">W</th>
-                      <th className="text-center py-2 px-1 md:py-3 md:px-2">L</th>
-                      <th className="text-center py-2 px-1 md:py-3 md:px-2">T</th>
-                      <th className="text-center py-2 px-1 md:py-3 md:px-2">NRR</th>
-                      <th className="text-center py-2 px-1 md:py-3 md:px-2">Pts</th>
-                      {viewType === 'form' && <th className="text-center py-2 px-1 md:py-3 md:px-2">Form</th>}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Array.isArray(groupTeams) &&
-                      groupTeams.map((team, index) => {
-                        const safeTeam =
-                          team && team.team ? team : {
-                            team: team.teamName || team.name || 'Unknown',
-                            matches: team.matches ?? team.played ?? 0,
-                            won: team.won ?? 0,
-                            lost: team.lost ?? 0,
-                            tied: team.tied ?? 0,
-                            nrr: team.nrr ?? 0,
-                            points: team.points ?? team.pts ?? 0,
-                            form: team.form ?? [],
-                            qualified: team.qualified ?? team.status ?? null,
-                            position: team.position ?? index + 1
-                          };
-
-                        const teamMeta =
-                          teamsInfo[safeTeam.team] || {
-                            short: safeTeam.teamCode || (safeTeam.team || '').slice(0, 2).toUpperCase(),
-                            color: '#999'
-                          };
-
-                        const isTop = safeTeam.position === 1 || index === 0;
-                        const isBottom = safeTeam.position === (groupTeams.length || 0) || index === groupTeams.length - 1;
-
-                        return (
-                          <tr
-                            key={safeTeam.teamId || safeTeam.team || index}
-                            className={`border-b hover:bg-gray-50 ${
-                              (safeTeam.qualified || '').toString().toLowerCase().includes('playoff')
-                                ? 'bg-green-50'
-                                : (safeTeam.qualified || '').toString().toLowerCase().includes('elim') ? 'bg-red-50' : ''
-                            }`}
-                          >
-                            <td className="py-2 md:py-4 px-1 md:px-2 font-bold text-sm md:text-lg">
-                              {safeTeam.position ?? index + 1}
-                              {isTop && <ArrowUpCircle className="h-3 w-3 md:h-4 md:w-4 ml-1 text-green-500 inline" />}
-                              {isBottom && <ArrowDownCircle className="h-3 w-3 md:h-4 md:w-4 ml-1 text-red-500 inline" />}
-                            </td>
-                            <td className="py-2 md:py-4 px-1 md:px-2">
-                              <div className="flex items-center space-x-2 md:space-x-3">
-                                <img
-                                  src={safeTeam.teamLogo || getProfileImageUrl(safeTeam.teamLogo)}
-                                  alt={safeTeam.team}
-                                  className="w-6 h-6 md:w-8 md:h-8 rounded-full object-cover"
-                                />
-                                <span className="font-medium text-sm md:text-base">{safeTeam.team}</span>
-                              </div>
-                            </td>
-                            <td className="text-center py-2 md:py-4 px-1 md:px-2">{safeTeam.matches ?? 0}</td>
-                            <td className="text-center py-2 md:py-4 px-1 md:px-2 text-green-600 font-medium">{safeTeam.won ?? 0}</td>
-                            <td className="text-center py-2 md:py-4 px-1 md:px-2 text-red-600 font-medium">{safeTeam.lost ?? 0}</td>
-                            <td className="text-center py-2 md:py-4 px-1 md:px-2">{safeTeam.tied ?? 0}</td>
-                            <td className={`text-center py-2 md:py-4 px-1 md:px-2 font-medium ${getNRRColor(safeTeam.nrr ?? 0)}`}>
-                              {(safeTeam.nrr ?? 0) > 0 ? `+${safeTeam.nrr}` : (safeTeam.nrr ?? 0)}
-                            </td>
-                            <td className="text-center py-2 md:py-4 px-1 md:px-2 font-bold text-sm md:text-lg">{safeTeam.points ?? 0}</td>
-                            {viewType === 'form' && (
-                              <td className="text-center py-2 md:py-4 px-1 md:px-2">
-                                <div className="flex justify-center space-x-1">
-                                  {Array.isArray(safeTeam.form) && safeTeam.form.length > 0 ? (
-                                    safeTeam.form.slice(0, 6).map((r, i) => <div key={i}>{getFormBadge(r)}</div>)
-                                  ) : (
-                                    <span className="text-xs md:text-sm text-gray-400">—</span>
-                                  )}
-                                </div>
-                              </td>
-                            )}
-                          </tr>
-                        );
-                      })}
-                  </tbody>
-                </table>
+        {!hasData ? (
+          <Card className="border border-gray-100 shadow-sm rounded-2xl overflow-hidden">
+            <div className="flex flex-col items-center justify-center py-20 px-4">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center mb-4">
+                <Trophy className="w-7 h-7 text-gray-300" />
               </div>
-            </CardContent>
+              <h3 className="text-lg font-semibold text-gray-700 mb-1">No Standings Yet</h3>
+              <p className="text-sm text-gray-400 text-center max-w-xs">
+                Standings will appear here once matches are played in the current season.
+              </p>
+            </div>
           </Card>
-        ))}
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-6"
+          >
+            {groupEntries.map(([groupName, groupTeams], gi) => {
+              const teams = safeArray(groupTeams);
+              if (!teams.length) return null;
+              const label = groupName === "Ungrouped" ? "Overall Standings" : `Group ${groupName}`;
+
+              return (
+                <motion.div
+                  key={groupName}
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: gi * 0.08 }}
+                >
+                  <Card className="border border-gray-100/80 shadow-sm rounded-2xl overflow-hidden">
+                    {/* Group header */}
+                    <div className="px-5 py-3.5 border-b border-gray-100 bg-white flex items-center gap-2">
+                      <div className="w-1.5 h-6 rounded-full bg-gradient-to-b from-blue-500 to-purple-500" />
+                      <span className="text-base md:text-lg font-bold text-gray-800 uppercase tracking-wider">{label}</span>
+                    </div>
+
+                    <CardContent className="p-0">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm md:text-base">
+                          <thead>
+                            <tr className="border-b border-gray-100 bg-gray-50/80">
+                              <th className="text-left py-4 px-4 text-xs md:text-sm font-semibold text-gray-500 uppercase tracking-wider w-12">#</th>
+                              <th className="text-left py-4 px-2 text-xs md:text-sm font-semibold text-gray-500 uppercase tracking-wider">Team</th>
+                              <th className="text-center py-4 px-2 text-xs md:text-sm font-semibold text-gray-500 uppercase tracking-wider w-12">M</th>
+                              <th className="text-center py-4 px-2 text-xs md:text-sm font-semibold text-gray-500 uppercase tracking-wider w-12">W</th>
+                              <th className="text-center py-4 px-2 text-xs md:text-sm font-semibold text-gray-500 uppercase tracking-wider w-12">L</th>
+                              <th className="text-center py-4 px-2 text-xs md:text-sm font-semibold text-gray-500 uppercase tracking-wider w-12">T</th>
+                              <th className="text-center py-4 px-2 text-xs md:text-sm font-semibold text-gray-500 uppercase tracking-wider w-24">NRR</th>
+                              <th className="text-center py-4 px-3 text-xs md:text-sm font-semibold text-gray-500 uppercase tracking-wider w-16">Pts</th>
+                              {viewType === "form" && (
+                                <th className="text-center py-4 px-2 text-xs md:text-sm font-semibold text-gray-500 uppercase tracking-wider w-36">Form</th>
+                              )}
+                            </tr>
+                          </thead>
+                          <tbody>
+                              {teams.map((team, i) => {
+                              const color = hashColor(team.team);
+                              const isQualified = team.qualified && String(team.qualified).toLowerCase().includes("playoff");
+                              const isEliminated = team.qualified && String(team.qualified).toLowerCase().includes("elim");
+
+                              return (
+                                <motion.tr
+                                  key={team.teamId || team.team || i}
+                                  initial={{ opacity: 0, x: -8 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  transition={{ delay: i * 0.03 }}
+                                  className={`group border-b border-gray-50/80 transition-colors ${
+                                    isQualified ? "bg-emerald-50/40 hover:bg-emerald-50/80" :
+                                    isEliminated ? "bg-red-50/30 hover:bg-red-50/60" :
+                                    "hover:bg-blue-50/40"
+                                  }`}
+                                >
+                                  <td className="py-4 px-4">
+                                    <span className="text-sm md:text-base font-bold text-gray-600">{team.position}</span>
+                                  </td>
+                                  <td className="py-4 px-2">
+                                    <div className="flex items-center gap-3">
+                                      <div className="relative flex-shrink-0">
+                                        {team.teamLogo ? (
+                                          <img
+                                            src={getProfileImageUrl(team.teamLogo)}
+                                            alt={team.team}
+                                            className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover ring-2 ring-gray-100"
+                                            onError={(e) => { e.currentTarget.style.display = "none"; (e.currentTarget.nextElementSibling as HTMLElement)?.classList.remove("hidden"); }}
+                                          />
+                                        ) : null}
+                                        <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center text-sm md:text-base font-bold text-white ${team.teamLogo ? "hidden" : ""}`}
+                                          style={{ backgroundColor: color }}>
+                                          {getInitials(team.team)}
+                                        </div>
+                                      </div>
+                                      <div className="flex flex-col">
+                                        <span className="text-sm md:text-base font-semibold text-gray-800 group-hover:text-blue-600 transition-colors leading-tight">{team.team}</span>
+                                        {team.teamCode && <span className="text-xs text-gray-400 font-mono">{team.teamCode}</span>}
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="text-center py-4 px-2 font-semibold text-gray-800 text-sm md:text-base">{team.matches}</td>
+                                  <td className="text-center py-4 px-2 font-bold text-emerald-600 text-sm md:text-base">{team.won}</td>
+                                  <td className="text-center py-4 px-2 font-bold text-red-500 text-sm md:text-base">{team.lost}</td>
+                                  <td className="text-center py-4 px-2 text-gray-500 text-sm md:text-base">{team.tied}</td>
+                                  <td className="text-center py-4 px-2">
+                                    <span className={`inline-block px-2.5 py-1 rounded-md text-sm md:text-base font-bold ${
+                                      team.nrr > 0 ? "bg-emerald-50 text-emerald-700" :
+                                      team.nrr < 0 ? "bg-red-50 text-red-600" :
+                                      "bg-gray-50 text-gray-500"
+                                    }`}>
+                                      {formatNrr(team.nrr)}
+                                    </span>
+                                  </td>
+                                  <td className="text-center py-4 px-3">
+                                    <span className="text-base md:text-lg font-extrabold text-gray-900">{team.points}</span>
+                                  </td>
+                                  {viewType === "form" && (
+                                    <td className="text-center py-3.5 px-2">
+                                      <div className="flex items-center justify-center gap-1">
+                                        {safeArray(team.form).length > 0 ? (
+                                          safeArray(team.form).slice(0, 6).map((r, fi) => (
+                                            <span key={fi}>{getFormBadge(r)}</span>
+                                          ))
+                                        ) : (
+                                          <span className="text-sm text-gray-300">—</span>
+                                        )}
+                                      </div>
+                                    </td>
+                                  )}
+                                </motion.tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Qualification legend for last group */}
+                  {gi === groupEntries.length - 1 && (
+                    <div className="flex items-center gap-4 mt-2 px-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-3 h-3 rounded bg-emerald-500/20 border border-emerald-500/40" />
+                        <span className="text-[10px] text-gray-400">Playoff / Qualified</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-3 h-3 rounded bg-red-500/20 border border-red-500/40" />
+                        <span className="text-[10px] text-gray-400">Eliminated</span>
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              );
+            })}
+          </motion.div>
+        )}
       </div>
     </div>
   );

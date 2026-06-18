@@ -19,6 +19,7 @@ import Gallery from "./pages/gallery/Gallery";
 import GalleryFullscreen from "@/pages/gallery/GalleryFullscreen";
 import TournamentStats from "./pages/TournamentStats";
 import LiveScores from "./pages/LiveScores";
+import WatchLive from "./pages/WatchLive";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import TournamentRegistration from "./pages/TournamentRegistration";
@@ -34,6 +35,8 @@ import Sponsors from "./pages/Sponsors";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentFailed from "./pages/PaymentFailed";
 import PlayersPage from "./pages/PlayersPage";
+import Videos from "./pages/Videos";
+import VideoManagement from "./pages/admin/VideoManagement";
 
 
 import ScrollToTop from "./components/ScrollToTop";
@@ -73,6 +76,7 @@ const App = () => (
               <Route path="/gallery/view/:imageId" element={<GalleryFullscreen />} />
               <Route path="/tournament-stats" element={<TournamentStats />} />
               <Route path="/live-scores" element={<LiveScores />} />
+              <Route path="/watch-live" element={<WatchLive />} />
               <Route path="/tournament-registration" element={<TournamentRegistration />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
@@ -83,7 +87,11 @@ const App = () => (
               <Route path="/admin/matches" element={<MatchManagement />} />
               <Route path="/admin/gallery" element={<GalleryManagement />} />
               <Route path="/admin/news" element={<NewsManagement />} />
+              <Route path="/admin/videos" element={<VideoManagement />} />
               <Route path="/admin/settings" element={<AdminSettings />} />
+
+              {/* Videos page (public) */}
+              <Route path="/videos" element={<Videos />} />
 
               {/* Sponsors page (public) */}
               <Route path="/sponsors" element={<Sponsors />} />

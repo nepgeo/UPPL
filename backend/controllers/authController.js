@@ -75,11 +75,7 @@ exports.register = async (req, res) => {
       }
     }
 
-    // ✅ Hash password
-    // const salt = await bcrypt.genSalt(10);
-    // const hashedPassword = await bcrypt.hash(password, salt);
-
-    const newUser = new User({
+    const newUserData = {
       name,
       email,
       password,
@@ -90,9 +86,11 @@ exports.register = async (req, res) => {
       phone,
       bio,
       dateOfBirth,
-      profileImage,
       documents,
-    });
+    };
+    if (profileImage) newUserData.profileImage = profileImage;
+
+    const newUser = new User(newUserData);
 
     if (newUser.role === "player") {
       newUser.verified = false;
@@ -175,6 +173,53 @@ exports.login = async (req, res) => {
   } catch (err) {
     console.error("Login error:", err.message);
     res.status(500).json({ message: "Error logging in" });
+  }
+};
+
+/**
+ * @desc    Firebase / Social Login (auto-create if new)
+ * @route   POST /api/auth/firebase
+ * @access  Public
+ */
+exports.firebaseLogin = async (req, res) => {
+  try {
+    const { email, name, provider } = req.body;
+    if (!email) return res.status(400).json({ message: "Email is required" });
+
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      const randomPassword = crypto.randomBytes(16).toString("hex");
+      user = new User({
+        name: name || email.split("@")[0],
+        email,
+        password: randomPassword,
+        role: "user",
+        verified: true,
+      });
+      await user.save();
+    }
+
+    const token = generateToken(user);
+
+    res.json({
+      message: "Login successful",
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        verified: user.verified,
+        playerCode: user.playerCode || null,
+        team: user.team || null,
+        profileImage: user.profileImage || null,
+        documents: user.documents || [],
+      },
+    });
+  } catch (err) {
+    console.error("Firebase login error:", err.message);
+    res.status(500).json({ message: "Error with social login" });
   }
 };
 

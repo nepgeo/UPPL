@@ -38,6 +38,12 @@ const teamSchema = new mongoose.Schema(
     managerName: { type: String, default: '' },
     contactNumber: { type: String },
 
+    paymentMethod: {
+      type: String,
+      enum: ['esewa', 'khalti', 'bank', 'other'],
+      default: 'esewa',
+    },
+
     seasonNumber: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Season',
@@ -56,13 +62,13 @@ const teamSchema = new mongoose.Schema(
 
     // ✅ Cloudinary receipt
     paymentReceipt: {
-      url: { type: String, required: true },
-      public_id: { type: String, required: true },
+      url: { type: String, default: '' },
+      public_id: { type: String, default: '' },
     },
 
     status: {
       type: String,
-      enum: ['pending', 'approved', 'rejected'],
+      enum: ['pending', 'pending_payment', 'approved', 'rejected'],
       default: 'pending',
     },
 

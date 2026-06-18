@@ -22,16 +22,18 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog"; // ✅ Adjust the path if you're using different folder structure
 
-import {useToast} from "@/components/ui/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import api from '@/lib/api';
+import BallScoring from '@/components/LiveScore/BallScoring';
+import MatchSetupWizard from '@/components/LiveScore/MatchSetupWizard';
 
 
 
 interface Team {
-  team: string;
+  team: { _id: string; teamName: string; teamCode: string; teamLogo?: string };
   teamName: string;
   teamCode: string;
-  teamLogo?: string; // Optional logo field
+  teamLogo?: string;
 }
 
 interface Group {
@@ -109,6 +111,8 @@ const MatchManagement: React.FC = () => {
   const [selectedFilter, setSelectedFilter] = useState<string>('all');
   const scheduleRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
+  const [seasons, setSeasons] = useState<{ _id: string; seasonNumber: number; isCurrent: boolean }[]>([]);
+  const [selectedSeasonId, setSelectedSeasonId] = useState<string>('');
 
   const today = new Date().toISOString().split("T")[0];
   const [newMatch, setNewMatch] = useState({
@@ -139,6 +143,12 @@ const [matchResult, setMatchResult] = useState({
   winner: '',
 });
 
+const [ballScoringDialog, setBallScoringDialog] = useState(false);
+const [scoringMatch, setScoringMatch] = useState<Match | null>(null);
+const [scoringMatchData, setScoringMatchData] = useState<any>(null);
+const [setupDialog, setSetupDialog] = useState(false);
+const [setupMatch, setSetupMatch] = useState<Match | null>(null);
+
 const user = JSON.parse(localStorage.getItem('pplt20_user') || '{}'); // example
 
 
@@ -158,7 +168,24 @@ useEffect(() => {
 
 
 
-  const fetchSchedule = async () => {
+  const fetchSeasons = async () => {
+    try {
+      const res = await api.get('/seasons');
+      const allSeasons = (res.data?.seasons || []).map((s: any) => ({
+        _id: s._id,
+        seasonNumber: s.seasonNumber,
+        isCurrent: s.isCurrent,
+      }));
+      allSeasons.sort((a: any, b: any) => b.seasonNumber - a.seasonNumber);
+      setSeasons(allSeasons);
+      return allSeasons;
+    } catch (err) {
+      console.error('Failed to fetch seasons:', err);
+      return [];
+    }
+  };
+
+  const fetchSchedule = async (seasonIdOverride?: string) => {
   console.log("📡 [fetchSchedule] Starting to fetch schedule...");
   try {
     setLoading(true);
@@ -167,7 +194,9 @@ useEffect(() => {
     console.log("🌐 [fetchSchedule] API Base:", api.defaults.baseURL);
     console.log("🌐 [fetchSchedule] Endpoint: /groups/schedule");
 
-    const res = await api.get("/groups/schedule");
+    const params: any = {};
+    if (seasonIdOverride) params.seasonId = seasonIdOverride;
+    const res = await api.get("/groups/schedule", { params });
 
     // --- Log full raw response for inspection
     console.log("✅ [fetchSchedule] Response received:", res);
@@ -182,7 +211,9 @@ useEffect(() => {
       );
     }
 
-    setSchedule(res.data.schedule);
+    const sched = res.data.schedule;
+    setSchedule(sched);
+    return seasonIdOverride || sched?.seasonNumber?._id;
   } catch (err: any) {
     console.error("❌ [fetchSchedule] Failed to fetch schedule:", err);
 
@@ -215,11 +246,14 @@ useEffect(() => {
 
 
 
-  // ✅ Change fetchMatches to exclude playoff/final matches at the source
-  const fetchMatches = async () => {
+  const fetchMatches = async (seasonIdOverride?: string) => {
   try {
     const token = localStorage.getItem("pplt20_token");
+    const seasonId = seasonIdOverride || schedule?.seasonNumber?._id || selectedSeasonId;
+    const params: any = {};
+    if (seasonId) params.seasonNumber = seasonId;
     const res = await api.get("/matches", {
+      params,
       headers: { Authorization: `Bearer ${token}` },
     });
 
@@ -305,8 +339,8 @@ useEffect(() => {
       description: "Groups and League Matches generated successfully!",
     });
 
-    await fetchSchedule();
-    await fetchMatches();
+    const schedId = await fetchSchedule();
+    fetchMatches(schedId);
   } catch (err: any) {
     console.error('❌ Failed to generate groups or league matches:', err);
     const serverMessage = err?.response?.data?.message || err?.message || "Unknown error";
@@ -371,8 +405,13 @@ useEffect(() => {
   };
 
   useEffect(() => {
-    fetchSchedule();
-    fetchMatches();
+    (async () => {
+      const allSeasons = await fetchSeasons();
+      const current = allSeasons.find((s: any) => s.isCurrent) || allSeasons[0];
+      if (current) setSelectedSeasonId(current._id);
+      const seasonId = current?._id || await fetchSchedule();
+      fetchMatches(seasonId);
+    })();
   }, []);
 
   useEffect(() => {
@@ -639,8 +678,27 @@ const handleCancelLiveMatch = async () => {
       <span className="text-indigo-600 text-3xl sm:text-4xl">🏆</span>
       <span>
         UPPL Season{" "}
-        {schedule?.seasonNumber?.seasonNumber ?? (
-          <span className="text-gray-400">N/A</span>
+        {selectedSeasonId ? (
+          <select
+            value={selectedSeasonId}
+            onChange={async (e) => {
+              const sid = e.target.value;
+              setSelectedSeasonId(sid);
+              const schedId = await fetchSchedule(sid);
+              fetchMatches(schedId || sid);
+            }}
+            className="ml-2 bg-white border border-gray-300 rounded-lg px-3 py-1 text-lg font-semibold text-gray-800 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          >
+            {seasons.map((s) => (
+              <option key={s._id} value={s._id}>
+                {s.seasonNumber}{s.isCurrent ? ' (Current)' : ''}
+              </option>
+            ))}
+          </select>
+        ) : (
+          schedule?.seasonNumber?.seasonNumber ?? (
+            <span className="text-gray-400">N/A</span>
+          )
         )}
       </span>
     </h2>
@@ -737,7 +795,7 @@ const handleCancelLiveMatch = async () => {
                   </thead>
                   <tbody>
                     {group.teams.map((team, index) => (
-                      <tr key={team.team} className="text-xs sm:text-sm">
+                      <tr key={team.team._id} className="text-xs sm:text-sm">
                         <td className="py-1 pr-2 sm:pr-4">{index + 1}</td>
                         <td className="py-1">{team.teamName}</td>
                         <td className="py-1 pr-2 sm:pr-4 font-bold">{team.teamCode}</td>
@@ -800,195 +858,164 @@ const handleCancelLiveMatch = async () => {
           .map((match, index) => (
             <Card
               key={match._id}
-              className="relative hover:shadow-lg transition-shadow rounded-2xl border border-gray-200 overflow-hidden bg-gradient-to-br from-white to-gray-50"
+              className="relative hover:shadow-xl transition-all duration-300 rounded-2xl border border-gray-200 overflow-hidden bg-white"
             >
-              {/* Action Buttons */}
-              <div
-                className="
-                  mt-2 flex flex-row gap-2 justify-center
-                  md:absolute md:top-2 md:right-2 md:flex-col md:gap-2 md:mt-0
-                  lg:top-4 lg:right-4 lg:gap-3
-                  z-10
-                "
-              >
-                <Button
-                  variant="default"
-                  className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold px-2 py-1 rounded text-xs sm:text-xs w-full md:w-auto"
-                  onClick={() => setEditMatch(match)}
-                >
-                  ✏️ Edit
-                </Button>
+              {/* Top accent bar */}
+              <div className={`h-1.5 w-full ${
+                match.result === 'live' ? 'bg-gradient-to-r from-red-500 to-orange-400' :
+                match.result === 'completed' ? 'bg-gradient-to-r from-green-500 to-emerald-400' :
+                'bg-gradient-to-r from-blue-500 to-indigo-400'
+              }`} />
 
-                <Button
-                  variant="default"
-                  className="bg-red-500 hover:bg-red-600 text-white font-semibold px-2 py-1 rounded text-xs sm:text-xs w-full md:w-auto"
-                  onClick={() =>
-                    setConfirmDelete({ open: true, matchId: match._id })
-                  }
-                >
-                  🗑️ Delete
-                </Button>
+              <CardContent className="p-0">
+                {/* Main Content Row */}
+                <div className="p-4 sm:p-6">
+                  <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 lg:items-center">
+                    {/* Match Number + Status */}
+                    <div className="flex items-center lg:flex-col lg:items-center gap-3 lg:gap-1 lg:min-w-[90px]">
+                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider lg:text-center">
+                        Match
+                      </span>
+                      <span className="text-lg sm:text-xl font-bold text-gray-900 lg:text-center">{index + 1}</span>
+                      <div className={`ml-auto lg:ml-0 text-[10px] font-semibold px-2.5 py-1 rounded-full
+                        ${match.result === 'live' ? 'bg-red-100 text-red-700' :
+                          match.result === 'completed' ? 'bg-green-100 text-green-700' :
+                          'bg-blue-100 text-blue-700'}`}
+                      >
+                        {match.result === 'live' ? 'LIVE' : getStatusText(match.result)}
+                      </div>
+                    </div>
 
-                {match.result === "upcoming" && (
-                  <Button
-                    variant="default"
-                    className="bg-blue-600 text-white hover:bg-blue-700 px-2 py-1 rounded text-xs sm:text-xs w-full md:w-auto"
-                    onClick={() => handleStartMatch(match._id)}
-                  >
-                    🚀 Start Match
-                  </Button>
-                )}
-
-                {match.result === "live" && (
-                  <Button
-                    onClick={() => handleOpenCompleteDialog(match)}
-                    className="px-2 py-1 bg-green-700 hover:bg-green-800 text-white text-xs sm:text-xs rounded w-full md:w-auto"
-                  >
-                    ✅ Complete
-                  </Button>
-                )}
-              </div>
-
-              {/* Match Content */}
-              <CardContent className="p-4 sm:p-6 pb-10 sm:pb-16 flex flex-col h-full">
-                <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 lg:gap-8 sm:items-center sm:justify-between">
-                  {/* Match Number + Type */}
-                  <div className="flex flex-col items-center justify-center px-2 sm:px-4 border-b sm:border-b-0 sm:border-r border-gray-200">
-                    <p className="text-xs sm:text-sm md:text-base font-bold text-gray-800">
-                      Match #{index + 1}
-                    </p>
-                    <p className="text-[10px] sm:text-xs md:text-sm font-medium text-gray-500">
-                      {match.stage
-                        ? match.stage.charAt(0).toUpperCase() + match.stage.slice(1)
-                        : "League"}
-                    </p>
-                  </div>
-
-                  {/* Teams Section */}
-                  <div className="flex-1">
-                    <div className="flex items-center justify-center gap-3 sm:gap-4 md:gap-6">
-                      {/* Team A */}
-                      <div className="flex flex-col items-center group">
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-full overflow-hidden border-2 md:border-4 border-white shadow-lg transition-transform duration-300 group-hover:scale-105">
+                    {/* Teams */}
+                    <div className="flex-1 flex items-center justify-center gap-4 sm:gap-8">
+                      <div className="flex flex-col items-center min-w-0 flex-1">
+                        <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full overflow-hidden border-2 border-gray-100 shadow-md flex-shrink-0">
                           {match.teamA.teamLogo ? (
-                            <img
-                              src={getImageUrl(match.teamA.teamLogo)}
-                              alt="Team A Logo"
-                              className="w-full h-full object-cover"
-                            />
+                            <img src={getImageUrl(match.teamA.teamLogo)} alt="" className="w-full h-full object-cover" />
                           ) : (
-                            <div
-                              className="w-full h-full flex items-center justify-center text-white font-bold text-[10px] sm:text-sm md:text-lg"
-                              style={{ backgroundColor: match.teamA.color }}
-                            >
+                            <div className="w-full h-full flex items-center justify-center text-white font-bold text-sm" style={{ backgroundColor: match.teamA.color }}>
                               {match.teamA.short}
                             </div>
                           )}
                         </div>
-                        <span className="mt-1 text-[10px] sm:text-xs md:text-sm font-semibold text-gray-800 truncate max-w-[60px] sm:max-w-[80px] md:max-w-[120px]">
+                        <span className="mt-1.5 text-xs sm:text-sm font-semibold text-gray-800 text-center truncate max-w-[100px]">
                           {match.teamA.teamName}
                         </span>
+                        {match.result === 'completed' && (
+                          <span className="text-[10px] text-gray-500 font-mono">{match.teamA.runs ?? 0}/{match.teamA.wickets ?? 0}</span>
+                        )}
                       </div>
 
-                      {/* VS */}
                       <div className="flex flex-col items-center">
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-r from-blue-50 to-indigo-50 flex items-center justify-center shadow-inner">
-                          <span className="text-xs sm:text-sm md:text-lg font-bold text-blue-600">
-                            VS
-                          </span>
-                        </div>
-                        <div
-                          className={`mt-1 text-[9px] sm:text-[10px] md:text-xs font-medium px-2 py-0.5 rounded-full
-                            ${
-                              match.result === "live"
-                                ? "bg-red-600 text-white animate-pulse shadow-md"
-                              : match.result === "upcoming"
-                                ? "bg-blue-100 text-blue-600"
-                              : match.result === "completed"
-                                ? "bg-green-100 text-green-600"
-                              : match.result === "canceled"
-                                ? "bg-gray-300 text-gray-700 line-through"
-                              : "bg-gray-100 text-gray-500"
-                            }
-                          `}
-                        >
-                          {match.result === "live" ? "LIVE" : getStatusText(match.result)}
-                        </div>
+                        <span className="text-xs sm:text-sm font-bold text-gray-400 px-2">VS</span>
+                        <span className="text-[10px] text-gray-400">{match.stage || 'League'}</span>
                       </div>
 
-                      {/* Team B */}
-                      <div className="flex flex-col items-center group">
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-full overflow-hidden border-2 md:border-4 border-white shadow-lg transition-transform duration-300 group-hover:scale-105">
+                      <div className="flex flex-col items-center min-w-0 flex-1">
+                        <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full overflow-hidden border-2 border-gray-100 shadow-md flex-shrink-0">
                           {match.teamB.teamLogo ? (
-                            <img
-                              src={getImageUrl(match.teamB.teamLogo)}
-                              alt="Team B Logo"
-                              className="w-full h-full object-cover"
-                            />
+                            <img src={getImageUrl(match.teamB.teamLogo)} alt="" className="w-full h-full object-cover" />
                           ) : (
-                            <div
-                              className="w-full h-full flex items-center justify-center text-white font-bold text-[10px] sm:text-sm md:text-lg"
-                              style={{ backgroundColor: match.teamB.color }}
-                            >
+                            <div className="w-full h-full flex items-center justify-center text-white font-bold text-sm" style={{ backgroundColor: match.teamB.color }}>
                               {match.teamB.short}
                             </div>
                           )}
                         </div>
-                        <span className="mt-1 text-[10px] sm:text-xs md:text-sm font-semibold text-gray-800 truncate max-w-[60px] sm:max-w-[80px] md:max-w-[120px]">
+                        <span className="mt-1.5 text-xs sm:text-sm font-semibold text-gray-800 text-center truncate max-w-[100px]">
                           {match.teamB.teamName}
                         </span>
+                        {match.result === 'completed' && (
+                          <span className="text-[10px] text-gray-500 font-mono">{match.teamB.runs ?? 0}/{match.teamB.wickets ?? 0}</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Date/Time */}
+                    <div className="flex lg:flex-col items-center lg:items-end gap-2 lg:min-w-[120px]">
+                      <div className="flex items-center gap-1.5 text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg">
+                        <Calendar className="h-3.5 w-3.5 text-blue-500" />
+                        <span className="text-xs font-medium">{formatDate(match.matchTime)}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg">
+                        <Clock className="h-3.5 w-3.5 text-purple-500" />
+                        <span className="text-xs font-medium">{formatTime(match.matchTime)}</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Details Section */}
-                  <div className="flex-1 mt-4 sm:mt-0 sm:pl-4 md:pl-8 sm:border-l border-gray-200">
-                    <div className="space-y-3 md:space-y-4">
-                      {/* Date & Time */}
-                      <div className="flex flex-wrap gap-2 text-gray-700">
-                        <div className="flex items-center gap-1.5 md:gap-2 bg-blue-50 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[10px] sm:text-xs md:text-sm">
-                          <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
-                          <span className="font-medium">
-                            {formatDate(match.matchTime)}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5 md:gap-2 bg-purple-50 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[10px] sm:text-xs md:text-sm">
-                          <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-purple-600" />
-                          <span className="font-medium">
-                            {formatTime(match.matchTime)}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Venue */}
-                      {/* <div className="flex items-center gap-1.5 md:gap-2 text-gray-700 bg-gray-50 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-[10px] sm:text-xs md:text-sm">
-                        <MapPin className="h-3 w-3 sm:h-4 sm:w-4 text-red-500" />
-                        <span className="font-medium truncate">
-                          {match.venue?.trim() !== "" ? match.venue : "TBD"}
+                  {/* Winner */}
+                  {match.result === 'completed' && match.winner && (
+                    <div className="mt-4 p-2.5 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+                      <div className="flex items-center gap-2">
+                        <Trophy className="h-4 w-4 text-amber-500" />
+                        <span className="text-xs font-bold text-green-800">
+                          {match.winner === 'teamA' ? match.teamA?.teamName :
+                           match.winner === 'teamB' ? match.teamB?.teamName :
+                           match.winner === 'tie' ? 'Match Tied' :
+                           match.winner === 'draw' ? 'Match Drawn' : 'No Result'}
+                          {match.margin ? ` won by ${match.margin}` : ''}
                         </span>
-                      </div> */}
-
-                      {/* Winner */}
-                      {match.result === "completed" && (
-                        <div className="mt-3 md:mt-4 p-2 md:p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
-                          <div className="flex items-center gap-1.5 md:gap-2">
-                            <Trophy className="h-3 w-3 sm:h-4 sm:w-4 text-amber-500" />
-                            <span className="text-[10px] sm:text-xs md:text-sm font-bold text-green-800">
-                              {match.winner === "teamA" && match.teamA?.teamName
-                                ? `${match.teamA.teamName} won by ${match.margin}`
-                                : match.winner === "teamB" && match.teamB?.teamName
-                                ? `${match.teamB.teamName} won by ${match.margin}`
-                                : match.winner === "tie"
-                                ? "Match Tied"
-                                : match.winner === "draw"
-                                ? "Match Drawn"
-                                : "No Result"}
-                            </span>
-                          </div>
-                        </div>
-                      )}
+                      </div>
                     </div>
-                  </div>
+                  )}
+                </div>
+
+                {/* Action Footer */}
+                <div className="border-t border-gray-100 bg-gray-50/80 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    className="h-8 text-xs font-medium border-gray-200 text-gray-600 hover:text-yellow-700 hover:border-yellow-300"
+                    onClick={() => setEditMatch(match)}
+                  >
+                    ✏️ Edit
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="h-8 text-xs font-medium border-gray-200 text-gray-600 hover:text-red-700 hover:border-red-300"
+                    onClick={() => setConfirmDelete({ open: true, matchId: match._id })}
+                  >
+                    🗑️ Delete
+                  </Button>
+
+                  {match.result === 'upcoming' && (
+                    <>
+                      <Button
+                        className="h-8 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white"
+                        onClick={() => handleStartMatch(match._id)}
+                      >
+                        🚀 Start
+                      </Button>
+                      <Button
+                        className="h-8 text-xs font-semibold bg-purple-600 hover:bg-purple-700 text-white"
+                        onClick={() => { setSetupMatch(match); setSetupDialog(true); }}
+                      >
+                        📋 XI & Toss
+                      </Button>
+                    </>
+                  )}
+
+                  {match.result === 'live' && (
+                    <>
+                      <Button
+                        className="h-8 text-xs font-semibold bg-orange-600 hover:bg-orange-700 text-white"
+                        onClick={() => { setScoringMatch(match); setBallScoringDialog(true); }}
+                      >
+                        🏏 Ball by Ball
+                      </Button>
+                      <Button
+                        className="h-8 text-xs font-semibold bg-purple-600 hover:bg-purple-700 text-white"
+                        onClick={() => { setSetupMatch(match); setSetupDialog(true); }}
+                      >
+                        📋 XI/Toss
+                      </Button>
+                      <Button
+                        className="h-8 text-xs font-semibold bg-green-700 hover:bg-green-800 text-white"
+                        onClick={() => handleOpenCompleteDialog(match)}
+                      >
+                        ✅ Complete
+                      </Button>
+                    </>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -1354,8 +1381,8 @@ const handleCancelLiveMatch = async () => {
                 <SelectValue placeholder="Select team A" />
               </SelectTrigger>
               <SelectContent>
-                {availableTeams.map((team) => (
-                  <SelectItem key={team.team} value={team.team}>
+                  {availableTeams.map((team) => (
+                  <SelectItem key={team.team._id} value={team.team._id}>
                     {team.teamName}
                   </SelectItem>
                 ))}
@@ -1375,7 +1402,7 @@ const handleCancelLiveMatch = async () => {
               </SelectTrigger>
               <SelectContent>
                 {availableTeams.map((team) => (
-                  <SelectItem key={team.team} value={team.team}>
+                  <SelectItem key={team.team._id} value={team.team._id}>
                     {team.teamName}
                   </SelectItem>
                 ))}
@@ -1425,7 +1452,100 @@ const handleCancelLiveMatch = async () => {
           </Button>
         </div>
       </DialogContent>
-    </Dialog>
+     </Dialog>
+
+      {/* Ball-by-Ball Scoring Dialog */}
+      <Dialog open={ballScoringDialog} onOpenChange={(open) => {
+        setBallScoringDialog(open);
+        if (!open) { setScoringMatch(null); setScoringMatchData(null); }
+      }}>
+        <DialogContent className="max-w-full h-dvh !rounded-none p-0 flex flex-col">
+          <DialogHeader className="px-4 pt-3 pb-0 flex-shrink-0">
+            <DialogTitle className="flex flex-col items-center gap-1">
+              <div className="flex items-center gap-3 flex-wrap justify-center">
+                <span className="text-xl font-bold text-blue-600">{scoringMatch?.teamA?.teamName}</span>
+                <span className="text-base font-semibold text-muted-foreground">vs</span>
+                <span className="text-xl font-bold text-blue-600">{scoringMatch?.teamB?.teamName}</span>
+                <span className="flex items-center gap-2">
+                  {(scoringMatch || scoringMatchData)?.result === 'live' && (
+                    <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-300">LIVE</span>
+                  )}
+                  {(scoringMatch || scoringMatchData)?.currentInnings === 2 && (
+                    <span className="text-xs font-bold text-amber-600 bg-amber-50 px-3 py-1 rounded-full border border-amber-300">2nd Innings</span>
+                  )}
+                </span>
+              </div>
+              {(() => {
+                const m = scoringMatchData || scoringMatch;
+                const ci = scoringMatchData?.currentInnings ?? scoringMatch?.currentInnings;
+                if (m?.tossWinner) {
+                  const winnerName = m.tossWinner === 'teamA' ? m?.teamA?.teamName : m?.teamB?.teamName;
+                  return (
+                    <>
+                      <span className="text-sm font-medium text-muted-foreground">
+                        {winnerName} won the toss & chose to {m?.tossDecision}
+                      </span>
+                      {ci ? <span className="text-lg font-bold text-muted-foreground">Innings {ci}</span> : null}
+                    </>
+                  );
+                }
+                return ci ? (
+                  <span className="text-lg font-bold text-muted-foreground">Innings {ci}</span>
+                ) : null;
+              })()}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto p-4">
+            {scoringMatch && (
+              <BallScoring
+                matchId={scoringMatch._id}
+                match={scoringMatchData || scoringMatch}
+                onUpdate={async () => {
+                  try {
+                    const res = await api.get(`/matches/${scoringMatch._id}/scoring-state`);
+                    setScoringMatchData(res.data.match);
+                  } catch {}
+                }}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Playing XI + Toss Setup Dialog */}
+      <Dialog open={setupDialog} onOpenChange={(open) => {
+        setSetupDialog(open);
+        if (!open) { setSetupMatch(null); }
+      }}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Match Setup: {setupMatch?.teamA?.teamName} vs {setupMatch?.teamB?.teamName}
+            </DialogTitle>
+          </DialogHeader>
+          {setupMatch && (
+            <MatchSetupWizard
+              matchId={setupMatch._id}
+              match={setupMatch}
+              onComplete={async () => {
+                setSetupDialog(false);
+                // Auto-open ball-by-ball scoring with correct innings
+                setScoringMatch(setupMatch);
+                setBallScoringDialog(true);
+                try {
+                  const res = await api.get(`/matches/${setupMatch._id}/scoring-state`);
+                  setScoringMatchData(res.data.match);
+                } catch {}
+                fetchMatches();
+                toast({
+                  title: '✅ Toss done, scoring ready',
+                  description: 'Ball-by-ball scoring opened',
+                });
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

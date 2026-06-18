@@ -32,22 +32,31 @@ const galleryRoutes = require('./routes/galleryRoutes');
 const sponsorRoutes = require('./routes/sponsorRoutes');
 const seasonRoutes = require('./routes/seasonRoutes');
 const teamRoutes = require('./routes/teamRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
 const groupRoutes = require('./routes/groupRoutes');
 const matchRoutes = require('./routes/matchRoutes');
 const pointsTableRoutes = require('./routes/pointsTableRoutes');
 const teamMemberRoutes = require('./routes/teamMemberRoutes');
+const videoRoutes = require('./routes/videoRoutes');
 
 const { startAutoGroupScheduler } = require('./utils/scheduleGroupGeneration');
+const { startNewsScheduler } = require('./utils/newsScheduler');
 
-// Start background scheduler (interval minutes)
+// Start background schedulers
 try {
   startAutoGroupScheduler(10); // runs every 10 minutes
 } catch (err) {
   console.warn('Failed to start group scheduler:', err?.message || err);
 }
 
+try {
+  startNewsScheduler(); // 5 top cricket news at 6 AM & 6 PM
+} catch (err) {
+  console.warn('Failed to start news scheduler:', err?.message || err);
+}
+
 // Environment-driven configuration
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173' || 'http://localhost:4173';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || FRONTEND_URL)
   .split(',')
   .map(s => s.trim())
@@ -69,12 +78,12 @@ if (!fs.existsSync(UPLOADS_ROOT)) {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// CORS: allow no-origin (Postman) plus configured origins
+// CORS: allow no-origin (Postman) plus configured origins plus any localhost dev
 app.use(cors({
   origin: (origin, callback) => {
-    // console.log("🌐 Incoming Origin:", origin); // <== DEBUG LOG
     if (!origin) return callback(null, true);
     if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+    if (origin.startsWith('http://localhost')) return callback(null, true);
     console.warn(`🚨 Blocked by CORS: ${origin}`);
     return callback(new Error('Not allowed by CORS'));
   },
@@ -162,9 +171,11 @@ app.use('/api', matchRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/gallery', galleryRoutes);
 app.use('/api/payment-qr', paymentQRRoutes);
+app.use('/api/payment', paymentRoutes);
 app.use('/api/team-members', teamMemberRoutes);
 app.use('/api/sponsors', sponsorRoutes);
 app.use('/api/points-table', pointsTableRoutes);
+app.use('/api', videoRoutes);
 
 // Serve uploads with safe CORS headers to allow accessing images from frontend
 app.use('/uploads', (req, res, next) => {

@@ -18,8 +18,8 @@ export const approvePlayer = (playerId: string) => {
   });
 };
 
-export const rejectPlayer = (playerId: string) => {
-  return api.patch(`${ADMIN_ENDPOINT}/reject-player/${playerId}`, {}, {
+export const rejectPlayer = (playerId: string, reason?: string) => {
+  return api.patch(`${ADMIN_ENDPOINT}/reject-player/${playerId}`, { reason }, {
     headers: getAuthHeaders(),
   });
 };

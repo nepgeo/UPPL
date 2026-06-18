@@ -1,7 +1,7 @@
 import React, { useEffect, useState , useRef} from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { Calendar, Trophy, Users, TrendingUp, Play, ArrowRight, Star } from 'lucide-react';
+import { Calendar, Trophy, Users, TrendingUp, Play, ArrowRight, Star, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +35,8 @@ const Home = () => {
     { label: "Tournaments", value: "0", icon: Trophy }
   ]);
 
+  const [upcomingMatches, setUpcomingMatches] = useState<any[]>([]);
+
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -46,12 +48,13 @@ const Home = () => {
           config.headers = { Authorization: `Bearer ${token}` };
         }
 
-        // ✅ News
-        if (token) {
-          const newsRes = await api.get("/news", config);
-          const sortedNews = Array.isArray(newsRes.data)
-            ? newsRes.data.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-            : [];
+        // ✅ News (public endpoint, no auth needed)
+        const newsRes = await api.get("/news?status=published", config);
+        const articles = newsRes.data?.articles || [];
+        if (articles.length) {
+          const sortedNews = articles.sort(
+            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
           setFeaturedNews(sortedNews.slice(0, 3));
         }
 
@@ -83,6 +86,19 @@ const Home = () => {
     };
 
     fetchData();
+  }, []);
+
+  useEffect(() => {
+    const fetchUpcoming = async () => {
+      try {
+        const res = await api.get("/matches/upcoming");
+        const data = Array.isArray(res.data) ? res.data : (res.data?.matches || []);
+        setUpcomingMatches(data.slice(0, 4));
+      } catch {
+        // silently fail — not critical
+      }
+    };
+    fetchUpcoming();
   }, []);
 
   useEffect(() => {
@@ -225,16 +241,12 @@ const Home = () => {
               Udaydev Patan Premiere League T20 - Where cricket meets entertainment in the most electrifying tournament of the year.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              {/* <Link to="/live-scores">
+              <Link to="/live-scores">
                 <Button size="lg" className="bg-red-600 hover:bg-red-700 text-white">
                   <Play className="mr-2 h-5 w-5" />
                   Watch Live
                 </Button>
-              </Link> */}
-              <Button size="lg" className="bg-red-600 hover:bg-red-700 text-white">
-                  <Play className="mr-2 h-5 w-5" />
-                  Watch Live
-              </Button>
+              </Link>
               <Link to="/schedule">
                 <Button size="lg" variant="outline" className="bg-white/10 border-white text-white hover:bg-white/20">
                   View Fixtures
@@ -294,52 +306,61 @@ const Home = () => {
 
 
       {/* Upcoming Matches */}
-      {/* <section className="py-16">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Upcoming Matches</h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Don't miss the action! Here are the next exciting matches in the PPLT20 tournament.
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-2 gap-6 mb-8">
-            {upcomingMatches.map((match) => (
-              <Card key={match.id} className="hover:shadow-lg transition-shadow cursor-pointer">
-                <Link to={`/match/${match.id}`}>
-                  <CardHeader>
-                    <div className="flex justify-between items-center">
-                      <Badge variant="outline" className="text-blue-600">
-                        {match.date} at {match.time}
-                      </Badge>
-                      <Badge variant="secondary">Upcoming</Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-center">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="text-lg font-semibold">{match.teamA}</div>
-                        <div className="text-2xl font-bold text-gray-400">VS</div>
-                        <div className="text-lg font-semibold">{match.teamB}</div>
+      {upcomingMatches.length > 0 && (
+        <section className="py-16 bg-white">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-gray-900 mb-4">Upcoming Matches</h2>
+              <p className="text-gray-600 max-w-2xl mx-auto">
+                Don't miss the action! Here are the next exciting matches in the UPPL T20 tournament.
+              </p>
+            </div>
+            
+            <div className="grid md:grid-cols-2 gap-6 mb-8">
+              {upcomingMatches.map((match: any) => (
+                <Card key={match._id || match.id} className="hover:shadow-lg transition-shadow cursor-pointer">
+                  <Link to={`/schedule`}>
+                    <CardHeader>
+                      <div className="flex justify-between items-center">
+                        <Badge variant="outline" className="text-blue-600">
+                          {new Date(match.date || match.matchDate).toLocaleDateString()}
+                        </Badge>
+                        <Badge variant="secondary">Upcoming</Badge>
                       </div>
-                      <p className="text-gray-600">{match.venue}</p>
-                    </div>
-                  </CardContent>
-                </Link>
-              </Card>
-            ))}
-          </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-center">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="text-lg font-semibold">
+                            {match.teamA?.teamName || match.teamA?.name || "Team A"}
+                          </div>
+                          <div className="text-2xl font-bold text-gray-400">VS</div>
+                          <div className="text-lg font-semibold">
+                            {match.teamB?.teamName || match.teamB?.name || "Team B"}
+                          </div>
+                        </div>
+                        <p className="text-gray-600 flex items-center justify-center gap-1">
+                          <MapPin className="h-4 w-4" />
+                          {match.venue || match.ground || "TBD"}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Link>
+                </Card>
+              ))}
+            </div>
 
-          <div className="text-center">
-            <Link to="/schedule">
-              <Button variant="outline">
-                View All Fixtures
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
+            <div className="text-center">
+              <Link to="/schedule">
+                <Button variant="outline">
+                  View All Fixtures
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
           </div>
-        </div>
-      </section> */}
+        </section>
+      )}
 
       {/* Featured News */}
       {/* Latest News Section (Updated) */}
@@ -388,9 +409,11 @@ const Home = () => {
                   Join our amazing community of sponsors and help us continue building incredible experiences.
                   Your support makes all the difference.
                 </p>
-                <button className="bg-white text-blue-600 px-6 py-2 rounded-md font-medium hover:bg-gray-100 transition-colors duration-300 shadow-md hover:shadow-lg text-sm">
-                  Contact Us
-                </button>
+                <Link to="/sponsors">
+                  <button className="bg-white text-blue-600 px-6 py-2 rounded-md font-medium hover:bg-gray-100 transition-colors duration-300 shadow-md hover:shadow-lg text-sm">
+                    Contact Us
+                  </button>
+                </Link>
               </div>
             </div>
           </div>

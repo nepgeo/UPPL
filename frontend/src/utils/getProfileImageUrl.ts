@@ -1,32 +1,33 @@
 import { BASE_URL } from "../config";
 
-export const getProfileImageUrl = (path: string | null | { url?: string }) => {
-  if (!path) {
-    return `${BASE_URL}/uploads/teamMembers/default-avatar.png`; // fallback placeholder
+const FALLBACK = "/placeholder.svg";
+
+type ImageInput = string | null | undefined | { url?: string; secure_url?: string };
+
+export const getProfileImageUrl = (path: ImageInput): string => {
+  if (!path) return FALLBACK;
+
+  // Cloudinary object
+  if (typeof path === "object") {
+    return path.secure_url || path.url || FALLBACK;
   }
 
-  // ✅ Case 1: Cloudinary object
-  if (typeof path === "object" && path.url) {
-    return path.url; // already full Cloudinary URL
-  }
-
-  // ✅ Case 2: string (could be cloudinary url or local path)
+  // String
   if (typeof path === "string") {
-    if (path.startsWith("http")) {
-      return path; // Cloudinary or external URL
-    }
+    // Already a bundled asset
+    if (path.startsWith("/src/") || path.includes("/assets/")) return path;
+    if (path.startsWith("http")) return path;
 
-    // legacy local path (normalize)
-    let cleanPath = path
+    // Legacy local path
+    let clean = path
       .replace(/\\/g, "/")
       .replace(/\/+/g, "/")
       .replace(/^uploads\//, "/uploads/");
-
-    if (!cleanPath.startsWith("/")) cleanPath = "/" + cleanPath;
-    return `${BASE_URL}${cleanPath}`;
+    if (!clean.startsWith("/")) clean = "/" + clean;
+    return `${BASE_URL}${clean}`;
   }
 
-  return `${BASE_URL}/uploads/teamMembers/default-avatar.png`; // ultimate fallback
+  return FALLBACK;
 };
 
 export default getProfileImageUrl;

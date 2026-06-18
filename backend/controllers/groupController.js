@@ -171,19 +171,27 @@ const getSchedule = async (req, res) => {
   try {
     console.log("📡 [getSchedule] Request received");
 
-    // ✅ Step 1: Find the current active season
-    const currentSeason = await Season.findOne({ isCurrent: true });
+    let targetSeasonId = req.query.seasonId;
+
+    // ✅ Step 1: Find target season (by query param or current active)
+    let currentSeason;
+    if (targetSeasonId) {
+      currentSeason = await Season.findById(targetSeasonId);
+    } else {
+      currentSeason = await Season.findOne({ isCurrent: true });
+    }
+
     if (!currentSeason) {
-      console.warn("⚠️ No current season found in database");
+      console.warn("⚠️ No season found");
       return res.status(404).json({
         success: false,
-        message: "No current season found. Please mark a season as current.",
+        message: "No season found. Please create or mark a season as current.",
       });
     }
 
-    console.log("📘 [getSchedule] Current season ID:", currentSeason._id);
+    console.log("📘 [getSchedule] Season ID:", currentSeason._id.toString());
 
-    // ✅ Step 2: Find the schedule linked to the current season
+    // ✅ Step 2: Find the schedule linked to the season
     const schedule = await GroupSchedule.findOne({ seasonNumber: currentSeason._id })
       .sort({ createdAt: -1 })
       .populate("seasonNumber")

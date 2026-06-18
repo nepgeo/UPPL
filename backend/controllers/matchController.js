@@ -203,6 +203,15 @@ const getMatches = async (req, res) => {
       .populate("teamA teamB", "teamName teamCode teamLogo")
       .sort({ matchTime: 1 });
 
+    // Sort: live matches first, then upcoming, then completed
+    matches.sort((a, b) => {
+      const order = { live: 0, upcoming: 1, completed: 2 };
+      const aOrder = order[a.result] ?? 1;
+      const bOrder = order[b.result] ?? 1;
+      if (aOrder !== bOrder) return aOrder - bOrder;
+      return new Date(a.matchTime).getTime() - new Date(b.matchTime).getTime();
+    });
+
     const safeMatches = matches.map((match) => {
       const teamA = match.teamA
         ? {
@@ -248,6 +257,12 @@ const getMatches = async (req, res) => {
         status: match.status ?? null,
         teamA,
         teamB,
+        score: match.score,
+        events: match.events,
+        currentOver: match.currentOver,
+        currentOverNumber: match.currentOverNumber,
+        battingFirst: match.battingFirst,
+        playerStats: match.playerStats,
       };
     });
 

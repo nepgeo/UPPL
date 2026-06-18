@@ -1,7 +1,7 @@
 // src/components/WeeklyTopNews.tsx
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { BASE_URL } from "@/config";
+import { getProfileImageUrl } from "@/utils/getProfileImageUrl";
 import api from "@/lib/api";
 
 
@@ -33,31 +33,29 @@ export default function WeeklyTopNews() {
     createdAt: new Date().toISOString(),
   };
 
-
+  const handleImgError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    e.currentTarget.src = "/placeholder.svg";
+  };
 
 useEffect(() => {
   const loadNews = async () => {
     try {
-      console.log("🔍 Fetching news from:", "/news");
-      const res = await api.get<Article[]>("/news");
-      console.log("✅ News response:", res);
+      const res = await api.get("/news?status=published");
 
-      const data = res.data;
-      if (!data || data.length === 0) {
+      const articles: Article[] = res.data?.articles || [];
+      if (!articles.length) {
         console.warn("⚠️ No news data received");
         return;
       }
 
-      // Sort newest first
-      const sortedByDate = [...data].sort(
+      const sortedByDate = [...articles].sort(
         (a, b) =>
           new Date(b.createdAt!).getTime() -
           new Date(a.createdAt!).getTime()
       );
       setFeaturedNews(sortedByDate.slice(0, 4));
 
-      // Shuffle for weekly carousel
-      const shuffled = [...data].sort(() => Math.random() - 0.5);
+      const shuffled = [...articles].sort(() => Math.random() - 0.5);
       setCarouselItems(shuffled);
 
     } catch (err) {
@@ -95,23 +93,6 @@ useEffect(() => {
   const bigFeatured = items[0];
   const rightList = items.slice(1, 4);
 
-  const getProfileImageUrl = (
-  path: string | null | { url?: string }
-): string => {
-  if (!path) return "/placeholder.svg";
-
-  if (typeof path === "object" && path.url) return path.url;
-
-  if (typeof path === "string") {
-    if (path.startsWith("http")) return path;
-    return `${BASE_URL}${path.startsWith("/") ? path : "/" + path}`;
-  }
-
-  return "/placeholder.svg";
-};
-
-
-
   return (
     <section className="py-16 bg-white">
       <div className="container mx-auto px-4">
@@ -142,6 +123,7 @@ useEffect(() => {
                   src={getProfileImageUrl(bigFeatured.images?.[0])}
                   alt={bigFeatured.title}
                   className="w-full h-full object-cover"
+                  onError={handleImgError}
                 />
               </div>
 
@@ -176,6 +158,7 @@ useEffect(() => {
                   src={getProfileImageUrl(article.images?.[0])}
                   alt={article.title}
                   className="w-24 h-20 object-cover rounded-md"
+                  onError={handleImgError}
                 />
                 <div className="flex flex-col">
                   <span className="text-xs text-gray-500">
@@ -225,6 +208,7 @@ useEffect(() => {
                   src={getProfileImageUrl(article.images?.[0])}
                   alt={article.title}
                   className="w-full h-72 object-cover"
+                  onError={handleImgError}
                 />
                 <div className="p-5">
                   <span className="text-xs text-gray-500 block mb-2">

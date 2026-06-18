@@ -30,8 +30,7 @@ const destroyPublicId = async (publicId) => {
     if (!publicId) return;
     await cloudinary.uploader.destroy(publicId);
   } catch (err) {
-    console.error("❌ Cloudinary delete error:", err.message);
-    throw err;
+    console.error("Cloudinary delete error:", err.message);
   }
 };
 

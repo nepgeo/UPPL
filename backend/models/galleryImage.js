@@ -1,10 +1,8 @@
 const mongoose = require('mongoose');
-const Album = require('../models/Album');
 
 const galleryImageSchema = new mongoose.Schema({
   title: { type: String, required: true },
 
-  // ✅ Store Cloudinary image as {url, public_id}
   image: {
     url: { type: String, required: true },
     public_id: { type: String, required: true },
@@ -12,10 +10,11 @@ const galleryImageSchema = new mongoose.Schema({
 
   tags: [String],
   uploadDate: { type: Date, default: Date.now },
+  isPublic: { type: Boolean, default: true },
 
   album: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Album', // ✅ Corrected model name
+    ref: 'Album',
     required: true,
   },
 });

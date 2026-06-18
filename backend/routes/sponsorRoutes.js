@@ -10,7 +10,8 @@ const {
   getAllIndividuals,
   createIndividual,
   updateIndividual,
-  deleteIndividual
+  deleteIndividual,
+  bulkToggleActive,
 } = require('../controllers/sponsorController');
 
 const { protect, requireAdminOrSuperAdmin } = require('../middleware/authMiddleware');
@@ -61,5 +62,7 @@ router.put(
 );
 
 router.delete('/individuals/:id', protect, requireAdminOrSuperAdmin, deleteIndividual);
+
+router.patch('/bulk/toggle', protect, requireAdminOrSuperAdmin, bulkToggleActive);
 
 module.exports = router;

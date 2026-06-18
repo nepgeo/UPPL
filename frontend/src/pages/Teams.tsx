@@ -272,7 +272,7 @@ const Teams = () => {
                             className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border"
                             onError={(e) => {
                               e.currentTarget.onerror = null;
-                              e.currentTarget.src = "";
+                              e.currentTarget.src = "/placeholder.svg";
                             }}
                           />
                         ) : (
