@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "routes": [
+    { "src": "/api/(.*)", "dest": "https://uppl-ajwn.onrender.com/api/$1" },
+    { "src": "/uploads/(.*)", "dest": "https://uppl-ajwn.onrender.com/uploads/$1" },
+    { "src": "/assets/(.*)", "dest": "/assets/$1" },
+    { "src": "/favicon.ico", "dest": "/favicon.ico" },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ]
+}
+
