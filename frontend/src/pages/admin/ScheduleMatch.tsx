@@ -83,6 +83,13 @@ export interface Match {
 
   /** ✅ add this */
   margin?: string | null;
+
+  score?: {
+    teamA: { runs: number; wickets: number; balls: number; extras?: number };
+    teamB: { runs: number; wickets: number; balls: number; extras?: number };
+  };
+  teamAResult?: { runs: number; wickets: number; overs: string };
+  teamBResult?: { runs: number; wickets: number; overs: string };
 }
 
 
@@ -154,6 +161,28 @@ const user = JSON.parse(localStorage.getItem('pplt20_user') || '{}'); // example
 
 const handleOpenCompleteDialog = (match: Match) => {
   setSelectedMatch(match);
+
+  const ballsToOvers = (balls: number) => {
+    const overs = Math.floor(balls / 6);
+    const rem = balls % 6;
+    return `${overs}.${rem}`;
+  };
+
+  const score = match.score;
+  setMatchResult({
+    teamA: {
+      runs: String(score?.teamA?.runs ?? match.teamAResult?.runs ?? ''),
+      wickets: String(score?.teamA?.wickets ?? match.teamAResult?.wickets ?? ''),
+      overs: score?.teamA?.balls != null ? ballsToOvers(score.teamA.balls) : (match.teamAResult?.overs ?? ''),
+    },
+    teamB: {
+      runs: String(score?.teamB?.runs ?? match.teamBResult?.runs ?? ''),
+      wickets: String(score?.teamB?.wickets ?? match.teamBResult?.wickets ?? ''),
+      overs: score?.teamB?.balls != null ? ballsToOvers(score.teamB.balls) : (match.teamBResult?.overs ?? ''),
+    },
+    winner: match.winner ?? '',
+  });
+
   setCompleteDialogOpen(true);
 };
 
