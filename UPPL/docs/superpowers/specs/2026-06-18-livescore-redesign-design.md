@@ -1,0 +1,127 @@
+# LiveScores Page Redesign — Design Spec
+
+## Overview
+
+Redesign the public LiveScores page (`LiveScores.tsx`) with a modern, sleek glassmorphism aesthetic. Refresh all match card buttons to ghost/outline style with gradient hover effects. Ensure full responsiveness across mobile/tablet/desktop.
+
+## Design System
+
+- **Theme:** Dark glassmorphism — frosted glass cards (`bg-white/5 backdrop-blur-md border-white/10`)
+- **Accent colors:** Blue → Purple gradient for interactive elements
+- **Status colors:** Red (live), Blue (upcoming), Green (completed)
+- **Typography:** White text, gray-300/400 secondary, font-extrabold for scores
+- **Animations:** Framer Motion fade/slide on mount, smooth transitions
+
+## 1. Hero Section
+
+- **Gradient background:** `from-blue-700 via-purple-800 to-indigo-900` with a subtle radial glow center
+- **Layout:** Centered, compact (`py-8 md:py-12`)
+- **Title:** "🏏 Live Scores" — text-4xl md:text-5xl font-extrabold text-white, tracking-tight
+- **Subtitle:** Gray-300 text-lg, updates based on live match presence
+- **Live count badge:** Pill badge `bg-white/10 border-white/20` with pulsing red dot, positioned below subtitle
+  - Shows "X Matches Live" when live matches exist, or "Cricket Action" when none
+- No decorative circles or brand logos above title
+
+## 2. Tab Navigation
+
+- **Container:** `bg-white/5 backdrop-blur-md border-white/10 rounded-xl` centered
+- **Style:** Underline-style tabs (not pills)
+  - Active tab: Colored bottom border (red/blue/green) with smooth CSS transition
+  - Inactive tab: Muted text, no border
+- **Labels:**
+  - Live — red dot icon + "(N)" count — `data-[state=active]:text-red-400`
+  - Upcoming — blue styling — `data-[state=active]:text-blue-400`
+  - Recent — green styling — `data-[state=active]:text-green-400`
+- **Watch Live button:** Glowing red gradient button to the right of tab bar
+  - `bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800`
+  - `shadow-lg shadow-red-600/20`
+- **Responsive:** Tabs wrap on very small screens, Watch Live stays inline on md+
+
+## 3. Live Match Cards
+
+- **Card style:** Glassmorphism — `bg-white/5 backdrop-blur-md border border-white/10 rounded-xl`
+- **Top bar:** 
+  - Left: Red dot + "LIVE" bold + stage/match number
+  - Right: Current run rate
+  - Small, subtle — no full colored banner
+- **Team rows:**
+  - 32px circular logo + team name (font-semibold)
+  - Score: Runs/wickets in text-2xl font-extrabold, overs + RR in text-xs text-gray-400
+- **Current over strip:** Compact ball-by-ball row below teams
+  - Each ball: 24px circle, color-coded (red=W, purple=6, green=4, blue=runs, gray=0)
+  - Label: "Over X:" above the strip
+- **Button:** Ghost/outline — `bg-white/5 hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-600 border border-white/20 text-white`
+  - Icon: `Eye` lucide icon
+  - Text: "View Live Score"
+  - Full-width on mobile, auto-width on desktop
+- **Responsive:**
+  - Mobile: single column, full-width
+  - Desktop: teams in flex-row with scores aligned right
+
+## 4. Upcoming Match Cards
+
+- **Card style:** Matching glass card
+- **Top row:** Stage badge (outline) + match number on left, "Upcoming" badge on right
+- **Teams:** Centered layout with logos in 48px circles, team names below, "VS" in yellow-400
+- **Date/time:** Below teams in gray-400 text-sm with Calendar + Clock icons
+- **Button:** Ghost style — `bg-white/10 hover:bg-white/20 border border-white/20 text-white`
+  - Text: "Match Details"
+- **Grid:** `grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4`
+- **Cards:** Equal height (`h-full flex flex-col`)
+
+## 5. Recent Match Cards
+
+- **Card style:** Matching glass card
+- **Top row:** Trophy icon + date on left, "Completed" green badge on right
+- **Team rows:**
+  - Logo + team name on left
+  - Score (runs/wickets) + overs + RR on right — same style as live cards
+- **Result banner:** Divider line + trophy icon + "X won by Y" in green-400
+- **Button:** Ghost style — `bg-white/10 hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-600 border border-white/20 text-white`
+  - Text: "View Scorecard"
+- **Responsive:** Full-width cards, content stacks on mobile
+
+## 6. Empty States
+
+- **Card style:** Matching glass card
+- **Layout:** Centered, p-16
+- **Icon:** Lucide icon (Activity/Calendar/Trophy) in 64px, gray-500
+- **Title:** text-2xl font-bold text-white
+- **Subtitle:** text-gray-400, mb-6
+- **CTA button:** Ghost style switching to relevant tab
+- **Animation:** Fade in via `motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}`
+
+## 7. Button Style Guide (all buttons)
+
+All action buttons use a consistent ghost/outline base with gradient hover effect:
+
+| Button | Default | Hover | Icon |
+|--------|---------|-------|------|
+| View Live Score | `bg-white/5 border border-white/20 text-white` | `bg-gradient-to-r from-blue-500 to-purple-600 border-transparent` | Eye |
+| Match Details | `bg-white/10 border border-white/20 text-white` | `bg-gradient-to-r from-blue-500 to-purple-600 border-transparent` | Eye |
+| View Scorecard | `bg-white/10 border border-white/20 text-white` | `bg-gradient-to-r from-blue-500 to-purple-600 border-transparent` | ArrowRight |
+| Watch Live (tab) | `bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-600/20` | `from-red-700 to-red-800 shadow-red-600/30` | Play |
+| Empty state CTA | `border border-white/20 text-white` | `bg-white/10` | ChevronRight |
+
+## 8. Responsive Strategy
+
+| Breakpoint | Changes |
+|------------|---------|
+| Default (mobile) | Single column, compact padding (p-4), small logos (32px), text-sm |
+| sm (640px) | Slightly larger padding, bigger logos |
+| md (768px) | 2-col upcoming grid, team rows flex-row, normal text sizes |
+| lg (1024px) | 3-col upcoming grid, normal spacing |
+| xl (1280px) | Max-width container constraint |
+
+## Files Changed
+
+- `frontend/src/pages/LiveScores.tsx` — Full page rewrite with new design
+- No other files need changes (all styles inline via Tailwind)
+
+## Out of Scope
+
+- MatchDetails page redesign
+- Schedule page match cards
+- Admin match scoring UI
+- Backend changes
+- New routing or API changes
