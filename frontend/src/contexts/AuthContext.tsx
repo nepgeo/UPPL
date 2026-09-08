@@ -35,6 +35,7 @@ interface AuthContextType {
   // ✅ Added functions
   forgotPassword: (email: string) => Promise<boolean>;
   socialLogin: (email: string, name: string, provider: string) => Promise<{ success: boolean; role?: string }>;
+  completePlayerProfile: (formData: FormData) => Promise<{ success: boolean; user?: User }>;
 }
 
 // Create Context
@@ -155,9 +156,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  // ✅ Complete Player Profile (after social login)
+  const completePlayerProfile = async (formData: FormData): Promise<{ success: boolean; user?: User }> => {
+    setLoading(true);
+    try {
+      const response = await api.put("/auth/complete-player-profile", formData);
+      const { token, user } = response.data;
+
+      localStorage.setItem("pplt20_user", JSON.stringify(user));
+      localStorage.setItem("pplt20_token", token);
+      setUser(user);
+
+      return { success: true, user };
+    } catch (error: any) {
+      console.error("Complete player profile failed:", error);
+      return { success: false };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <AuthContext.Provider
-      value={{ user, setUser, login, logout, register, loading, forgotPassword, socialLogin }}
+      value={{ user, setUser, login, logout, register, loading, forgotPassword, socialLogin, completePlayerProfile }}
     >
       {children}
     </AuthContext.Provider>

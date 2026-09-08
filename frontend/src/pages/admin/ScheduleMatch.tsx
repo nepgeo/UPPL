@@ -26,6 +26,7 @@ import { useToast } from "@/components/ui/use-toast";
 import api from '@/lib/api';
 import BallScoring from '@/components/LiveScore/BallScoring';
 import MatchSetupWizard from '@/components/LiveScore/MatchSetupWizard';
+import { DateTimePicker } from '@/components/ui/date-time-picker';
 
 
 
@@ -121,15 +122,13 @@ const MatchManagement: React.FC = () => {
   const [seasons, setSeasons] = useState<{ _id: string; seasonNumber: number; isCurrent: boolean }[]>([]);
   const [selectedSeasonId, setSelectedSeasonId] = useState<string>('');
 
-  const today = new Date().toISOString().split("T")[0];
   const [newMatch, setNewMatch] = useState({
     seasonNumber: '',
     groupName: '',
     stage: '',
     teamA: '',
     teamB: '',
-    date: today,
-    time: '',
+    matchTime: null as Date | null,
     venue: '',
   });
   const { toast } = useToast();
@@ -451,7 +450,7 @@ useEffect(() => {
 
   const handleAddMatch = async () => {
   try {
-    if (!newMatch.date || !newMatch.time) {
+    if (!newMatch.matchTime) {
       toast({
         title: "Missing Fields",
         description: "Please select both date and time.",
@@ -460,8 +459,8 @@ useEffect(() => {
       return;
     }
 
-    // ✅ Proper ISO time
-    const matchTime = new Date(`${newMatch.date}T${newMatch.time}`).toISOString();
+    // ✅ Proper ISO time from Date object
+    const matchTime = newMatch.matchTime.toISOString();
 
     const payload = {
       seasonNumber: newMatch.seasonNumber,
@@ -496,8 +495,7 @@ useEffect(() => {
       stage: "",
       teamA: "",
       teamB: "",
-      date: new Date().toISOString().split("T")[0],
-      time: "",
+      matchTime: null,
       venue: "",
     });
 
@@ -1099,56 +1097,17 @@ const handleCancelLiveMatch = async () => {
                 />
               </div>
 
-              {/* Date */}
-              <div>
-                <label className="text-xs sm:text-sm font-medium mb-1 block">Date</label>
-                <input
-                  type="date"
-                  value={
-                    editMatch.matchTime
-                      ? new Date(editMatch.matchTime).toISOString().split("T")[0]
-                      : ""
-                  }
-                  onChange={(e) => {
-                    const current = editMatch.matchTime
-                      ? new Date(editMatch.matchTime)
-                      : new Date();
-                    const timePart =
-                      current.toISOString().split("T")[1]?.slice(0, 5) || "12:00";
-                    const combined = new Date(`${e.target.value}T${timePart}`);
-                    setEditMatch({ ...editMatch, matchTime: combined.toISOString() });
+              {/* Date & Time */}
+              <div className="col-span-1 sm:col-span-2">
+                <label className="text-xs sm:text-sm font-medium mb-1 block">Date & Time</label>
+                <DateTimePicker
+                  value={editMatch.matchTime ? new Date(editMatch.matchTime) : null}
+                  onChange={(date) => {
+                    if (date) {
+                      setEditMatch({ ...editMatch, matchTime: date.toISOString() });
+                    }
                   }}
-                  className="w-full border px-2 py-1 sm:px-3 sm:py-2 rounded text-sm"
-                />
-              </div>
-
-              {/* Time */}
-              <div>
-                <label className="text-xs sm:text-sm font-medium mb-1 block">Time</label>
-                <input
-                  type="time"
-                  value={
-                    editMatch.matchTime
-                      ? new Date(editMatch.matchTime).toLocaleTimeString("en-GB", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })
-                      : ""
-                  }
-                  onChange={(e) => {
-                    const datePart = editMatch.matchTime
-                      ? new Date(editMatch.matchTime)
-                      : new Date();
-
-                    // Preserve the date part, update only hours/minutes
-                    const [hours, minutes] = e.target.value.split(":").map(Number);
-
-                    const updated = new Date(datePart);
-                    updated.setHours(hours, minutes, 0, 0);
-
-                    setEditMatch({ ...editMatch, matchTime: updated.toISOString() });
-                  }}
-                  className="w-full border px-2 py-1 sm:px-3 sm:py-2 rounded text-sm"
+                  placeholder="Select match date & time"
                 />
               </div>
 
@@ -1440,29 +1399,13 @@ const handleCancelLiveMatch = async () => {
           </div>
 
           {/* Date & Time */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="text-xs sm:text-sm font-medium">Date</label>
-              <input
-                type="date"
-                value={newMatch.date}
-                onChange={(e) =>
-                  setNewMatch({ ...newMatch, date: e.target.value })
-                }
-                className="w-full border rounded-lg px-2 py-1 text-xs sm:text-sm focus:ring-2 focus:ring-primary"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs sm:text-sm font-medium">Time</label>
-              <input
-                type="time"
-                value={newMatch.time}
-                onChange={(e) =>
-                  setNewMatch({ ...newMatch, time: e.target.value })
-                }
-                className="w-full border rounded-lg px-2 py-1 text-xs sm:text-sm focus:ring-2 focus:ring-primary"
-              />
-            </div>
+          <div className="space-y-1">
+            <label className="text-xs sm:text-sm font-medium">Date & Time</label>
+            <DateTimePicker
+              value={newMatch.matchTime}
+              onChange={(date) => setNewMatch({ ...newMatch, matchTime: date })}
+              placeholder="Select match date & time"
+            />
           </div>
         </div>
 

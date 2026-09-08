@@ -20,6 +20,7 @@ import {
 import { motion } from "framer-motion";
 import api from "@/lib/api";
 import { getGoogleAuthToken, getFacebookAuthToken } from "@/services/firebase";
+import RoleSelectionModal from "@/components/RoleSelectionModal";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -50,6 +51,11 @@ const Login = () => {
   // Error dialog
   const [isErrorDialogOpen, setIsErrorDialogOpen] = useState(false);
     // Add a new state for input error
+
+  // Role selection modal for social login
+  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
+  const [socialUserName, setSocialUserName] = useState("");
+  const [socialUserImage, setSocialUserImage] = useState("");
 const [forgotEmailError, setForgotEmailError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -228,6 +234,11 @@ const [forgotEmailError, setForgotEmailError] = useState('');
         const userInfo = await res.json();
         email = userInfo.email;
         name = userInfo.name || email.split("@")[0];
+        // Capture Google profile picture
+        console.log("Google userInfo:", userInfo);
+        if (userInfo.picture) {
+          setSocialUserImage(userInfo.picture);
+        }
       } else {
         const appId = import.meta.env.VITE_FACEBOOK_APP_ID;
         if (!appId) {
@@ -246,8 +257,20 @@ const [forgotEmailError, setForgotEmailError] = useState('');
       if (!email) throw new Error("Could not get email from provider");
       const { success } = await socialLogin(email, name, provider);
       if (!success) throw new Error("Backend authentication failed");
-      toast({ title: "Welcome!", description: `Signed in with ${provider}` });
-      navigate("/");
+
+      // Check if this is a first-time social login user (role=user, no player details)
+      const savedUser = JSON.parse(localStorage.getItem("pplt20_user") || "{}");
+      const isFirstTimeUser = savedUser.role === "user" && !savedUser.phone && !savedUser.position;
+
+      if (isFirstTimeUser) {
+        // Show role selection modal for first-time users
+        setSocialUserName(name || email.split("@")[0]);
+        setIsRoleModalOpen(true);
+      } else {
+        // Existing user, just navigate
+        toast({ title: "Welcome!", description: `Signed in with ${provider}` });
+        navigate("/");
+      }
     } catch (err: any) {
       if (err?.error === "popup_closed_by_user" || err?.message?.includes("user closed")) return;
       toast({
@@ -626,6 +649,18 @@ const [forgotEmailError, setForgotEmailError] = useState('');
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Role Selection Modal for Social Login */}
+      <RoleSelectionModal
+        open={isRoleModalOpen}
+        onClose={() => {
+          setIsRoleModalOpen(false);
+          navigate("/");
+        }}
+        userName={socialUserName}
+        userEmail={email}
+        userImage={socialUserImage}
+      />
     </div>
   );
 };

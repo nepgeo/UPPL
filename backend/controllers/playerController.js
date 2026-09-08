@@ -3,7 +3,60 @@ const Player = require("../models/Player");
 const User = require("../models/User");
 
 // ===============================
-// Get Player Profile
+// Get My Profile (for logged-in player)
+// ===============================
+exports.getMyProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select(
+      "name email phone bio dateOfBirth position battingStyle bowlingStyle profileImage documents playerCode role verified team"
+    );
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const player = await Player.findOne({ userId: req.user.id }).lean();
+
+    const careerStats = player?.careerStats || {
+      matches: 0, innings: 0, runs: 0, ballsFaced: 0, fours: 0, sixes: 0,
+      highestScore: 0, notOuts: 0, wickets: 0, ballsBowled: 0, runsConceded: 0,
+      bestBowlingWickets: 0, bestBowlingRuns: 0, economy: 0, strikeRate: 0,
+      average: 0, catches: 0, stumpings: 0,
+    };
+
+    const Team = require("../models/teamModel");
+    let team = null;
+    try {
+      team = await Team.findOne({ "players.user": user._id }).select("teamName logo").lean();
+    } catch (_) {}
+
+    res.json({
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone || "",
+        bio: user.bio || "",
+        dateOfBirth: user.dateOfBirth || "",
+        position: user.position || "",
+        battingStyle: user.battingStyle || "",
+        bowlingStyle: user.bowlingStyle || "",
+        profileImage: user.profileImage || null,
+        documents: user.documents || [],
+        playerCode: user.playerCode || null,
+        role: user.role,
+        verified: user.verified,
+        team: user.team || null,
+      },
+      team,
+      careerStats,
+    });
+  } catch (err) {
+    console.error("❌ getMyProfile error:", err);
+    res.status(500).json({ message: "Error fetching profile", error: err.message });
+  }
+};
+
+// ===============================
+// Get Player Profile (admin)
 // ===============================
 exports.getPlayerProfile = async (req, res) => {
   try {

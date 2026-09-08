@@ -111,16 +111,6 @@ const TeamManagement = () => {
   const [selectedSeasonId, setSelectedSeasonId] = useState('');
   const [teams, setTeams] = useState<any[]>([]);
 
-  const [newSeason, setNewSeason] = useState<{ number: string; endDate: string; year?: string }>({
-    number: "", endDate: "", year: undefined,
-  });
-
-  const [showSeasonModal, setShowSeasonModal] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingSeason, setEditingSeason] = useState({ number: '', endDate: '' });
-  const [seasonInput, setSeasonInput] = useState({
-    number: '', endDate: new Date().toISOString().slice(0, 16),
-  });
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [selectedPlayer, setSelectedPlayer] = useState<any | null>(null);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
@@ -147,10 +137,8 @@ const TeamManagement = () => {
       const current = mapped.find((s: any) => s.isCurrent);
       if (current) {
         setSelectedSeasonId(current.id);
-        setSeasonInput({ number: current.number.toString(), endDate: new Date(current.endDate).toISOString().slice(0, 16) });
       } else if (mapped.length > 0) {
         setSelectedSeasonId(mapped[0].id);
-        setSeasonInput({ number: mapped[0].number.toString(), endDate: new Date(mapped[0].endDate).toISOString().slice(0, 16) });
       }
     } catch (err) { console.error('Failed to load seasons:', err) }
   };
@@ -161,55 +149,6 @@ const TeamManagement = () => {
       const res = await api.get(`/teams?seasonId=${seasonId}`, { headers: { Authorization: `Bearer ${token}` } });
       setTeams(res.data);
     } catch (err) { console.error('Failed to load teams', err) }
-  };
-
-  const handleCreateSeason = async () => {
-    if (!newSeason.number || !newSeason.endDate) return toast({ title: "Error", description: "All fields are required", variant: "destructive" });
-    try {
-      const token = localStorage.getItem('pplt20_token');
-      await api.post('/seasons', { seasonNumber: Number(newSeason.number), entryDeadline: newSeason.endDate }, { headers: { Authorization: `Bearer ${token}` } });
-      await fetchSeasons();
-      setNewSeason({ number: '', endDate: new Date().toISOString().slice(0, 16) });
-      toast({ title: "Season Created", description: `Season ${newSeason.number} added successfully` });
-    } catch { toast({ title: "Error", description: "Failed to create season", variant: "destructive" }) }
-  };
-
-  const handleDeleteSeason = async (id: string) => {
-    try {
-      const token = localStorage.getItem('pplt20_token');
-      await api.delete(`/seasons/${id}`, { headers: { Authorization: `Bearer ${token}` } });
-      await fetchSeasons();
-      if (id === selectedSeasonId) { setSelectedSeasonId(''); setTeams([]) }
-      toast({ title: "Deleted", description: "Season deleted successfully" });
-    } catch { toast({ title: "Error", description: "Could not delete season", variant: "destructive" }) }
-  };
-
-  const handleEditClick = (season: any) => {
-    setEditingId(season.id);
-    setEditingSeason({ number: season.number.toString(), endDate: new Date(season.endDate).toISOString().slice(0, 16) });
-  };
-
-  const handleSaveEdit = async () => {
-    if (!editingSeason.number || !editingSeason.endDate) return toast({ title: "Error", description: "All fields are required", variant: "destructive" });
-    try {
-      const token = localStorage.getItem('pplt20_token');
-      await api.put(`/seasons/${editingId}`, { seasonNumber: Number(editingSeason.number), entryDeadline: editingSeason.endDate }, { headers: { Authorization: `Bearer ${token}` } });
-      await fetchSeasons();
-      setEditingId(null);
-      toast({ title: "Updated", description: "Season updated successfully" });
-    } catch { toast({ title: "Error", description: "Failed to update season", variant: "destructive" }) }
-  };
-
-  const handleSetSeason = async () => {
-    const found = seasons.find((s: any) => s.number === Number(seasonInput.number));
-    if (!found) return toast({ title: "Error", description: "Season not found", variant: "destructive" });
-    try {
-      const token = localStorage.getItem('pplt20_token');
-      await api.put(`/seasons/${found.id}/set-current`, {}, { headers: { Authorization: `Bearer ${token}` } });
-      await fetchSeasons();
-      setSelectedSeasonId(found.id);
-      toast({ title: "Active Season Set", description: `Season ${found.number} is now active` });
-    } catch { toast({ title: "Error", description: "Failed to set season", variant: "destructive" }) }
   };
 
   const selectedSeason = seasons.find((s: any) => s.id === selectedSeasonId);
@@ -286,48 +225,6 @@ const TeamManagement = () => {
 
   return (
     <div className="space-y-6">
-      {/* Season Management Card */}
-      <Card className="border-0 shadow-md rounded-xl overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3.5 px-5">
-          <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <Calendar className="w-4 h-4" /> Manage Seasons
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-4 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-end gap-3">
-            <div className="flex-1 min-w-0">
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Season Number</label>
-              <Input placeholder="e.g. 102" value={newSeason.number} onChange={(e) => setNewSeason({ ...newSeason, number: e.target.value })} className="h-9 text-sm" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <label className="text-xs font-medium text-gray-500 mb-1 block">Team Entry Deadline</label>
-              <Input type="datetime-local" value={newSeason.endDate} onChange={(e) => setNewSeason({ ...newSeason, endDate: e.target.value, year: new Date(e.target.value).getFullYear().toString() })} className="h-9 text-sm" />
-            </div>
-            <div className="flex gap-2 shrink-0">
-              <Button onClick={handleCreateSeason} className="h-9 text-xs"><Plus className="w-3.5 h-3.5 mr-1" /> Add Season</Button>
-              <Button variant="outline" onClick={() => setShowSeasonModal(true)} className="h-9 text-xs"><Eye className="w-3.5 h-3.5 mr-1" /> All Seasons</Button>
-            </div>
-          </div>
-          <div className="border-t border-gray-100 pt-3">
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Set Active Season</label>
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-              <Select value={seasonInput.number} onValueChange={(val) => setSeasonInput(prev => ({ ...prev, number: val }))}>
-                <SelectTrigger className="w-full sm:w-44 h-9 text-sm">
-                  <SelectValue placeholder="Select Season" />
-                </SelectTrigger>
-                <SelectContent>
-                  {seasons.map((s: any) => (
-                    <SelectItem key={`s-${s.id}`} value={s.number.toString()}>Season {s.number} {s.isCurrent ? '(Active)' : ''}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Input type="datetime-local" value={seasonInput.endDate} disabled className="h-9 text-sm sm:w-52" />
-              <Button onClick={handleSetSeason} className="h-9 text-xs">Set Active</Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Team Management Card */}
       <Card className="border-0 shadow-md rounded-xl overflow-hidden">
         <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3.5 px-5">
@@ -506,81 +403,101 @@ const TeamManagement = () => {
       {/* Player Profile Dialog */}
       {selectedPlayer && (
         <Dialog open={!!selectedPlayer} onOpenChange={(open) => { if (!open) setSelectedPlayer(null) }}>
-          <DialogContent className="max-w-2xl bg-white rounded-xl shadow-2xl p-0 overflow-hidden max-h-[90vh] flex flex-col">
-            <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4 shrink-0">
-              <DialogHeader>
-                <div className="flex items-center justify-between">
-                  <DialogTitle className="text-lg font-semibold text-white flex items-center gap-2">
-                    <User className="w-4 h-4" /> {selectedPlayer.user?.name || selectedPlayer.name || 'Player'}
-                  </DialogTitle>
+          <DialogContent className="max-w-3xl bg-white rounded-2xl shadow-2xl p-0 overflow-hidden max-h-[90vh] flex flex-col">
+            {/* Hero Header */}
+            <div className="relative bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 px-6 py-8 shrink-0">
+              <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iLjA1Ij48cGF0aCBkPSJNMzYgMzRoMnYyaC0yem0wLThoMnYyaC0yek0yMCAzNGgydjJoLTJ6bTAtOGgydjJoLTJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
+              <div className="relative flex items-end gap-5">
+                <div className="w-28 h-28 rounded-2xl bg-white/20 backdrop-blur-sm border-2 border-white/30 flex items-center justify-center text-white text-4xl font-bold overflow-hidden shadow-xl shrink-0">
+                  {selectedPlayer.user?.profileImage ? (
+                    <img src={getImageUrl(selectedPlayer.user.profileImage)} alt="" className="w-full h-full object-cover cursor-pointer" onClick={() => setZoomedImage(getImageUrl(selectedPlayer.user.profileImage))} />
+                  ) : (
+                    (selectedPlayer.user?.name || selectedPlayer.name)?.[0]?.toUpperCase() || '?'
+                  )}
                 </div>
-                <p className="text-xs text-blue-300 mt-0.5">Player Code: {selectedPlayer.user?.playerCode || selectedPlayer.code || 'No Code'}</p>
-              </DialogHeader>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-5">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                <div className="text-center space-y-3">
-                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-3xl font-bold mx-auto overflow-hidden">
-                    {selectedPlayer.user?.profileImage ? (
-                      <img src={getImageUrl(selectedPlayer.user.profileImage)} alt="" className="w-full h-full object-cover" onClick={() => setZoomedImage(getImageUrl(selectedPlayer.user.profileImage))} />
-                    ) : (
-                      (selectedPlayer.user?.name || selectedPlayer.name)?.[0]?.toUpperCase() || '?'
-                    )}
-                  </div>
-                  <div>
-                    <span className="inline-block px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium capitalize">
+                <div className="flex-1 min-w-0 pb-1">
+                  <h2 className="text-2xl font-bold text-white truncate">{selectedPlayer.user?.name || selectedPlayer.name || 'Player'}</h2>
+                  <p className="text-white/70 text-sm mt-0.5">#{selectedPlayer.user?.playerCode || selectedPlayer.code || 'No Code'}</p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-white/20 text-white backdrop-blur-sm capitalize">
                       {selectedPlayer.user?.position || selectedPlayer.position || 'N/A'}
                     </span>
+                    {statusBadge(selectedPlayer.status)}
                   </div>
-                  <div className="flex justify-center">{statusBadge(selectedPlayer.status)}</div>
-                  <div className="space-y-1.5 text-left bg-gray-50 rounded-lg p-3 text-sm">
-                    {[
-                      { icon: Mail, label: 'Email', value: selectedPlayer.user?.email },
-                      { icon: Phone, label: 'Phone', value: selectedPlayer.user?.phone },
-                      { icon: CalendarDays, label: 'DOB', value: selectedPlayer.user?.dateOfBirth ? new Date(selectedPlayer.user.dateOfBirth).toLocaleDateString() : 'N/A' },
-                    ].map((item, i) => (
-                      <div key={i} className="flex items-center gap-2 text-xs">
-                        <item.icon className="w-3 h-3 text-gray-400 shrink-0" />
-                        <span className="text-gray-600">{item.label}: <strong className="text-gray-800">{item.value || 'N/A'}</strong></span>
-                      </div>
-                    ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto">
+              {/* Quick Info Bar */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-gray-100 border-b">
+                {[
+                  { label: 'Email', value: selectedPlayer.user?.email || 'N/A', icon: Mail },
+                  { label: 'Phone', value: selectedPlayer.user?.phone || 'N/A', icon: Phone },
+                  { label: 'DOB', value: selectedPlayer.user?.dateOfBirth ? new Date(selectedPlayer.user.dateOfBirth).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A', icon: CalendarDays },
+                  { label: 'Role', value: selectedPlayer.user?.position || selectedPlayer.position || 'N/A', icon: User },
+                ].map((item, i) => (
+                  <div key={i} className="bg-white p-3 flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                      <item.icon className="w-4 h-4 text-gray-500" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] text-gray-400 uppercase tracking-wide">{item.label}</p>
+                      <p className="text-xs font-medium text-gray-800 truncate">{item.value}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="p-5 space-y-5">
+                {/* Playing Style */}
+                <div>
+                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Playing Style</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 p-4">
+                      <div className="absolute top-0 right-0 w-16 h-16 bg-blue-500/10 rounded-full -mr-6 -mt-6" />
+                      <p className="text-xs text-blue-600 font-medium mb-1">Batting Style</p>
+                      <p className="text-sm font-bold text-gray-800">{selectedPlayer.user?.battingStyle || 'N/A'}</p>
+                    </div>
+                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-100 p-4">
+                      <div className="absolute top-0 right-0 w-16 h-16 bg-purple-500/10 rounded-full -mr-6 -mt-6" />
+                      <p className="text-xs text-purple-600 font-medium mb-1">Bowling Style</p>
+                      <p className="text-sm font-bold text-gray-800">{selectedPlayer.user?.bowlingStyle || 'N/A'}</p>
+                    </div>
                   </div>
                 </div>
 
-                <div className="md:col-span-2 space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-blue-50 rounded-lg p-3">
-                      <p className="text-xs text-blue-600 font-medium mb-0.5">Batting Style</p>
-                      <p className="text-sm font-semibold text-gray-800">{selectedPlayer.user?.battingStyle || 'N/A'}</p>
-                    </div>
-                    <div className="bg-purple-50 rounded-lg p-3">
-                      <p className="text-xs text-purple-600 font-medium mb-0.5">Bowling Style</p>
-                      <p className="text-sm font-semibold text-gray-800">{selectedPlayer.user?.bowlingStyle || 'N/A'}</p>
-                    </div>
+                {/* Bio */}
+                <div>
+                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">About</h3>
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <p className="text-sm text-gray-700 leading-relaxed">{selectedPlayer.user?.bio || 'No bio available.'}</p>
                   </div>
+                </div>
 
-                  <div>
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Bio</p>
-                    <p className="text-sm text-gray-700">{selectedPlayer.user?.bio || 'No bio available.'}</p>
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Documents ({selectedPlayer.user?.documents?.length || 0})</p>
+                {/* Documents */}
+                <div>
+                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                    Documents ({selectedPlayer.user?.documents?.length || 0})
+                  </h3>
+                  {selectedPlayer.user?.documents?.length > 0 ? (
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                      {selectedPlayer.user.documents.map((doc: any, i: number) => (
+                        <button
+                          key={i}
+                          onClick={() => { setSelectedPlayer(selectedPlayer); setZoomedDocIndex(i) }}
+                          className="aspect-[4/3] rounded-xl overflow-hidden border-2 border-gray-100 hover:border-indigo-400 hover:shadow-md transition-all duration-200 bg-gray-50 group"
+                        >
+                          <img src={getImageUrl(doc)} alt={`Doc ${i + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" onError={e => (e.currentTarget as HTMLImageElement).src = "/placeholder.svg"} />
+                        </button>
+                      ))}
                     </div>
-                    {selectedPlayer.user?.documents?.length > 0 ? (
-                      <div className="grid grid-cols-3 gap-2">
-                        {selectedPlayer.user.documents.map((doc: any, i: number) => (
-                          <button key={i} onClick={() => { setSelectedPlayer(selectedPlayer); setZoomedDocIndex(i) }} className="aspect-[4/3] rounded-lg overflow-hidden border border-gray-200 hover:border-blue-400 transition-colors bg-gray-50">
-                            <img src={getImageUrl(doc)} alt={`Doc ${i + 1}`} className="w-full h-full object-cover" onError={e => (e.currentTarget as HTMLImageElement).src = "/placeholder.svg"} />
-                          </button>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center gap-2 py-5 bg-gray-50 rounded-lg text-sm text-gray-400"><ImageIcon className="w-4 h-4" /> No documents</div>
-                    )}
-                  </div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-2 py-8 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 text-sm text-gray-400">
+                      <ImageIcon className="w-5 h-5" /> No documents uploaded
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -713,63 +630,6 @@ const TeamManagement = () => {
         </Dialog>
       )}
 
-      {/* All Seasons Modal */}
-      {showSeasonModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowSeasonModal(false)}>
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
-            <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-5 py-3.5 flex items-center justify-between shrink-0 rounded-t-xl">
-              <h2 className="text-sm font-semibold text-white flex items-center gap-2"><Calendar className="w-4 h-4" /> All Seasons</h2>
-              <button onClick={() => setShowSeasonModal(false)} className="text-gray-400 hover:text-white"><X className="w-4 h-4" /></button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-xs text-gray-500 uppercase tracking-wider border-b border-gray-100">
-                    <th className="pb-2 font-medium">#</th>
-                    <th className="pb-2 font-medium">Season</th>
-                    <th className="pb-2 font-medium">Entry Deadline</th>
-                    <th className="pb-2 font-medium text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {seasons.map((s: any, i: number) => (
-                    <tr key={s.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="py-2.5 text-xs text-gray-400">{i + 1}</td>
-                      <td className="py-2.5">
-                        {editingId === s.id ? (
-                          <Input value={editingSeason.number} onChange={(e) => setEditingSeason({ ...editingSeason, number: e.target.value })} className="h-7 text-xs w-24" />
-                        ) : (
-                          <span className="text-sm font-medium text-gray-800">Season {s.number} {s.isCurrent && <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded ml-1">Active</span>}</span>
-                        )}
-                      </td>
-                      <td className="py-2.5">
-                        {editingId === s.id ? (
-                          <Input type="datetime-local" value={editingSeason.endDate} onChange={(e) => setEditingSeason({ ...editingSeason, endDate: e.target.value })} className="h-7 text-xs w-44" />
-                        ) : (
-                          <span className="text-sm text-gray-600">{new Date(s.endDate).toLocaleString('en-IN')}</span>
-                        )}
-                      </td>
-                      <td className="py-2.5 text-right">
-                        {editingId === s.id ? (
-                          <div className="flex gap-1 justify-end">
-                            <Button size="sm" onClick={handleSaveEdit} className="h-7 w-7 p-0"><Save className="w-3.5 h-3.5" /></Button>
-                            <Button size="sm" variant="ghost" onClick={() => setEditingId(null)} className="h-7 w-7 p-0"><X className="w-3.5 h-3.5" /></Button>
-                          </div>
-                        ) : (
-                          <div className="flex gap-1 justify-end">
-                            <Button size="sm" variant="outline" onClick={() => handleEditClick(s)} className="h-7 w-7 p-0"><Pencil className="w-3.5 h-3.5" /></Button>
-                            <Button size="sm" variant="destructive" onClick={() => handleDeleteSeason(s.id)} className="h-7 w-7 p-0"><Trash2 className="w-3.5 h-3.5" /></Button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

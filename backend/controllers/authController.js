@@ -224,6 +224,89 @@ exports.firebaseLogin = async (req, res) => {
 };
 
 /**
+ * @desc    Complete player profile after social login
+ * @route   PUT /api/auth/complete-player-profile
+ * @access  Private
+ */
+exports.completePlayerProfile = async (req, res) => {
+  try {
+    console.log("📦 completePlayerProfile - req.body:", req.body);
+    console.log("📎 completePlayerProfile - req.files:", req.files);
+    console.log("👤 completePlayerProfile - req.user:", req.user?._id);
+
+    const { phone, dateOfBirth, position, battingStyle, bowlingStyle, bio } = req.body;
+
+    if (!phone || !dateOfBirth || !position) {
+      return res.status(400).json({ message: "Phone, date of birth, and position are required" });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    user.phone = phone;
+    user.dateOfBirth = dateOfBirth;
+    user.position = position;
+    user.battingStyle = battingStyle || "";
+    user.bowlingStyle = bowlingStyle || "";
+    user.bio = bio || "";
+    user.role = "player";
+    user.verified = false;
+    user.playerCode = null;
+
+    // ✅ Cloudinary: profileImage
+    if (req.files?.profileImage?.[0]) {
+      const uploaded = await uploadFileToCloudinary(
+        req.files.profileImage[0].path,
+        "users/profile"
+      );
+      user.profileImage = { url: uploaded.url, public_id: uploaded.public_id };
+    }
+
+    // ✅ Cloudinary: documents
+    if (req.files?.documents?.length > 0) {
+      const docs = [];
+      for (const file of req.files.documents) {
+        const uploaded = await uploadFileToCloudinary(
+          file.path,
+          "users/documents"
+        );
+        docs.push({ url: uploaded.url, public_id: uploaded.public_id });
+      }
+      user.documents = docs;
+    }
+
+    await user.save();
+
+    const token = generateToken(user);
+
+    res.json({
+      message: "Player profile completed",
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        verified: user.verified,
+        playerCode: user.playerCode || null,
+        team: user.team || null,
+        phone: user.phone,
+        dateOfBirth: user.dateOfBirth,
+        position: user.position,
+        battingStyle: user.battingStyle,
+        bowlingStyle: user.bowlingStyle,
+        bio: user.bio,
+        profileImage: user.profileImage || null,
+        documents: user.documents || [],
+      },
+    });
+  } catch (err) {
+    console.error("Complete player profile error:", err);
+    res.status(500).json({ message: "Error completing player profile", error: err.message });
+  }
+};
+
+/**
  * @desc    Forgot Password (send OTP)
  * @route   POST /api/auth/forgot-password
  */

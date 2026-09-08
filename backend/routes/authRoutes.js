@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
 const { upload, uploadTeamFiles, uploadPaymentQR } = require("../middleware/upload");
+const { protect } = require("../middleware/authMiddleware");
 
 // Register route with image and document upload
 router.post(
@@ -17,6 +18,11 @@ router.post('/login', authController.login);
 
 
 router.post('/firebase', authController.firebaseLogin);
+
+router.put('/complete-player-profile', protect, upload.fields([
+  { name: 'profileImage', maxCount: 1 },
+  { name: 'documents', maxCount: 10 }
+]), authController.completePlayerProfile);
 
 router.post('/forgot-password', authController.forgotPassword);
 router.post('/forgot-password/verify', authController.verifyResetOtp);   // optional

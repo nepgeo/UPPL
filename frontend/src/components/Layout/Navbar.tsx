@@ -304,7 +304,7 @@ useEffect(() => {
                 )}
 
                 {/* ✅ Player Profile link */}
-                {role === "player" && user?.verified && (
+                {role === "player" && (
                   <Link
                     to="/player-profile"
                     className="text-sm font-medium text-gray-700 hover:text-blue-600"

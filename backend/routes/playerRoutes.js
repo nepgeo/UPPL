@@ -186,10 +186,8 @@ router.post("/check-code", async (req, res) => {
   }
 });
 
-module.exports = router;
-
-
-
+// ✅ Player: get own profile (requires auth, not admin)
+router.get('/my-profile', protect, playerController.getMyProfile);
 
 
 router.use(protect);

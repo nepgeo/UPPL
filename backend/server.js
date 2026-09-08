@@ -94,7 +94,12 @@ app.use(cors({
 }));
 
 // Security & logging
-app.use(helmet({ contentSecurityPolicy: false })); // CSP disabled to avoid common dev issues; customize as needed
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginOpenerPolicy: false,
+  crossOriginResourcePolicy: false,
+  crossOriginEmbedderPolicy: false,
+}));
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 // Database connection

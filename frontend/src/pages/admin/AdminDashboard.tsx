@@ -4,7 +4,7 @@ import {
   Users, UserCheck, Calendar, Trophy, FileText, Settings, Activity,
   Clock, CheckCircle, XCircle, AlertCircle, Images, Film,
   ArrowRight, Plus, LayoutDashboard, PanelLeftClose, PanelLeftOpen,
-  BarChart3, UserPlus, List, Video, Image
+  BarChart3, UserPlus, List, Video, Image, Eye, Pencil, Trash2, Save, X, Search, ChevronDown
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +14,10 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
 import { getAdminDashboard } from '@/services/adminService';
 import { approvePlayer, rejectPlayer } from '@/services/playerVerificationService';
+import api from '@/lib/api';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import NewsManagement from '@/pages/admin/NewsManagement';
 import GalleryManagement from '@/pages/admin/GalleryManagement';
@@ -30,7 +34,6 @@ import AllRounderIcon from "@/assets/icons/all.png";
 import GlovesIcon from "@/assets/icons/gloves.png";
 import CapIcon from "@/assets/icons/cap.png"; 
 import { useLocation } from "react-router-dom";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import getProfileImageUrl  from "@/utils/getProfileImageUrl";
 import VideoManagement from "@/pages/admin/VideoManagement";
 import UsersManagement from "@/pages/admin/UsersManagement";
@@ -57,6 +60,241 @@ const roleIcon = (roleRaw?: string) => {
 };
 
 
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+const CreateSeasonModal = ({ open, onClose, onSubmit, newSeason, setNewSeason }: {
+  open: boolean;
+  onClose: () => void;
+  onSubmit: (num?: string, deadline?: string) => void;
+  newSeason: { number: string; endDate: string; year?: string };
+  setNewSeason: (s: any) => void;
+}) => {
+  const now = new Date();
+  const [step, setStep] = useState<'number' | 'date'>('number');
+  const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth());
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [selectedHour, setSelectedHour] = useState<number>(12);
+  const [selectedMinute, setSelectedMinute] = useState<number>(0);
+  const [selectedAmPm, setSelectedAmPm] = useState<'AM' | 'PM'>('PM');
+
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const years = Array.from({ length: 20 }, (_, i) => now.getFullYear() - 5 + i);
+  const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+  const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+  const hours12 = Array.from({ length: 12 }, (_, i) => i + 1);
+  const minutes = [0, 15, 30, 45];
+
+  const to24Hour = (h12: number, ampm: 'AM' | 'PM') => {
+    if (ampm === 'AM') return h12 === 12 ? 0 : h12;
+    return h12 === 12 ? 12 : h12 + 12;
+  };
+
+  const handleDateConfirm = () => {
+    if (!selectedDay || !newSeason.number) return;
+    const h24 = to24Hour(selectedHour, selectedAmPm);
+    const dt = new Date(selectedYear, selectedMonth, selectedDay, h24, selectedMinute);
+    const isoStr = dt.toISOString().slice(0, 16);
+    onSubmit(newSeason.number, isoStr);
+  };
+
+  const selectedDateStr = selectedDay
+    ? `${selectedDay} ${MONTHS[selectedMonth]} ${selectedYear}, ${selectedHour}:${String(selectedMinute).padStart(2, '0')} ${selectedAmPm}`
+    : '';
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[92vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 px-5 py-4 shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                <Plus className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-white">Create New Season</h2>
+                <p className="text-[11px] text-blue-100">{step === 'number' ? 'Enter season number' : 'Set entry deadline'}</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors">
+              <X className="w-3.5 h-3.5 text-white" />
+            </button>
+          </div>
+          <div className="flex gap-2 mt-3">
+            <div className={`h-1 flex-1 rounded-full ${step === 'number' || step === 'date' ? 'bg-white' : 'bg-white/30'}`} />
+            <div className={`h-1 flex-1 rounded-full ${step === 'date' ? 'bg-white' : 'bg-white/30'}`} />
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-5">
+          {step === 'number' ? (
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-semibold text-gray-700 mb-2 block">Season Number</label>
+                <Input
+                  placeholder="e.g. 102"
+                  value={newSeason.number}
+                  onChange={(e) => setNewSeason({ ...newSeason, number: e.target.value })}
+                  className="h-11 text-base rounded-xl border-gray-200 text-center text-lg font-bold"
+                  autoFocus
+                />
+              </div>
+              <Button
+                onClick={() => { if (newSeason.number) setStep('date'); }}
+                disabled={!newSeason.number}
+                className="w-full h-11 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-sm font-semibold shadow-md shadow-blue-200 disabled:opacity-40"
+              >
+                Continue <ArrowRight className="w-4 h-4 ml-1.5" />
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3.5">
+              {/* Year */}
+              <div>
+                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5 block">Year</label>
+                <div className="flex gap-1.5 overflow-x-auto pb-1" style={{ scrollbarWidth: 'thin' }}>
+                  {years.map(y => (
+                    <button
+                      key={y}
+                      onClick={() => { setSelectedYear(y); setSelectedDay(null); }}
+                      className={`h-8 px-3 rounded-lg text-xs font-semibold transition-all shrink-0 ${
+                        selectedYear === y
+                          ? 'bg-blue-600 text-white shadow-sm'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {y}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Month */}
+              <div>
+                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5 block">Month</label>
+                <div className="grid grid-cols-6 gap-1.5">
+                  {MONTHS.map((m, idx) => (
+                    <button
+                      key={m}
+                      onClick={() => { setSelectedMonth(idx); setSelectedDay(null); }}
+                      className={`h-8 rounded-lg text-[11px] font-semibold transition-all ${
+                        selectedMonth === idx
+                          ? 'bg-blue-600 text-white shadow-sm'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Day */}
+              <div>
+                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5 block">Day</label>
+                <div className="grid grid-cols-7 gap-1">
+                  {['S','M','T','W','T','F','S'].map((d, i) => (
+                    <div key={i} className="text-center text-[9px] font-semibold text-gray-400 pb-0.5">{d}</div>
+                  ))}
+                  {Array.from({ length: new Date(selectedYear, selectedMonth, 1).getDay() }, (_, i) => (
+                    <div key={`empty-${i}`} />
+                  ))}
+                  {days.map(d => (
+                    <button
+                      key={d}
+                      onClick={() => setSelectedDay(d)}
+                      className={`aspect-square rounded-lg text-[11px] font-semibold transition-all ${
+                        selectedDay === d
+                          ? 'bg-blue-600 text-white shadow-sm'
+                          : 'bg-gray-50 text-gray-600 hover:bg-blue-50 hover:text-blue-600'
+                      }`}
+                    >
+                      {d}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Time + Preview row */}
+              <div className="flex gap-3 items-end">
+                <div className="flex-1">
+                  <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5 block">Time</label>
+                  <div className="flex items-center gap-1.5">
+                    <Select value={String(selectedHour)} onValueChange={(v) => setSelectedHour(Number(v))}>
+                      <SelectTrigger className="w-14 h-9 rounded-lg text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {hours12.map(h => (
+                          <SelectItem key={h} value={String(h)}>{h}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <span className="text-sm font-bold text-gray-400">:</span>
+                    <Select value={String(selectedMinute)} onValueChange={(v) => setSelectedMinute(Number(v))}>
+                      <SelectTrigger className="w-14 h-9 rounded-lg text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {minutes.map(m => (
+                          <SelectItem key={m} value={String(m)}>{String(m).padStart(2, '0')}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <div className="flex rounded-lg overflow-hidden border border-gray-200 h-9">
+                      <button
+                        onClick={() => setSelectedAmPm('AM')}
+                        className={`px-2.5 h-full text-[11px] font-bold transition-all ${selectedAmPm === 'AM' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                      >
+                        AM
+                      </button>
+                      <button
+                        onClick={() => setSelectedAmPm('PM')}
+                        className={`px-2.5 h-full text-[11px] font-bold transition-all ${selectedAmPm === 'PM' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                      >
+                        PM
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                {selectedDay && (
+                  <div className="bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 text-center shrink-0">
+                    <p className="text-[9px] text-blue-500 font-medium uppercase">Deadline</p>
+                    <p className="text-xs font-bold text-blue-700">{selectedDateStr}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-1">
+                <Button
+                  variant="outline"
+                  onClick={() => setStep('number')}
+                  className="flex-1 h-10 rounded-xl text-sm font-semibold border-gray-200"
+                >
+                  Back
+                </Button>
+                <Button
+                  onClick={handleDateConfirm}
+                  disabled={!selectedDay}
+                  className="flex-1 h-10 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-sm font-semibold shadow-md shadow-blue-200 disabled:opacity-40"
+                >
+                  Create Season
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 const AdminDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -65,6 +303,19 @@ const AdminDashboard = () => {
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [expandedPlayerId, setExpandedPlayerId] = useState<string | null>(null);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
+
+  // Season management state
+  const [seasons, setSeasons] = useState<any[]>([]);
+  const [newSeason, setNewSeason] = useState<{ number: string; endDate: string; year?: string }>({
+    number: "", endDate: "", year: undefined,
+  });
+  const [showSeasonModal, setShowSeasonModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingSeason, setEditingSeason] = useState({ number: '', endDate: '' });
+  const [seasonInput, setSeasonInput] = useState({
+    number: '', endDate: new Date().toISOString().slice(0, 16),
+  });
 
   const location = useLocation();
   const query = new URLSearchParams(location.search);
@@ -105,6 +356,78 @@ useEffect(() => {
 
 
   const pendingPlayers = dashboardData?.pendingPlayersList ?? [];
+
+  // Season management functions
+  useEffect(() => { fetchSeasons(); }, []);
+
+  const fetchSeasons = async () => {
+    try {
+      const token = localStorage.getItem('pplt20_token');
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      const res = await api.get('/seasons', config);
+      const mapped = res.data.map((s: any) => ({
+        id: s._id, number: s.seasonNumber, year: new Date(s.entryDeadline).getFullYear(),
+        endDate: s.entryDeadline, isCurrent: s.isCurrent,
+      }));
+      setSeasons(mapped);
+      const current = mapped.find((s: any) => s.isCurrent);
+      if (current) {
+        setSeasonInput({ number: current.number.toString(), endDate: new Date(current.endDate).toISOString().slice(0, 16) });
+      } else if (mapped.length > 0) {
+        setSeasonInput({ number: mapped[0].number.toString(), endDate: new Date(mapped[0].endDate).toISOString().slice(0, 16) });
+      }
+    } catch (err) { console.error('Failed to load seasons:', err) }
+  };
+
+  const handleCreateSeason = async (seasonNumber?: string, entryDeadline?: string) => {
+    const num = seasonNumber ?? newSeason.number;
+    const deadline = entryDeadline ?? newSeason.endDate;
+    if (!num || !deadline) return toast({ title: "Error", description: "All fields are required", variant: "destructive" });
+    try {
+      const token = localStorage.getItem('pplt20_token');
+      await api.post('/seasons', { seasonNumber: Number(num), entryDeadline: deadline }, { headers: { Authorization: `Bearer ${token}` } });
+      await fetchSeasons();
+      setNewSeason({ number: '', endDate: '' });
+      setShowCreateModal(false);
+      toast({ title: "Season Created", description: `Season ${num} added successfully` });
+    } catch { toast({ title: "Error", description: "Failed to create season", variant: "destructive" }) }
+  };
+
+  const handleDeleteSeason = async (id: string) => {
+    try {
+      const token = localStorage.getItem('pplt20_token');
+      await api.delete(`/seasons/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+      await fetchSeasons();
+      toast({ title: "Deleted", description: "Season deleted successfully" });
+    } catch { toast({ title: "Error", description: "Could not delete season", variant: "destructive" }) }
+  };
+
+  const handleEditClick = (season: any) => {
+    setEditingId(season.id);
+    setEditingSeason({ number: season.number.toString(), endDate: new Date(season.endDate).toISOString().slice(0, 16) });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingSeason.number || !editingSeason.endDate) return toast({ title: "Error", description: "All fields are required", variant: "destructive" });
+    try {
+      const token = localStorage.getItem('pplt20_token');
+      await api.put(`/seasons/${editingId}`, { seasonNumber: Number(editingSeason.number), entryDeadline: editingSeason.endDate }, { headers: { Authorization: `Bearer ${token}` } });
+      await fetchSeasons();
+      setEditingId(null);
+      toast({ title: "Updated", description: "Season updated successfully" });
+    } catch { toast({ title: "Error", description: "Failed to update season", variant: "destructive" }) }
+  };
+
+  const handleSetSeason = async () => {
+    const found = seasons.find((s: any) => s.number === Number(seasonInput.number));
+    if (!found) return toast({ title: "Error", description: "Season not found", variant: "destructive" });
+    try {
+      const token = localStorage.getItem('pplt20_token');
+      await api.put(`/seasons/${found.id}/set-current`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      await fetchSeasons();
+      toast({ title: "Active Season Set", description: `Season ${found.number} is now active` });
+    } catch { toast({ title: "Error", description: "Failed to set season", variant: "destructive" }) }
+  };
 
   const handleApprovePlayer = async (playerId: string) => {
     try {
@@ -279,6 +602,7 @@ useEffect(() => {
                     { value: "users", label: "Total Users", icon: Users },
                     { value: "players", label: "Verifications", icon: UserCheck, badge: dashboardData?.pendingPlayers },
                     { value: "teams", label: "Season", icon: Trophy },
+                    { value: "team-management", label: "Team Mgmt", icon: Users },
                     { value: "matches", label: "Schedule", icon: Calendar },
                     { value: "gallery", label: "Gallery", icon: Images, badge: dashboardData?.contentStats?.totalGalleryImages },
                     { value: "news", label: "News", icon: FileText, badge: dashboardData?.contentStats?.draftNews },
@@ -345,6 +669,7 @@ useEffect(() => {
                       { value: "users", label: "Total Users", icon: Users },
                       { value: "players", label: "Verifications", icon: UserCheck },
                       { value: "teams", label: "Season", icon: Trophy },
+                      { value: "team-management", label: "Team Mgmt", icon: Users },
                       { value: "matches", label: "Schedule", icon: Calendar },
                       { value: "gallery", label: "Gallery", icon: Images },
                       { value: "news", label: "News", icon: FileText },
@@ -374,6 +699,7 @@ useEffect(() => {
                     { value: "users", label: "Total Users", icon: Users },
                     { value: "players", label: "Verifications", icon: UserCheck },
                     { value: "teams", label: "Season", icon: Trophy },
+                    { value: "team-management", label: "Team Mgmt", icon: Users },
                     { value: "matches", label: "Schedule", icon: Calendar },
                     { value: "gallery", label: "Gallery", icon: Images },
                     { value: "news", label: "News", icon: FileText },
@@ -413,7 +739,7 @@ useEffect(() => {
                 { title: 'Verified Players', value: dashboardData?.verifiedPlayers ?? 0, icon: UserCheck, gradient: 'from-green-500 to-emerald-600', route: '/admin/users' },
                 { title: 'Pending', value: dashboardData?.pendingPlayers ?? 0, icon: Clock, gradient: 'from-orange-500 to-amber-600', onClick: () => setActiveTab('players') },
                 { title: 'Active Matches', value: dashboardData?.activeMatches ?? 0, icon: Activity, gradient: 'from-purple-500 to-violet-600', onClick: () => setActiveTab('matches') },
-                { title: 'Teams', value: dashboardData?.totalTeams ?? 0, icon: Trophy, gradient: 'from-indigo-500 to-indigo-600', onClick: () => setActiveTab('teams') },
+                { title: 'Teams', value: dashboardData?.totalTeams ?? 0, icon: Trophy, gradient: 'from-indigo-500 to-indigo-600', onClick: () => setActiveTab('team-management') },
                 { title: 'Total Matches', value: dashboardData?.totalMatches ?? 0, icon: Calendar, gradient: 'from-teal-500 to-cyan-600', onClick: () => setActiveTab('matches') },
               ].map((stat, i) => (
                 <Card
@@ -643,7 +969,7 @@ useEffect(() => {
                 </CardHeader>
                 <CardContent className="p-4 space-y-2">
                   {[
-                    { label: 'Manage Teams', icon: Trophy, tab: 'teams' },
+                    { label: 'Manage Teams', icon: Trophy, tab: 'team-management' },
                     { label: 'Schedule Match', icon: Calendar, tab: 'matches' },
                     { label: 'Verifications', icon: UserCheck, tab: 'players', badge: dashboardData?.pendingPlayers ?? 0 },
                     { label: 'Gallery', icon: Images, tab: 'gallery' },
@@ -795,6 +1121,256 @@ useEffect(() => {
           </TabsContent>
 
           <TabsContent value="teams">
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                {/* Create Season Card */}
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden lg:col-span-2">
+                  <div className="bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 px-6 py-4 flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                      <Plus className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-white">Season Management</h3>
+                      <p className="text-xs text-blue-100">Create and manage league seasons</p>
+                    </div>
+                  </div>
+                  <div className="p-5 flex items-center gap-3">
+                    <Button
+                      onClick={() => { setNewSeason({ number: '', endDate: '' }); setShowCreateModal(true); }}
+                      className="h-10 rounded-xl px-5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-sm font-semibold shadow-md shadow-blue-200"
+                    >
+                      <Plus className="w-4 h-4 mr-1.5" /> Create Season
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowSeasonModal(true)}
+                      className="h-10 rounded-xl px-5 text-sm font-semibold border-gray-200 hover:bg-gray-50"
+                    >
+                      <Eye className="w-4 h-4 mr-1.5" /> View All Seasons
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Active Season Card */}
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                  <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-4 flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                      <Trophy className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-white">Active Season</h3>
+                      <p className="text-xs text-emerald-100">Currently active season</p>
+                    </div>
+                  </div>
+                  <div className="p-5">
+                    {seasons.find((s: any) => s.isCurrent) ? (
+                      <div className="text-center mb-4">
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center mx-auto mb-3 shadow-lg shadow-emerald-200">
+                          <span className="text-2xl font-bold text-white">{seasons.find((s: any) => s.isCurrent)?.number}</span>
+                        </div>
+                        <p className="text-sm font-semibold text-gray-800">Season {seasons.find((s: any) => s.isCurrent)?.number}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          Deadline: {new Date(seasons.find((s: any) => s.isCurrent)?.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="text-center mb-4">
+                        <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                          <Trophy className="w-8 h-8 text-gray-300" />
+                        </div>
+                        <p className="text-sm font-medium text-gray-400">No Active Season</p>
+                      </div>
+                    )}
+                    <div className="border-t border-gray-100 pt-4">
+                      <label className="text-xs font-semibold text-gray-600 mb-1.5 block">Switch Active Season</label>
+                      <div className="flex gap-2">
+                        <Select value={seasonInput.number} onValueChange={(val) => {
+                          const found = seasons.find((s: any) => s.number === Number(val));
+                          setSeasonInput({ number: val, endDate: found ? new Date(found.endDate).toISOString().slice(0, 16) : '' });
+                        }}>
+                          <SelectTrigger className="flex-1 h-10 rounded-xl text-sm border-gray-200">
+                            <SelectValue placeholder="Select Season" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {seasons.map((s: any) => (
+                              <SelectItem key={`s-${s.id}`} value={s.number.toString()}>
+                                Season {s.number} {s.isCurrent ? '(Active)' : ''}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button onClick={handleSetSeason} className="h-10 rounded-xl px-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-sm font-semibold shadow-md shadow-emerald-200">
+                          Set
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stats Row */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+                    <Calendar className="w-5 h-5 text-blue-500" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-gray-900">{seasons.length}</p>
+                    <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Total Seasons</p>
+                  </div>
+                </div>
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+                    <Trophy className="w-5 h-5 text-emerald-500" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-gray-900">{seasons.filter((s: any) => s.isCurrent).length}</p>
+                    <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Active</p>
+                  </div>
+                </div>
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center shrink-0">
+                    <Clock className="w-5 h-5 text-purple-500" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-gray-900">{seasons.filter((s: any) => !s.isCurrent).length}</p>
+                    <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Past</p>
+                  </div>
+                </div>
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
+                    <AlertCircle className="w-5 h-5 text-amber-500" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-gray-900">{seasons.filter((s: any) => new Date(s.endDate) < new Date() && !s.isCurrent).length}</p>
+                    <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Expired</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* All Seasons Modal */}
+              {showSeasonModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowSeasonModal(false)}>
+                  <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+                    <div className="bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 px-6 py-5 shrink-0">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                            <Calendar className="w-5 h-5 text-white" />
+                          </div>
+                          <div>
+                            <h2 className="text-base font-semibold text-white">All Seasons</h2>
+                            <p className="text-xs text-blue-100">{seasons.length} season{seasons.length !== 1 ? 's' : ''} total</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setShowSeasonModal(false)}
+                          className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+                        >
+                          <X className="w-4 h-4 text-white" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-5">
+                      {seasons.length === 0 ? (
+                        <div className="text-center py-12">
+                          <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                            <Calendar className="w-8 h-8 text-gray-300" />
+                          </div>
+                          <p className="text-gray-500 font-medium">No seasons created yet</p>
+                          <p className="text-sm text-gray-400 mt-1">Create your first season above</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {seasons.map((s: any, i: number) => {
+                            const isExpired = new Date(s.endDate) < new Date() && !s.isCurrent;
+                            return (
+                              <div
+                                key={s.id}
+                                className={`group rounded-xl border-2 transition-all duration-200 ${
+                                  s.isCurrent
+                                    ? 'border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 shadow-md shadow-emerald-100'
+                                    : isExpired
+                                    ? 'border-gray-100 bg-gray-50 opacity-70'
+                                    : 'border-gray-100 bg-white hover:border-blue-200 hover:shadow-md hover:shadow-blue-100'
+                                }`}
+                              >
+                                {editingId === s.id ? (
+                                  <div className="p-4">
+                                    <div className="flex items-center gap-3 mb-3">
+                                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${s.isCurrent ? 'bg-emerald-500' : 'bg-gray-200'}`}>
+                                        <span className="text-sm font-bold text-white">{i + 1}</span>
+                                      </div>
+                                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Editing Season</span>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                      <div>
+                                        <label className="text-xs font-medium text-gray-500 mb-1 block">Season Number</label>
+                                        <Input value={editingSeason.number} onChange={(e) => setEditingSeason({ ...editingSeason, number: e.target.value })} className="h-9 text-sm rounded-lg" />
+                                      </div>
+                                      <div>
+                                        <label className="text-xs font-medium text-gray-500 mb-1 block">Entry Deadline</label>
+                                        <Input type="datetime-local" value={editingSeason.endDate} onChange={(e) => setEditingSeason({ ...editingSeason, endDate: e.target.value })} className="h-9 text-sm rounded-lg" />
+                                      </div>
+                                    </div>
+                                    <div className="flex gap-2 mt-3">
+                                      <Button size="sm" onClick={handleSaveEdit} className="h-8 rounded-lg px-4 text-xs bg-emerald-600 hover:bg-emerald-700">
+                                        <Save className="w-3.5 h-3.5 mr-1" /> Save
+                                      </Button>
+                                      <Button size="sm" variant="ghost" onClick={() => setEditingId(null)} className="h-8 rounded-lg px-4 text-xs">Cancel</Button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="p-4 flex items-center gap-4">
+                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${
+                                      s.isCurrent ? 'bg-gradient-to-br from-emerald-400 to-teal-500' : isExpired ? 'bg-gray-300' : 'bg-gradient-to-br from-blue-400 to-indigo-500'
+                                    }`}>
+                                      <span className="text-lg font-bold text-white">{s.number}</span>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-sm font-semibold text-gray-800">Season {s.number}</span>
+                                        {s.isCurrent && <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">Active</span>}
+                                        {isExpired && <span className="text-[10px] font-bold uppercase tracking-wider bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full">Expired</span>}
+                                      </div>
+                                      <p className="text-xs text-gray-400 mt-0.5">
+                                        Deadline: {new Date(s.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                      </p>
+                                    </div>
+                                    <div className="flex gap-1.5 shrink-0">
+                                      <button onClick={() => handleEditClick(s)} className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-500 hover:text-white flex items-center justify-center transition-all" title="Edit">
+                                        <Pencil className="w-3.5 h-3.5" />
+                                      </button>
+                                      <button onClick={() => handleDeleteSeason(s.id)} className="w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all" title="Delete">
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Create Season Modal */}
+              {showCreateModal && (
+                <CreateSeasonModal
+                  open={showCreateModal}
+                  onClose={() => setShowCreateModal(false)}
+                  onSubmit={handleCreateSeason}
+                  newSeason={newSeason}
+                  setNewSeason={setNewSeason}
+                />
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="team-management">
             <TeamManagement />
           </TabsContent>
 

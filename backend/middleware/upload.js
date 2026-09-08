@@ -16,13 +16,9 @@ const storage = multer.diskStorage({
     cb(null, `${uuidv4()}${path.extname(file.originalname)}`),
 });
 
-// file filter for images and pdfs
+// file filter - accept all file types (Cloudinary handles resource_type: auto)
 const fileFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith("image/") || file.mimetype === "application/pdf") {
-    cb(null, true);
-  } else {
-    cb(new Error("Only image and PDF files are allowed"), false);
-  }
+  cb(null, true);
 };
 
 // 20MB limit

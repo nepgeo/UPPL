@@ -23,6 +23,7 @@ import WatchLive from "./pages/WatchLive";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import TournamentRegistration from "./pages/TournamentRegistration";
+import PlayerProfile from "./pages/PlayerProfile";
 import NotFound from "./pages/NotFound";
 
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -99,15 +100,8 @@ const App = () => (
               <Route path="/payment-failed" element={<PaymentFailed />} />
 
 
-              {/* Coming Soon / Fallback */}
-              <Route
-                path="/player-profile"
-                element={
-                  <div className="p-8 text-center">
-                    <h1 className="text-2xl">Player Profile - Coming Soon</h1>
-                  </div>
-                }
-              />
+              {/* Player Profile */}
+              <Route path="/player-profile" element={<PlayerProfile />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </LayoutWrapper>

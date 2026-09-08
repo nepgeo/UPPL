@@ -9,8 +9,8 @@ export const API_BASE =
     ? sanitizedApi
     : (import.meta.env.MODE === "production"
         ? "/api"
-        : "http://localhost:5000/api");
+        : "http://localhost:3000/api");
 
 export const BASE_URL =
   (import.meta.env.VITE_BASE_URL as string) ||
-  (typeof window !== "undefined" ? window.location.origin : "http://localhost:5000");
+  (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000");
