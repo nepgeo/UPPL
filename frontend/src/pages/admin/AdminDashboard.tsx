@@ -326,6 +326,10 @@ const AdminDashboard = () => {
     setActiveTab(tabFromUrl);
   }, [tabFromUrl]);
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [activeTab]);
+
   
 
 useEffect(() => {
@@ -554,28 +558,6 @@ useEffect(() => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-6 rounded-xl bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 shadow-lg animate-fade-in">
-            {/* Left: Animated Title + Welcome */}
-            <div>
-              <h1
-                className="hidden md:block text-3xl font-extrabold text-white tracking-tight font-mono whitespace-nowrap overflow-hidden border-r-4 border-white pr-2 animate-typing-loop"
-              >
-                <span className="uppercase">Admin Dashboard</span>
-              </h1>
-
-              <p className="mt-1 text-blue-100 text-sm animate-slide-up">
-                Welcome back, <span className="font-semibold text-white">{user?.name}</span>
-              </p>
-            </div>
-
-            {/* Right: Status */}
-            <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
-            </div>
-          </div>
-        </div>
-      </div>
 
       <div className="container mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>

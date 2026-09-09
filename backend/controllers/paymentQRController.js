@@ -89,28 +89,31 @@ async function deleteQR(req, res) {
       return res.status(400).json({ success: false, message: "public_id is required" });
     }
 
+    // Decode URI component in case it was encoded
+    public_id = decodeURIComponent(public_id);
+
     // Clean public_id (remove extension if any)
-    public_id = public_id.replace(/\.(jpg|jpeg|png)$/i, "");
+    public_id = public_id.replace(/\.(jpg|jpeg|png|gif|webp)$/i, "");
     if (!public_id.startsWith("payment-qr/")) {
       public_id = `payment-qr/${public_id}`;
     }
 
+    console.log("Attempting to delete Cloudinary public_id:", public_id);
+
     const result = await destroyPublicId(public_id);
+    console.log("Cloudinary delete result:", result);
 
-    if (!result) {
-      console.error("❌ Cloudinary returned undefined for public_id:", public_id);
-      return res.status(500).json({ success: false, message: "Failed to delete QR from Cloudinary" });
-    }
-
+    // Delete from DB regardless of Cloudinary result
+    // (file might already be deleted from Cloudinary)
     const deletedQR = await PaymentQR.findOneAndDelete({ public_id });
 
     return res.json({
       success: true,
-      message: "🗑️ QR deleted successfully from Cloudinary & DB",
+      message: "QR deleted successfully",
       qr: deletedQR || null,
     });
   } catch (err) {
-    console.error("❌ deleteQR error:", err);
+    console.error("deleteQR error:", err);
     return res.status(500).json({ success: false, message: "Failed to delete QR" });
   }
 }
