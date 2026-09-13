@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import {
-  Undo2, SkipForward, Send, RefreshCw, Play, Square, MoreVertical,
+  SkipForward, Send, RefreshCw, Play, Square, MoreVertical,
   Sun, Moon, RotateCcw, X,
 } from 'lucide-react';
 import api from '@/lib/api';
@@ -113,7 +113,6 @@ export default function BallScoring({ matchId, match, onUpdate }: Props) {
   const [localScore, setLocalScore] = useState<{ teamA: InningsScore; teamB: InningsScore } | null>(null);
   const [flashRun, setFlashRun] = useState<string | null>(null);
   const [commentaryLog, setCommentaryLog] = useState<string[]>([]);
-  const [undoToastId, setUndoToastId] = useState<string | null>(null);
   const submittingRef = useRef(false);
   const formKey = `bsc_form_${matchId}`;
 
@@ -296,15 +295,6 @@ export default function BallScoring({ matchId, match, onUpdate }: Props) {
       toast({ title: '✅ Ball recorded', description: logLine });
       resetForm();
 
-      if (undoToastId) {
-        // Dismiss old undo toast
-      }
-      const tid = `undo_${Date.now()}`;
-      setUndoToastId(tid);
-      setTimeout(async () => {
-        setUndoToastId(null);
-      }, 5000);
-
       if (res.data.overCompleted) setShowOverModal(true);
       await refreshMatch();
     } catch (err: any) {
@@ -315,20 +305,8 @@ export default function BallScoring({ matchId, match, onUpdate }: Props) {
     }
   };
 
-  const quickUndo = async () => {
-    setUndoToastId(null);
-    setUndoing(true);
-    try {
-      await api.delete(`/matches/${matchId}/score-undo`);
-      toast({ title: '↩️ Undone', description: 'Last ball removed.' });
-      setCommentaryLog(prev => prev.slice(1));
-      await refreshMatch();
-    } catch (err: any) {
-      toast({ title: 'Error', description: err.response?.data?.message || 'Undo failed', variant: 'destructive' });
-    } finally { setUndoing(false); }
-  };
-
   const handleUndo = async () => {
+    if (!window.confirm('Undo last ball? This will recalculate the match state.')) return;
     setUndoing(true);
     try {
       await api.delete(`/matches/${matchId}/score-undo`);
@@ -581,20 +559,6 @@ export default function BallScoring({ matchId, match, onUpdate }: Props) {
               </button>
             </div>
       </div>
-
-      {/* Undo Toast Bar */}
-      {undoToastId && (
-        <div className={`flex flex-col sm:flex-row items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl shadow-lg border gap-2 ${d('bg-amber-50 border-amber-200', 'bg-amber-900/30 border-amber-700/50')}`}>
-          <span className={`text-xs sm:text-sm ${d('text-amber-800', 'text-amber-200')}`}>✅ Ball recorded</span>
-          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-end">
-            <span className={`text-[10px] sm:text-xs ${d('text-amber-600', 'text-amber-400')}`}>Undo: 5s</span>
-            <Button size="sm" onClick={quickUndo} disabled={undoing}
-              className="h-7 sm:h-8 px-2 sm:px-3 text-[10px] sm:text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded-lg">
-              <Undo2 className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-1" /> Undo
-            </Button>
-          </div>
-        </div>
-      )}
 
       {/* Completed Match Banner — hides scoring controls */}
       {match.result === 'completed' && (
