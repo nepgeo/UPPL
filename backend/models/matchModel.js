@@ -128,6 +128,9 @@ const twenty20Schema = new mongoose.Schema({
   nextBatBIndex: { type: Number, default: 0 },
   dismissedPlayers: [{ type: String }],
 
+  // Redo stack (undone events that can be re-applied)
+  redoStack: [ballEventSchema],
+
   // Bowling order tracking
   bowlerQueue: [{ type: String }],
 
@@ -144,6 +147,9 @@ const twenty20Schema = new mongoose.Schema({
   powerplayActive: { type: Boolean, default: true },
   powerplayOvers: { type: Number, default: 6 },
 
+  // Match format
+  totalOvers: { type: Number, default: 20 },
+
   winner: {
     type: String,
     enum: ['teamA', 'teamB', 'draw', 'tie', 'no_result']
@@ -151,6 +157,19 @@ const twenty20Schema = new mongoose.Schema({
 
   margin: {
     type: String
+  },
+
+  // Player of the Match
+  playerOfTheMatch: {
+    playerName: { type: String, default: '' },
+    team: { type: String, default: '' },
+    reason: { type: String, default: '' },
+    battingRuns: { type: Number, default: 0 },
+    battingBalls: { type: Number, default: 0 },
+    bowlingWickets: { type: Number, default: 0 },
+    bowlingRuns: { type: Number, default: 0 },
+    bowlingOvers: { type: String, default: '0' },
+    points: { type: Number, default: 0 },
   },
 
   matchNumber: { type: Number },

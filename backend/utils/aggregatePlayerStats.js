@@ -133,6 +133,18 @@ async function aggregatePlayerStatsForMatch(matchId) {
       }
     }
 
+    // Increment manOfTheMatch count for POTM player
+    if (match.playerOfTheMatch?.playerName) {
+      const potmUser = nameToUser[match.playerOfTheMatch.playerName];
+      if (potmUser) {
+        const potmPlayer = userIdToPlayer[String(potmUser._id)];
+        if (potmPlayer) {
+          potmPlayer.careerStats.manOfTheMatch = (potmPlayer.careerStats.manOfTheMatch || 0) + 1;
+          await potmPlayer.save();
+        }
+      }
+    }
+
     return { updated, errors };
   } catch (err) {
     console.error('Failed to aggregate stats for match', matchId, err);
@@ -151,7 +163,7 @@ async function aggregateAllPlayerStats() {
           wickets: 0, ballsBowled: 0, runsConceded: 0,
           bestBowlingWickets: 0, bestBowlingRuns: 0,
           economy: 0, strikeRate: 0, average: 0,
-          catches: 0, stumpings: 0,
+          catches: 0, stumpings: 0, manOfTheMatch: 0,
         },
       },
     });
@@ -186,4 +198,105 @@ async function aggregateAllPlayerStats() {
   }
 }
 
-module.exports = { aggregatePlayerStatsForMatch, aggregateAllPlayerStats };
+/**
+ * Calculate Player of the Match from match stats.
+ * Uses a points system:
+ * - Batting: runs * 1 + (runs >= 50 ? 20 : 0) + (runs >= 100 ? 30 : 0) + fours * 1 + sixes * 2 + (strikeRate > 150 ? 10 : 0)
+ * - Bowling: wickets * 25 + (wickets >= 3 ? 10 : 0) + (wickets >= 5 ? 20 : 0) + (economy < 6 ? 10 : 0) + (economy < 4 ? 10 : 0)
+ * - All-round: bonus for contributing with both bat and ball
+ */
+function calculatePlayerOfTheMatch(playerStats) {
+  const batting = playerStats?.batting || [];
+  const bowling = playerStats?.bowling || [];
+
+  // Build a map of all players
+  const playerMap = {};
+
+  for (const b of batting) {
+    const name = b.playerName;
+    if (!name) continue;
+    if (!playerMap[name]) playerMap[name] = { playerName: name, team: b.team || '', batPoints: 0, bowlPoints: 0, totalPoints: 0, batting: null, bowling: null };
+    const runs = b.runs || 0;
+    const balls = b.balls || 0;
+    const fours = b.fours || 0;
+    const sixes = b.sixes || 0;
+    const sr = balls > 0 ? (runs / balls) * 100 : 0;
+
+    let points = runs * 1;
+    if (runs >= 50) points += 20;
+    if (runs >= 100) points += 30;
+    points += fours * 1;
+    points += sixes * 2;
+    if (sr > 150 && balls >= 10) points += 10;
+    if (sr > 200 && balls >= 10) points += 10;
+
+    playerMap[name].batPoints = points;
+    playerMap[name].batting = { runs, balls, fours, sixes, strikeRate: parseFloat(sr.toFixed(1)) };
+  }
+
+  for (const bw of bowling) {
+    const name = bw.playerName;
+    if (!name) continue;
+    if (!playerMap[name]) playerMap[name] = { playerName: name, team: bw.team || '', batPoints: 0, bowlPoints: 0, totalPoints: 0, batting: null, bowling: null };
+    const wickets = bw.wickets || 0;
+    const runs = bw.runs || 0;
+    const balls = bw.balls || 0;
+    const overs = `${Math.floor(balls / 6)}.${balls % 6}`;
+    const econ = balls > 0 ? (runs / balls) * 6 : 0;
+
+    let points = wickets * 25;
+    if (wickets >= 3) points += 10;
+    if (wickets >= 5) points += 20;
+    if (econ < 6 && balls >= 12) points += 10;
+    if (econ < 4 && balls >= 12) points += 10;
+    // Maiden overs bonus
+    if ((bw.maidens || 0) > 0) points += bw.maidens * 5;
+
+    playerMap[name].bowlPoints = points;
+    playerMap[name].bowling = { wickets, runs, overs, economy: parseFloat(econ.toFixed(2)) };
+  }
+
+  // Calculate total points and all-round bonus
+  let bestPlayer = null;
+  let bestPoints = -1;
+
+  for (const name of Object.keys(playerMap)) {
+    const p = playerMap[name];
+    p.totalPoints = p.batPoints + p.bowlPoints;
+    // All-round bonus: contributing with both bat and ball
+    if (p.batPoints > 10 && p.bowlPoints > 10) {
+      p.totalPoints += 15;
+    }
+    if (p.totalPoints > bestPoints) {
+      bestPoints = p.totalPoints;
+      bestPlayer = p;
+    }
+  }
+
+  if (!bestPlayer) return null;
+
+  // Build reason string
+  const reasons = [];
+  if (bestPlayer.batting) {
+    const b = bestPlayer.batting;
+    reasons.push(`${b.runs} runs (${b.balls} balls, ${b.fours}×4, ${b.sixes}×6)`);
+  }
+  if (bestPlayer.bowling) {
+    const bw = bestPlayer.bowling;
+    reasons.push(`${bw.wickets} wickets for ${bw.runs} runs in ${bw.overs} overs`);
+  }
+
+  return {
+    playerName: bestPlayer.playerName,
+    team: bestPlayer.team,
+    reason: reasons.join(' | '),
+    battingRuns: bestPlayer.batting?.runs || 0,
+    battingBalls: bestPlayer.batting?.balls || 0,
+    bowlingWickets: bestPlayer.bowling?.wickets || 0,
+    bowlingRuns: bestPlayer.bowling?.runs || 0,
+    bowlingOvers: bestPlayer.bowling?.overs || '0',
+    points: bestPlayer.totalPoints,
+  };
+}
+
+module.exports = { aggregatePlayerStatsForMatch, aggregateAllPlayerStats, calculatePlayerOfTheMatch };

@@ -4,7 +4,7 @@ const AuditLog = require('../models/AuditLog');
 const Ball = require('../models/Ball');
 const { getIo } = require('../socket');
 const { computeMatchState } = require('../utils/scoreCalculator');
-const { aggregatePlayerStatsForMatch } = require('../utils/aggregatePlayerStats');
+const { aggregatePlayerStatsForMatch, calculatePlayerOfTheMatch } = require('../utils/aggregatePlayerStats');
 
 async function logAction(matchId, admin, action, oldData, newData, reason) {
   try {
@@ -15,6 +15,93 @@ async function logAction(matchId, admin, action, oldData, newData, reason) {
       oldData, newData, reason,
     });
   } catch (e) { /* non-critical */ }
+}
+
+function rebuildMatchState(match) {
+  const battingFirst = match.battingFirst || 'teamA';
+  const teamAOrder = match.battingOrderA || [];
+  const teamBOrder = match.battingOrderB || [];
+
+  let striker = '';
+  let nonStriker = '';
+  let currentBowler = '';
+  let batIdxA = 0;
+  let batIdxB = 0;
+  const dismissedPlayers = [];
+
+  for (let i = 0; i < match.events.length; i++) {
+    const ev = match.events[i];
+    const battingTeam = ev.battingTeam || battingFirst;
+    const order = battingTeam === 'teamA' ? teamAOrder : teamBOrder;
+
+    // Initialize striker/nonStriker from batting order on first event
+    if (!striker && !nonStriker && order.length >= 2) {
+      striker = order[0];
+      nonStriker = order[1];
+    }
+
+    // Set bowler
+    if (ev.bowler) currentBowler = ev.bowler;
+
+    // Set batsman on strike from event
+    if (ev.batsman) striker = ev.batsman;
+
+    // Wicket: dismiss batsman, advance batting order for new man
+    if (ev.wicket && ev.batsman) {
+      if (!dismissedPlayers.includes(ev.batsman)) {
+        dismissedPlayers.push(ev.batsman);
+      }
+      const currentIdx = battingTeam === 'teamA' ? batIdxA : batIdxB;
+      let newIdx = currentIdx;
+      while (newIdx < order.length && (
+        dismissedPlayers.includes(order[newIdx]) ||
+        order[newIdx] === striker ||
+        order[newIdx] === nonStriker
+      )) {
+        newIdx++;
+      }
+      if (newIdx < order.length) {
+        striker = order[newIdx];
+        newIdx++;
+      } else {
+        striker = '';
+      }
+      if (battingTeam === 'teamA') batIdxA = newIdx;
+      else batIdxB = newIdx;
+    }
+
+    // Strike rotation
+    const isLegalDelivery = !ev.extras || (ev.extras.type !== 'wide' && ev.extras.type !== 'no_ball' && ev.extras.type !== 'penalty');
+    const totalRuns = (ev.runs || 0) + ((ev.extras && ev.extras.runs) || 0);
+    const isByeLegBye = ev.extras && (ev.extras.type === 'bye' || ev.extras.type === 'leg_bye');
+
+    const bypassSwap = ev.wicket;
+    const oddRunsFromBat = ev.runs === 1 || ev.runs === 3 || ev.runs === 5;
+    const oddRunsTotal = totalRuns % 2 === 1;
+    const shouldSwap = !bypassSwap && (
+      (isLegalDelivery && oddRunsFromBat) ||
+      (!isLegalDelivery && oddRunsTotal) ||
+      (isByeLegBye && oddRunsTotal)
+    );
+    if (shouldSwap) [striker, nonStriker] = [nonStriker, striker];
+
+    // Over completion swap (happens on 6th legal ball, always)
+    const legalInThisOver = match.events.filter((e, idx) => idx <= i && (e.over === ev.over) &&
+      (!e.extras || (e.extras.type !== 'wide' && e.extras.type !== 'no_ball' && e.extras.type !== 'penalty'))
+    );
+    if (legalInThisOver.length >= 6) {
+      [striker, nonStriker] = [nonStriker, striker];
+    }
+  }
+
+  match.striker = striker;
+  match.nonStriker = nonStriker;
+  match.currentBowler = currentBowler;
+  match.dismissedPlayers = dismissedPlayers;
+  match.nextBatAIndex = batIdxA;
+  match.nextBatBIndex = batIdxB;
+
+  return match;
 }
 
 // ===== PLAYING XI =====
@@ -37,7 +124,7 @@ exports.setPlayingXI = async (req, res) => {
     const match = await Match.findById(matchId);
     if (team === 'teamA') match.battingOrderA = players.map(p => p.playerName);
     else match.battingOrderB = players.map(p => p.playerName);
-    await match.save();
+    await match.save({ validateBeforeSave: false });
 
     await logAction(matchId, req.user, 'set_playing_xi', {}, { team, count: players.length }, 'Playing XI set');
     res.json({ success: true, playingXI: xi });
@@ -70,7 +157,7 @@ exports.doMatchToss = async (req, res) => {
     } else {
       match.battingFirst = tossWinner === 'teamA' ? 'teamB' : 'teamA';
     }
-    await match.save();
+    await match.save({ validateBeforeSave: false });
 
     await logAction(req.params.matchId, req.user, 'toss', {}, { tossWinner, tossDecision }, 'Toss completed');
     res.json({ success: true, match });
@@ -99,10 +186,17 @@ exports.startInnings = async (req, res) => {
     match.overCompleted = false;
     match.currentOverRuns = 0;
     match.currentOverExtras = false;
+    match.currentOver = [];
     match.freeHit = false;
     match.powerplayActive = true;
     match.result = 'live';
-    await match.save();
+    // Ensure score is fresh for the batting team
+    const battingTeam = match.currentInnings === 1 ? match.battingFirst : (match.battingFirst === 'teamA' ? 'teamB' : 'teamA');
+    match.score[battingTeam] = { battingTeam, runs: 0, wickets: 0, balls: 0, extras: 0, fours: 0, sixes: 0, runRate: 0 };
+    // Reset dismissed players for new innings
+    match.dismissedPlayers = [];
+    match.playerStats = { batting: [], bowling: [] };
+    await match.save({ validateBeforeSave: false });
 
     await logAction(req.params.matchId, req.user, 'start_innings', {}, { striker, nonStriker, bowler }, 'Innings started');
     try { getIo().to(`match:${match._id}`).emit('innings_started', { match }); } catch (e) {}
@@ -134,15 +228,27 @@ exports.endInnings = async (req, res) => {
       match.overCompleted = false;
       match.currentOverRuns = 0;
       match.currentOverExtras = false;
+      match.currentOver = [];
       match.freeHit = false;
       match.powerplayActive = true;
+      // Reset 2nd innings score
+      const secondBattingTeam = match.battingFirst === 'teamA' ? 'teamB' : 'teamA';
+      match.score[secondBattingTeam] = { battingTeam: secondBattingTeam, runs: 0, wickets: 0, balls: 0, extras: 0, fours: 0, sixes: 0, runRate: 0 };
+      // Reset dismissed players and batting order for 2nd innings
+      match.dismissedPlayers = [];
+      match.nextBatAIndex = 0;
+      match.nextBatBIndex = 0;
+      // Reset player stats for 2nd innings (keep 1st innings stats in events)
+      match.playerStats = { batting: [], bowling: [] };
     } else {
       match.result = 'completed';
       match.inningsStarted = false;
     }
-    await match.save();
+    await match.save({ validateBeforeSave: false });
 
     if (match.result === 'completed') {
+      const potm = calculatePlayerOfTheMatch(match.playerStats);
+      if (potm) match.playerOfTheMatch = potm;
       aggregatePlayerStatsForMatch(match._id).catch(err =>
         console.warn('Player stats aggregation failed:', err?.message)
       );
@@ -162,6 +268,32 @@ exports.scoreBall = async (req, res) => {
     const match = await Match.findById(req.params.matchId).populate('teamA teamB');
     if (!match) return res.status(404).json({ message: 'Match not found' });
     if (!match.inningsStarted) return res.status(400).json({ message: 'Innings not started' });
+
+    // --- All out check: prevent scoring after 10 wickets ---
+    const battingTeamCheck = match.currentInnings === 1 ? match.battingFirst : (match.battingFirst === 'teamA' ? 'teamB' : 'teamA');
+    const currentScore = match.score[battingTeamCheck];
+    if (currentScore && currentScore.wickets >= 10) {
+      return res.status(400).json({ message: 'All out — innings is over' });
+    }
+
+    // --- Chase completed check (2nd innings only) ---
+    if (match.currentInnings === 2) {
+      const firstInningsTeam = match.battingFirst;
+      const firstInningsScore = match.score[firstInningsTeam];
+      if (firstInningsScore && currentScore) {
+        const target = firstInningsScore.runs + 1;
+        if (currentScore.runs >= target) {
+          return res.status(400).json({ message: `Target already reached — ${battingTeamCheck} wins!` });
+        }
+      }
+    }
+
+    // --- Bowler over limit check (max 4 overs = 24 balls in T20) ---
+    const bowlingTeamCheck = battingTeamCheck === 'teamA' ? 'teamB' : 'teamA';
+    const bowlerStats = match.playerStats.bowling.find(b => b.playerName === match.currentBowler && b.team === bowlingTeamCheck);
+    if (bowlerStats && bowlerStats.balls >= 24) {
+      return res.status(400).json({ message: `${match.currentBowler} has already bowled their full quota (4 overs)` });
+    }
 
     const { runs, extraType, extraRuns, isWicket, wicketType, dismissedPlayer, newBatsman, fielder, isDeadBall } = req.body;
 
@@ -228,6 +360,11 @@ exports.scoreBall = async (req, res) => {
     else ballEvent.description = `${runs} run${runs > 1 ? 's' : ''} to ${match.striker}`;
 
     match.events.push(ballEvent);
+    // Clear redo stack on new ball — can't redo after making a new move
+    if (match.redoStack && match.redoStack.length > 0) {
+      match.redoStack = [];
+      match.markModified('redoStack');
+    }
 
     // --- Update score ---
     const score = match.score[battingTeam];
@@ -321,6 +458,30 @@ exports.scoreBall = async (req, res) => {
       }
     }
 
+    // --- All out check: if 10 wickets have fallen, end the innings ---
+    if (score.wickets >= 10) {
+      match.firstInningsCompleted = match.currentInnings === 1;
+      match.inningsStarted = false;
+      match.striker = '';
+      match.nonStriker = '';
+      match.currentBowler = '';
+      match.overCompleted = false;
+      const allOutOvers = `${Math.floor(score.balls / 6)}.${score.balls % 6}`;
+      if (battingTeam === 'teamA') {
+        match.teamAResult = { runs: score.runs, wickets: score.wickets, overs: allOutOvers };
+      } else {
+        match.teamBResult = { runs: score.runs, wickets: score.wickets, overs: allOutOvers };
+      }
+      // If both innings completed, mark match completed
+      if (match.currentInnings === 2 || match.firstInningsCompleted) {
+        if (match.currentInnings === 2 || (match.currentInnings === 1 && match.firstInningsCompleted)) {
+          match.result = 'completed';
+          const potm2 = calculatePlayerOfTheMatch(match.playerStats);
+          if (potm2) match.playerOfTheMatch = potm2;
+        }
+      }
+    }
+
     // --- Player bowling stats ---
     let bowlStat = match.playerStats.bowling.find(b => b.playerName === match.currentBowler && b.team === bowlingTeam);
     if (!bowlStat) {
@@ -340,9 +501,10 @@ exports.scoreBall = async (req, res) => {
     if (extraType === 'no_ball') bowlStat.noBalls += 1;
     bowlStat.economy = parseFloat(((bowlStat.runs / (bowlStat.balls || 1)) * 6).toFixed(2));
 
-    // --- Bowler over limit check (max 4 in T20) ---
-    if (bowlStat.balls >= 24 && isLegalDelivery) {
-      // Don't block — just flag; UI can warn
+    // --- Bowler over limit check (max 4 overs = 24 balls in T20) ---
+    // Already handled at the start of scoreBall — this is just a safety flag
+    if (bowlStat.balls > 24) {
+      // This should not happen if the early check works
     }
 
     // --- Maiden over: tracked when over completes ---
@@ -405,7 +567,33 @@ exports.scoreBall = async (req, res) => {
     // --- Set free hit for next ball if this ball was a no-ball ---
     match.freeHit = extraType === 'no_ball';
 
-    await match.save();
+    // --- Chase completed check (2nd innings) — auto-end match ---
+    if (match.currentInnings === 2 && match.result !== 'completed') {
+      const firstInningsTeam = match.battingFirst;
+      const firstInningsScore = match.score[firstInningsTeam];
+      if (firstInningsScore) {
+        const target = firstInningsScore.runs + 1;
+        if (score.runs >= target) {
+          match.result = 'completed';
+          match.inningsStarted = false;
+          match.winner = battingTeam;
+          match.margin = `${10 - score.wickets} wickets`;
+          const potm3 = calculatePlayerOfTheMatch(match.playerStats);
+          if (potm3) match.playerOfTheMatch = potm3;
+          match.striker = '';
+          match.nonStriker = '';
+          match.currentBowler = '';
+          const chaseOvers = `${Math.floor(score.balls / 6)}.${score.balls % 6}`;
+          if (battingTeam === 'teamA') {
+            match.teamAResult = { runs: score.runs, wickets: score.wickets, overs: chaseOvers };
+          } else {
+            match.teamBResult = { runs: score.runs, wickets: score.wickets, overs: chaseOvers };
+          }
+        }
+      }
+    }
+
+    await match.save({ validateBeforeSave: false });
 
     // --- Save audit trail ball ---
     try {
@@ -450,7 +638,7 @@ exports.setBowler = async (req, res) => {
     if (!match) return res.status(404).json({ message: 'Match not found' });
     match.currentBowler = req.body.bowler;
     if (req.body.bowlerQueue) match.bowlerQueue = req.body.bowlerQueue;
-    await match.save();
+    await match.save({ validateBeforeSave: false });
     res.json({ success: true, match });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -467,7 +655,7 @@ exports.setBatsman = async (req, res) => {
     if (role === 'striker') match.striker = playerName;
     else if (role === 'nonStriker') match.nonStriker = playerName;
 
-    await match.save();
+    await match.save({ validateBeforeSave: false });
     res.json({ success: true, match });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -483,6 +671,10 @@ exports.undoBall = async (req, res) => {
 
     const removed = match.events.pop();
     match.markModified('events');
+
+    // Push removed event to redo stack
+    match.redoStack.push(removed);
+    match.markModified('redoStack');
 
     // Recalculate score/playerStats from remaining events
     const battingFirst = match.battingFirst || 'teamA';
@@ -557,7 +749,10 @@ exports.undoBall = async (req, res) => {
     // Recalculate dismissed players from events
     match.dismissedPlayers = match.events.filter(e => e.wicket).map(e => e.batsman).filter(Boolean);
 
-    await match.save();
+    // Rebuild striker, nonStriker, bowler, batting order from remaining events
+    rebuildMatchState(match);
+
+    await match.save({ validateBeforeSave: false });
 
     try { await Ball.findOneAndDelete({ matchId: match._id, overNumber: removed.over, ballNumber: removed.ball }); } catch (e) {}
     await logAction(match._id, req.user, 'undo_ball', { removed }, {}, 'Ball undone');
@@ -569,6 +764,99 @@ exports.undoBall = async (req, res) => {
     } catch (e) {}
 
     res.json({ success: true, match, message: 'Last ball undone. State recalculated.' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// ===== REDO BALL =====
+exports.redoBall = async (req, res) => {
+  try {
+    const match = await Match.findById(req.params.matchId);
+    if (!match) return res.status(404).json({ message: 'Match not found' });
+    if (!match.redoStack || match.redoStack.length === 0) return res.status(400).json({ message: 'No redo available' });
+
+    const event = match.redoStack.pop();
+    match.markModified('redoStack');
+    match.events.push(event);
+    match.markModified('events');
+
+    // Recalculate score/playerStats from all events
+    const battingFirst = match.battingFirst || 'teamA';
+    const state = computeMatchState(match.events, battingFirst);
+    match.score = state.score;
+    match.playerStats = state.playerStats;
+
+    const t1 = state.score.teamA;
+    const t2 = state.score.teamB;
+    match.teamAResult = { runs: t1.runs, wickets: t1.wickets, overs: `${t1.overs}.${t1.balls % 6}` };
+    match.teamBResult = { runs: t2.runs, wickets: t2.wickets, overs: `${t2.overs}.${t2.balls % 6}` };
+
+    // Rebuild striker, bowler, batting order from all events
+    rebuildMatchState(match);
+
+    // Rebuild current over
+    if (match.events.length === 0) {
+      match.currentOverNumber = 0;
+      match.legalBallsInOver = 0;
+      match.overCompleted = false;
+      match.currentOver = [];
+      match.currentOverRuns = 0;
+      match.currentOverExtras = false;
+      match.freeHit = false;
+    } else {
+      const lastEv = match.events[match.events.length - 1];
+      const allLegalInLastOver = match.events.filter(e =>
+        (!e.extras || (e.extras.type !== 'wide' && e.extras.type !== 'no_ball' && e.extras.type !== 'penalty'))
+      );
+      const overGroups = {};
+      allLegalInLastOver.forEach(e => {
+        if (!overGroups[e.over]) overGroups[e.over] = [];
+        overGroups[e.over].push(e);
+      });
+      const completedOvers = Object.keys(overGroups)
+        .map(Number).filter(ov => overGroups[ov].length >= 6)
+        .sort((a, b) => b - a);
+      const currentOverNum = completedOvers.length > 0 ? completedOvers[0] + 1 : 0;
+
+      match.currentOverNumber = currentOverNum;
+      const currentOverEvents = match.events.filter(e => e.over === currentOverNum);
+      const legalInCurrent = currentOverEvents.filter(e =>
+        !e.extras || (e.extras.type !== 'wide' && e.extras.type !== 'no_ball' && e.extras.type !== 'penalty')
+      );
+      match.legalBallsInOver = legalInCurrent.length;
+      match.overCompleted = match.legalBallsInOver >= 6;
+      match.currentOver = currentOverEvents;
+
+      match.currentOverRuns = 0;
+      match.currentOverExtras = false;
+      currentOverEvents.forEach(e => {
+        const er = (e.extras && e.extras.runs) || 0;
+        const erType = e.extras && e.extras.type;
+        const br = e.runs || 0;
+        const isWideNB = erType === 'wide' || erType === 'no_ball';
+        if (isWideNB) match.currentOverRuns += br + er;
+        else if (erType === 'bye' || erType === 'leg_bye') match.currentOverRuns += 0;
+        else match.currentOverRuns += br;
+        if (isWideNB) match.currentOverExtras = true;
+      });
+
+      match.freeHit = lastEv.extras && lastEv.extras.type === 'no_ball';
+    }
+
+    match.dismissedPlayers = match.events.filter(e => e.wicket).map(e => e.batsman).filter(Boolean);
+
+    await match.save({ validateBeforeSave: false });
+
+    try { await Ball.create({ matchId: match._id, innings: match.currentInnings, overNumber: event.over, ballNumber: event.ball, battingTeam: event.battingTeam, bowlingTeam: event.battingTeam === 'teamA' ? 'teamB' : 'teamA', striker: event.batsman, nonStriker: '', bowler: event.bowler, runs: event.runs || 0, extraRuns: event.extras?.runs || 0, extraType: event.extras?.type || null, isWicket: event.wicket, wicketType: event.wicketType || null, dismissedPlayer: event.wicket ? event.batsman : '', commentary: event.description, isFour: event.isFour, isSix: event.isSix, freeHit: event.freeHit, isDeadBall: false }); } catch (e) {}
+
+    try {
+      const io = getIo();
+      io.to(`match:${match._id}`).emit('ball_added', { event, match });
+      io.to(`match:${match._id}`).emit('score_updated', { match });
+    } catch (e) {}
+
+    res.json({ success: true, match, message: 'Ball re-applied.' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -601,7 +889,7 @@ exports.finishOver = async (req, res) => {
     match.currentOverExtras = false;
     match.overCompleted = false;
 
-    await match.save();
+    await match.save({ validateBeforeSave: false });
 
     await logAction(match._id, req.user, 'over_finished', {}, {}, 'Over force-finished');
 
@@ -625,6 +913,15 @@ exports.getScoringState = async (req, res) => {
       .populate('teamA', 'teamName teamLogo teamCode')
       .populate('teamB', 'teamName teamLogo teamCode');
     if (!match) return res.status(404).json({ message: 'Match not found' });
+
+    // Auto-calculate POTM for completed matches missing it
+    if (match.result === 'completed' && (!match.playerOfTheMatch || !match.playerOfTheMatch.playerName)) {
+      const potm = calculatePlayerOfTheMatch(match.playerStats);
+      if (potm) {
+        match.playerOfTheMatch = potm;
+    await match.save({ validateBeforeSave: false });
+      }
+    }
 
     const xi = await PlayingXI.find({ matchId: match._id });
     const battingFirst = match.battingFirst || 'teamA';

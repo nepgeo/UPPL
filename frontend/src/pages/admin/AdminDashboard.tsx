@@ -4,7 +4,7 @@ import {
   Users, UserCheck, Calendar, Trophy, FileText, Settings, Activity,
   Clock, CheckCircle, XCircle, AlertCircle, Images, Film,
   ArrowRight, Plus, LayoutDashboard, PanelLeftClose, PanelLeftOpen,
-  BarChart3, UserPlus, List, Video, Image, Eye, Pencil, Trash2, Save, X, Search, ChevronDown
+  BarChart3, UserPlus, List, Video, Image, Eye, Pencil, Trash2, Save, X, Search, ChevronDown, ChevronRight
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -299,6 +299,8 @@ const AdminDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
+  const [scheduleSubTab, setScheduleSubTab] = useState<'groups' | 'matches'>('groups');
+  const [scheduleExpanded, setScheduleExpanded] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [expandedPlayerId, setExpandedPlayerId] = useState<string | null>(null);
@@ -585,7 +587,7 @@ useEffect(() => {
                     { value: "players", label: "Verifications", icon: UserCheck, badge: dashboardData?.pendingPlayers },
                     { value: "teams", label: "Season", icon: Trophy },
                     { value: "team-management", label: "Team Mgmt", icon: Users },
-                    { value: "matches", label: "Schedule", icon: Calendar },
+                    { value: "matches", label: "Schedule", icon: Calendar, hasSub: true },
                     { value: "gallery", label: "Gallery", icon: Images, badge: dashboardData?.contentStats?.totalGalleryImages },
                     { value: "news", label: "News", icon: FileText, badge: dashboardData?.contentStats?.draftNews },
                     { value: "sponsor", label: "Sponsor", icon: Settings },
@@ -594,31 +596,65 @@ useEffect(() => {
                     const Icon = item.icon;
                     const isActive = activeTab === item.value;
                     const showBadge = item.badge !== undefined && item.badge > 0;
+                    const isExpanded = item.hasSub && scheduleExpanded;
                     return (
-                      <button
-                        key={item.value}
-                        onClick={() => setActiveTab(item.value)}
-                        className={`
-                          w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
-                          ${isActive
-                            ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-md'
-                            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                          }
-                          ${sidebarCollapsed ? 'justify-center px-0' : ''}
-                        `}
-                        title={sidebarCollapsed ? item.label : undefined}
-                      >
-                        <Icon className="w-4.5 h-4.5 shrink-0" />
-                        {!sidebarCollapsed && <span className="truncate uppercase">{item.label}</span>}
-                        {!sidebarCollapsed && showBadge && (
-                          <span className={`ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-tight ${isActive ? 'bg-white text-blue-600' : 'bg-red-100 text-red-600'}`}>
-                            {item.badge}
-                          </span>
+                      <div key={item.value}>
+                        <button
+                          onClick={() => {
+                            if (item.hasSub) {
+                              setScheduleExpanded(!scheduleExpanded);
+                              setActiveTab(item.value);
+                            } else {
+                              setActiveTab(item.value);
+                            }
+                          }}
+                          className={`
+                            w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
+                            ${isActive
+                              ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-md'
+                              : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                            }
+                            ${sidebarCollapsed ? 'justify-center px-0' : ''}
+                          `}
+                          title={sidebarCollapsed ? item.label : undefined}
+                        >
+                          <Icon className="w-4.5 h-4.5 shrink-0" />
+                          {!sidebarCollapsed && <span className="truncate uppercase">{item.label}</span>}
+                          {!sidebarCollapsed && showBadge && (
+                            <span className={`ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-tight ${isActive ? 'bg-white text-blue-600' : 'bg-red-100 text-red-600'}`}>
+                              {item.badge}
+                            </span>
+                          )}
+                          {item.hasSub && !sidebarCollapsed && (
+                            <ChevronRight className={`ml-auto w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
+                          )}
+                          {isActive && !sidebarCollapsed && !showBadge && !item.hasSub && (
+                            <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white" />
+                          )}
+                        </button>
+                        {/* Sub-navigation for Schedule */}
+                        {item.hasSub && isExpanded && !sidebarCollapsed && (
+                          <div className="ml-6 mt-1 space-y-0.5">
+                            {[
+                              { key: 'groups' as const, label: 'Groups', icon: '🏆' },
+                              { key: 'matches' as const, label: 'Match Schedule', icon: '📅' },
+                            ].map((sub) => (
+                              <button
+                                key={sub.key}
+                                onClick={() => setScheduleSubTab(sub.key)}
+                                className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold uppercase tracking-wider transition-all duration-200 ${
+                                  scheduleSubTab === sub.key
+                                    ? 'bg-indigo-100 text-indigo-700 border-l-2 border-indigo-500'
+                                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                                }`}
+                              >
+                                <span className="text-base">{sub.icon}</span>
+                                <span>{sub.label}</span>
+                              </button>
+                            ))}
+                          </div>
                         )}
-                        {isActive && !sidebarCollapsed && !showBadge && (
-                          <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white" />
-                        )}
-                      </button>
+                      </div>
                     );
                   })}
                 </div>
@@ -1357,7 +1393,7 @@ useEffect(() => {
           </TabsContent>
 
           <TabsContent value="matches">
-            <ScheduleMatch />
+            <ScheduleMatch subTab={scheduleSubTab} />
           </TabsContent>
 
           <TabsContent value="gallery">

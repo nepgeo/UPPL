@@ -4,7 +4,7 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { DownloadIcon, RefreshCcw, Clock, Filter, Calendar, MapPin,Plus, Settings, Trophy,ArrowRight  } from 'lucide-react';
+import { DownloadIcon, RefreshCcw, Clock, Filter, Calendar, MapPin,Plus, Settings, Trophy,ArrowRight, X } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -65,6 +65,8 @@ export interface Match {
     teamName: string;
     teamLogo: string;
     teamCode: string;
+    short?: string;
+    color?: string;
     runs?: number;
     wickets?: number;
     overs?: string;
@@ -75,6 +77,8 @@ export interface Match {
     teamName: string;
     teamLogo: string;
     teamCode: string;
+    short?: string;
+    color?: string;
     runs?: number;
     wickets?: number;
     overs?: string;
@@ -91,6 +95,18 @@ export interface Match {
   };
   teamAResult?: { runs: number; wickets: number; overs: string };
   teamBResult?: { runs: number; wickets: number; overs: string };
+
+  playerOfTheMatch?: {
+    playerName?: string;
+    team?: string;
+    reason?: string;
+    battingRuns?: number;
+    battingBalls?: number;
+    bowlingWickets?: number;
+    bowlingRuns?: number;
+    bowlingOvers?: string;
+    points?: number;
+  };
 }
 
 
@@ -111,7 +127,7 @@ const getStatusText = (result) => {
   }
 };
 
-const MatchManagement: React.FC = () => {
+const MatchManagement: React.FC<{ subTab?: 'groups' | 'matches' }> = ({ subTab = 'groups' }) => {
   const [schedule, setSchedule] = useState<Schedule | null>(null);
   const [loading, setLoading] = useState(false);
   const [matches, setMatches] = useState<Match[]>([]);
@@ -448,6 +464,11 @@ useEffect(() => {
 
   const groupColors = ['bg-blue-100', 'bg-green-100', 'bg-yellow-100', 'bg-red-100', 'bg-purple-100'];
 
+  const groupTeams = newMatch.groupName
+    ? (schedule?.groups.find(g => g.groupName === newMatch.groupName)?.teams || [])
+    : availableTeams;
+  const teamBOptions = groupTeams.filter(t => t.team._id !== newMatch.teamA);
+
   const handleAddMatch = async () => {
   try {
     if (!newMatch.matchTime) {
@@ -456,6 +477,14 @@ useEffect(() => {
         description: "Please select both date and time.",
         variant: "destructive",
       });
+      return;
+    }
+    if (!newMatch.teamA || !newMatch.teamB) {
+      toast({ title: "Select both teams", variant: "destructive" });
+      return;
+    }
+    if (newMatch.teamA === newMatch.teamB) {
+      toast({ title: "Same team selected", description: "Team A and Team B must be different", variant: "destructive" });
       return;
     }
 
@@ -696,121 +725,71 @@ const handleCancelLiveMatch = async () => {
 
   return (
     <div className="p-6">
-      {/* Header Section */}
-      {/* ======= HEADER SECTION ======= */}
-<div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 border-b border-gray-200 pb-4">
-  {/* Title + Info */}
-  <div className="space-y-1 sm:space-y-2">
-    <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900 flex items-center gap-3">
-      <span className="text-indigo-600 text-3xl sm:text-4xl">🏆</span>
-      <span>
-        UPPL Season{" "}
-        {selectedSeasonId ? (
-          <select
-            value={selectedSeasonId}
-            onChange={async (e) => {
-              const sid = e.target.value;
-              setSelectedSeasonId(sid);
-              const schedId = await fetchSchedule(sid);
-              fetchMatches(schedId || sid);
-            }}
-            className="ml-2 bg-white border border-gray-300 rounded-lg px-3 py-1 text-lg font-semibold text-gray-800 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-400"
-          >
-            {seasons.map((s) => (
-              <option key={s._id} value={s._id}>
-                {s.seasonNumber}{s.isCurrent ? ' (Current)' : ''}
-              </option>
-            ))}
-          </select>
-        ) : (
-          schedule?.seasonNumber?.seasonNumber ?? (
-            <span className="text-gray-400">N/A</span>
-          )
-        )}
-      </span>
-    </h2>
-
-    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-gray-600 text-xs sm:text-sm md:text-base">
-      <p>
-        📅 Year:{" "}
-        {schedule?.seasonNumber?.entryDeadline
-          ? new Date(schedule.seasonNumber.entryDeadline).getFullYear()
-          : "N/A"}
-      </p>
-      <span className="hidden sm:block text-gray-400">|</span>
-      <p>
-        ⏰ Entry Deadline:{" "}
-        {schedule?.seasonNumber?.entryDeadline
-          ? new Date(
-              schedule.seasonNumber.entryDeadline
-            ).toLocaleString("en-GB", {
-              dateStyle: "medium",
-              timeStyle: "short",
-            })
-          : "Not Set"}
-      </p>
-      <span className="hidden sm:block text-gray-400">|</span>
-      <p>
-        🏅 Status:{" "}
-        {schedule?.groups?.length > 0 ? (
-          <span className="text-green-600 font-semibold">Active</span>
-        ) : (
-          <span className="text-gray-500 font-medium">No Schedule Yet</span>
-        )}
-      </p>
-    </div>
-  </div>
-
-  {/* Actions */}
-  <div className="flex flex-col sm:flex-row flex-wrap gap-3 items-center">
-    {user?.role === "super-admin" && (
-      <Button
-  variant="outline"
-  disabled
-  className="flex items-center gap-2 w-full sm:w-auto border-indigo-300 text-indigo-400 bg-gray-100 cursor-not-allowed font-semibold transition"
-  onClick={handleGenerateAll}
->
-  <RefreshCcw size={16} /> Generate Schedule
-</Button>
-
-    )}
-
-    {/* Download Dropdown */}
-    <div className="relative group w-full sm:w-auto mt-2 sm:mt-0">
-      <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 hover:bg-indigo-100 cursor-pointer transition mx-auto sm:mx-0 border border-gray-200 shadow-sm">
-        <DownloadIcon className="w-5 h-5 text-gray-700 group-hover:text-indigo-600" />
+    {subTab === 'groups' ? (
+      <>
+      {/* ======= GROUPS HEADER ======= */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 border-b border-gray-200 pb-4">
+        <div className="space-y-1 sm:space-y-2">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900 flex items-center gap-3">
+            <span className="text-indigo-600 text-3xl sm:text-4xl">🏆</span>
+            <span>
+              UPPL Season{" "}
+              {selectedSeasonId ? (
+                <select
+                  value={selectedSeasonId}
+                  onChange={async (e) => {
+                    const sid = e.target.value;
+                    setSelectedSeasonId(sid);
+                    const schedId = await fetchSchedule(sid);
+                    fetchMatches(schedId || sid);
+                  }}
+                  className="ml-2 bg-white border border-gray-300 rounded-lg px-3 py-1 text-lg font-semibold text-gray-800 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                >
+                  {seasons.map((s) => (
+                    <option key={s._id} value={s._id}>
+                      {s.seasonNumber}{s.isCurrent ? ' (Current)' : ''}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                schedule?.seasonNumber?.seasonNumber ?? (
+                  <span className="text-gray-400">N/A</span>
+                )
+              )}
+            </span>
+          </h2>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-gray-600 text-xs sm:text-sm md:text-base">
+            <p>📅 Year: {schedule?.seasonNumber?.entryDeadline ? new Date(schedule.seasonNumber.entryDeadline).getFullYear() : "N/A"}</p>
+            <span className="hidden sm:block text-gray-400">|</span>
+            <p>⏰ Entry Deadline: {schedule?.seasonNumber?.entryDeadline ? new Date(schedule.seasonNumber.entryDeadline).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }) : "Not Set"}</p>
+            <span className="hidden sm:block text-gray-400">|</span>
+            <p>🏅 Status: {schedule?.groups?.length > 0 ? <span className="text-green-600 font-semibold">Active</span> : <span className="text-gray-500 font-medium">No Schedule Yet</span>}</p>
+          </div>
+        </div>
+        <div className="flex flex-col sm:flex-row flex-wrap gap-3 items-center">
+          {user?.role === "super-admin" && (
+            <Button variant="outline" disabled className="flex items-center gap-2 w-full sm:w-auto border-indigo-300 text-indigo-400 bg-gray-100 cursor-not-allowed font-semibold transition" onClick={handleGenerateAll}>
+              <RefreshCcw size={16} /> Generate Schedule
+            </Button>
+          )}
+          <div className="relative group w-full sm:w-auto mt-2 sm:mt-0">
+            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 hover:bg-indigo-100 cursor-pointer transition mx-auto sm:mx-0 border border-gray-200 shadow-sm">
+              <DownloadIcon className="w-5 h-5 text-gray-700 group-hover:text-indigo-600" />
+            </div>
+            <div className="absolute top-12 right-0 hidden group-hover:flex flex-col bg-white border border-gray-200 rounded-lg shadow-xl text-sm min-w-[140px] z-10">
+              <button className="px-4 py-2 hover:bg-indigo-50 text-left transition" onClick={() => handleDownload("jpg")}>📷 Download JPG</button>
+              <button className="px-4 py-2 hover:bg-indigo-50 text-left transition" onClick={() => handleDownload("pdf")}>📄 Download PDF</button>
+            </div>
+          </div>
+        </div>
       </div>
-      <div className="absolute top-12 right-0 hidden group-hover:flex flex-col bg-white border border-gray-200 rounded-lg shadow-xl text-sm min-w-[140px] z-10">
-        <button
-          className="px-4 py-2 hover:bg-indigo-50 text-left transition"
-          onClick={() => handleDownload("jpg")}
-        >
-          📷 Download JPG
-        </button>
-        <button
-          className="px-4 py-2 hover:bg-indigo-50 text-left transition"
-          onClick={() => handleDownload("pdf")}
-        >
-          📄 Download PDF
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
 
-
-
-      {/* Groups */}
-      <div ref={scheduleRef} className="space-y-4 sm:space-y-6 mb-6 sm:mb-10">
+      {/* Groups Content */}
+      <div ref={scheduleRef} className="space-y-4 sm:space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-6">
           {schedule?.groups.map((group, i) => (
-            <div
-              key={group.groupName}
-              className={`rounded-md p-2 sm:p-4 shadow ${groupColors[i % groupColors.length]}`}
-            >
-              <h3 className="text-sm sm:text-lg font-semibold mb-1 sm:mb-2">
-                Group {group.groupName}
-              </h3>
+            <div key={group.groupName} className={`rounded-md p-2 sm:p-4 shadow ${groupColors[i % groupColors.length]}`}>
+              <h3 className="text-sm sm:text-lg font-semibold mb-1 sm:mb-2">Group {group.groupName}</h3>
               <div className="overflow-x-auto">
                 <table className="w-full table-auto text-left border-collapse text-xs sm:text-sm">
                   <thead>
@@ -835,16 +814,50 @@ const handleCancelLiveMatch = async () => {
           ))}
         </div>
       </div>
-
-
-      {/* Match Schedule Title */}
-      <div className="text-center px-4">
-        <h1 className="text-3xl font-semibold text-gray-800 mb-6">Match Schedule</h1>
+      </>
+    ) : (
+      <>
+      {/* ======= MATCH SCHEDULE HEADER ======= */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 border-b border-gray-200 pb-4">
+        <div className="space-y-1 sm:space-y-2">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900 flex items-center gap-3">
+            <span className="text-indigo-600 text-3xl sm:text-4xl">📅</span>
+            <span>
+              Match Schedule{" "}
+              {selectedSeasonId ? (
+                <select
+                  value={selectedSeasonId}
+                  onChange={async (e) => {
+                    const sid = e.target.value;
+                    setSelectedSeasonId(sid);
+                    const schedId = await fetchSchedule(sid);
+                    fetchMatches(schedId || sid);
+                  }}
+                  className="ml-2 bg-white border border-gray-300 rounded-lg px-3 py-1 text-lg font-semibold text-gray-800 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                >
+                  {seasons.map((s) => (
+                    <option key={s._id} value={s._id}>
+                      {s.seasonNumber}{s.isCurrent ? ' (Current)' : ''}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                schedule?.seasonNumber?.seasonNumber ?? (
+                  <span className="text-gray-400">N/A</span>
+                )
+              )}
+            </span>
+          </h2>
+        </div>
+        <div className="flex flex-col sm:flex-row flex-wrap gap-3 items-center">
+          <Button variant="default" onClick={() => setOpen(true)} className="flex items-center gap-2 w-full sm:w-auto">
+            <Plus className="h-4 w-4" /> Schedule Match
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-4 mb-4 sm:mb-8 text-xs sm:text-sm">
-        {/* Filter Section */}
         <div className="flex items-center space-x-1 sm:space-x-2 w-full sm:w-auto">
           <Filter className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500" />
           <Select value={selectedFilter} onValueChange={setSelectedFilter}>
@@ -859,20 +872,7 @@ const handleCancelLiveMatch = async () => {
             </SelectContent>
           </Select>
         </div>
-
-        {/* Button Section */}
-        <div className="w-full sm:w-auto sm:ml-auto">
-          <Button
-            variant="default"
-            onClick={() => setOpen(true)}
-            className="w-full sm:w-auto h-8 sm:h-10 text-xs sm:text-sm px-2 sm:px-4"
-          >
-            <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" /> Add Match
-          </Button>
-        </div>
       </div>
-
-
 
       {/* Match Cards */}
       <div className="space-y-10">
@@ -897,14 +897,14 @@ const handleCancelLiveMatch = async () => {
               <CardContent className="p-0">
                 {/* Main Content Row */}
                 <div className="p-4 sm:p-6">
-                  <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 lg:items-center">
+                  <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 sm:items-center">
                     {/* Match Number + Status */}
-                    <div className="flex items-center lg:flex-col lg:items-center gap-3 lg:gap-1 lg:min-w-[90px]">
-                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider lg:text-center">
+                    <div className="flex items-center sm:flex-col sm:items-center gap-3 sm:gap-1 sm:min-w-[90px]">
+                      <span className="text-sm font-semibold text-gray-400 uppercase tracking-wider sm:text-center">
                         Match
                       </span>
-                      <span className="text-lg sm:text-xl font-bold text-gray-900 lg:text-center">{index + 1}</span>
-                      <div className={`ml-auto lg:ml-0 text-[10px] font-semibold px-2.5 py-1 rounded-full
+                      <span className="text-2xl sm:text-3xl font-bold text-gray-900 sm:text-center">{index + 1}</span>
+                      <div className={`ml-auto sm:ml-0 text-xs font-semibold px-3 py-1 rounded-full
                         ${match.result === 'live' ? 'bg-red-100 text-red-700' :
                           match.result === 'completed' ? 'bg-green-100 text-green-700' :
                           'bg-blue-100 text-blue-700'}`}
@@ -916,134 +916,156 @@ const handleCancelLiveMatch = async () => {
                     {/* Teams */}
                     <div className="flex-1 flex items-center justify-center gap-4 sm:gap-8">
                       <div className="flex flex-col items-center min-w-0 flex-1">
-                        <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full overflow-hidden border-2 border-gray-100 shadow-md flex-shrink-0">
+                        <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full overflow-hidden border-2 border-gray-100 shadow-md flex-shrink-0">
                           {match.teamA.teamLogo ? (
                             <img src={getImageUrl(match.teamA.teamLogo)} alt="" className="w-full h-full object-cover" />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-white font-bold text-sm" style={{ backgroundColor: match.teamA.color }}>
+                            <div className="w-full h-full flex items-center justify-center text-white font-bold text-base" style={{ backgroundColor: match.teamA.color }}>
                               {match.teamA.short}
                             </div>
                           )}
                         </div>
-                        <span className="mt-1.5 text-xs sm:text-sm font-semibold text-gray-800 text-center truncate max-w-[100px]">
+                        <span className="mt-2 text-sm sm:text-base font-semibold text-gray-800 text-center truncate max-w-[120px]">
                           {match.teamA.teamName}
                         </span>
                         {match.result === 'completed' && (
-                          <span className="text-[10px] text-gray-500 font-mono">{match.teamA.runs ?? 0}/{match.teamA.wickets ?? 0}</span>
+                          <span className="text-xs sm:text-sm text-gray-500 font-mono font-semibold">{match.teamA.runs ?? 0}/{match.teamA.wickets ?? 0}</span>
                         )}
                       </div>
 
                       <div className="flex flex-col items-center">
-                        <span className="text-xs sm:text-sm font-bold text-gray-400 px-2">VS</span>
-                        <span className="text-[10px] text-gray-400">{match.stage || 'League'}</span>
+                        <span className="text-sm sm:text-base font-bold text-gray-400 px-2">VS</span>
+                        <span className="text-xs text-gray-400">{match.stage || 'League'}</span>
                       </div>
 
                       <div className="flex flex-col items-center min-w-0 flex-1">
-                        <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full overflow-hidden border-2 border-gray-100 shadow-md flex-shrink-0">
+                        <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full overflow-hidden border-2 border-gray-100 shadow-md flex-shrink-0">
                           {match.teamB.teamLogo ? (
                             <img src={getImageUrl(match.teamB.teamLogo)} alt="" className="w-full h-full object-cover" />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-white font-bold text-sm" style={{ backgroundColor: match.teamB.color }}>
+                            <div className="w-full h-full flex items-center justify-center text-white font-bold text-base" style={{ backgroundColor: match.teamB.color }}>
                               {match.teamB.short}
                             </div>
                           )}
                         </div>
-                        <span className="mt-1.5 text-xs sm:text-sm font-semibold text-gray-800 text-center truncate max-w-[100px]">
+                        <span className="mt-2 text-sm sm:text-base font-semibold text-gray-800 text-center truncate max-w-[120px]">
                           {match.teamB.teamName}
                         </span>
                         {match.result === 'completed' && (
-                          <span className="text-[10px] text-gray-500 font-mono">{match.teamB.runs ?? 0}/{match.teamB.wickets ?? 0}</span>
+                          <span className="text-xs sm:text-sm text-gray-500 font-mono font-semibold">{match.teamB.runs ?? 0}/{match.teamB.wickets ?? 0}</span>
                         )}
                       </div>
                     </div>
 
                     {/* Date/Time */}
-                    <div className="flex lg:flex-col items-center lg:items-end gap-2 lg:min-w-[120px]">
-                      <div className="flex items-center gap-1.5 text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg">
-                        <Calendar className="h-3.5 w-3.5 text-blue-500" />
-                        <span className="text-xs font-medium">{formatDate(match.matchTime)}</span>
+                    <div className="flex sm:flex-col items-center sm:items-end gap-2 sm:min-w-[130px]">
+                      <div className="flex items-center gap-2 text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
+                        <Calendar className="h-4 w-4 text-blue-500" />
+                        <span className="text-sm font-medium">{formatDate(match.matchTime)}</span>
                       </div>
-                      <div className="flex items-center gap-1.5 text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg">
-                        <Clock className="h-3.5 w-3.5 text-purple-500" />
-                        <span className="text-xs font-medium">{formatTime(match.matchTime)}</span>
+                      <div className="flex items-center gap-2 text-gray-600 bg-gray-50 px-3 py-2 rounded-lg">
+                        <Clock className="h-4 w-4 text-purple-500" />
+                        <span className="text-sm font-medium">{formatTime(match.matchTime)}</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Winner */}
-                  {match.result === 'completed' && match.winner && (
-                    <div className="mt-4 p-2.5 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
-                      <div className="flex items-center gap-2">
-                        <Trophy className="h-4 w-4 text-amber-500" />
-                        <span className="text-xs font-bold text-green-800">
-                          {match.winner === 'teamA' ? match.teamA?.teamName :
-                           match.winner === 'teamB' ? match.teamB?.teamName :
-                           match.winner === 'tie' ? 'Match Tied' :
-                           match.winner === 'draw' ? 'Match Drawn' : 'No Result'}
-                          {match.margin ? ` won by ${match.margin}` : ''}
-                        </span>
+                  {/* Player of the Match */}
+                  {match.result === 'completed' && match.playerOfTheMatch?.playerName && (
+                    <div className="mt-4 p-5 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 rounded-xl border-2 border-amber-300 shadow-md text-center">
+                      <div className="flex justify-center mb-2">
+                        <span className="text-4xl">🌟</span>
                       </div>
+                      <p className="text-xs font-bold text-amber-600 uppercase tracking-widest mb-1">Player of the Match</p>
+                      <p className="text-xl sm:text-2xl font-extrabold text-amber-900">{match.playerOfTheMatch.playerName}</p>
+                      {match.playerOfTheMatch.points ? (
+                        <span className="inline-block mt-2 bg-amber-200 text-amber-900 text-sm font-bold px-3 py-1 rounded-full">{match.playerOfTheMatch.points} pts</span>
+                      ) : null}
+                      {match.playerOfTheMatch.reason && (
+                        <p className="text-sm text-amber-700 mt-2 font-medium">{match.playerOfTheMatch.reason}</p>
+                      )}
                     </div>
                   )}
                 </div>
 
-                {/* Action Footer */}
-                <div className="border-t border-gray-100 bg-gray-50/80 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    className="h-8 text-xs font-medium border-gray-200 text-gray-600 hover:text-yellow-700 hover:border-yellow-300"
-                    onClick={() => setEditMatch(match)}
-                  >
-                    ✏️ Edit
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="h-8 text-xs font-medium border-gray-200 text-gray-600 hover:text-red-700 hover:border-red-300"
-                    onClick={() => setConfirmDelete({ open: true, matchId: match._id })}
-                  >
-                    🗑️ Delete
-                  </Button>
+                {/* Big Action Buttons — full width, left to right */}
+                <div className="border-t border-gray-100 bg-gray-50/80 px-4 sm:px-6 py-4">
+                  <div className="flex flex-col sm:flex-row flex-wrap gap-3">
 
-                  {match.result === 'upcoming' && (
-                    <>
-                      <Button
-                        className="h-8 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white"
-                        onClick={() => handleStartMatch(match._id)}
-                      >
-                        🚀 Start
-                      </Button>
-                      <Button
-                        className="h-8 text-xs font-semibold bg-purple-600 hover:bg-purple-700 text-white"
-                        onClick={() => { setSetupMatch(match); setSetupDialog(true); }}
-                      >
-                        📋 XI & Toss
-                      </Button>
-                    </>
-                  )}
+                    {match.result === 'upcoming' && (
+                      <>
+                        <Button
+                          className="w-full sm:flex-1 sm:min-w-[120px] h-12 text-base font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-sm"
+                          onClick={() => { setSetupMatch(match); setSetupDialog(true); }}
+                        >
+                          🚀 Start Match
+                        </Button>
+                      </>
+                    )}
 
-                  {match.result === 'live' && (
-                    <>
+                    {match.result === 'live' && (
+                      <>
+                        <Button
+                          className="w-full sm:flex-1 sm:min-w-[120px] h-12 text-base font-bold bg-orange-600 hover:bg-orange-700 text-white rounded-xl shadow-sm"
+                          onClick={() => { setScoringMatch(match); setBallScoringDialog(true); }}
+                        >
+                          🏏 Ball by Ball
+                        </Button>
+                        <Button
+                          className="w-full sm:flex-1 sm:min-w-[120px] h-12 text-base font-bold bg-green-700 hover:bg-green-800 text-white rounded-xl shadow-sm"
+                          onClick={() => handleOpenCompleteDialog(match)}
+                        >
+                          ✅ Complete
+                        </Button>
+                      </>
+                    )}
+
+                    {match.result === 'completed' && (
                       <Button
-                        className="h-8 text-xs font-semibold bg-orange-600 hover:bg-orange-700 text-white"
+                        className="w-full sm:flex-1 sm:min-w-[120px] h-12 text-base font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm"
                         onClick={() => { setScoringMatch(match); setBallScoringDialog(true); }}
                       >
                         🏏 Ball by Ball
                       </Button>
-                      <Button
-                        className="h-8 text-xs font-semibold bg-purple-600 hover:bg-purple-700 text-white"
-                        onClick={() => { setSetupMatch(match); setSetupDialog(true); }}
-                      >
-                        📋 XI/Toss
-                      </Button>
-                      <Button
-                        className="h-8 text-xs font-semibold bg-green-700 hover:bg-green-800 text-white"
-                        onClick={() => handleOpenCompleteDialog(match)}
-                      >
-                        ✅ Complete
-                      </Button>
-                    </>
-                  )}
+                    )}
+
+                    {/* Edit / Delete — always visible */}
+                    <Button
+                      variant="outline"
+                      className="w-full sm:w-auto h-12 px-6 text-base font-semibold border-gray-200 text-gray-600 hover:text-yellow-700 hover:border-yellow-300 rounded-xl"
+                      onClick={() => setEditMatch(match)}
+                    >
+                      ✏️ Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full sm:w-auto h-12 px-6 text-base font-semibold border-gray-200 text-gray-600 hover:text-red-700 hover:border-red-300 rounded-xl"
+                      onClick={() => setConfirmDelete({ open: true, matchId: match._id })}
+                    >
+                      🗑️ Delete
+                    </Button>
+                  </div>
                 </div>
+
+                {/* Winner — below buttons */}
+                {match.result === 'completed' && (
+                  <div className="px-4 sm:px-6 pb-4">
+                    <div className="p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <Trophy className="h-5 w-5 text-amber-500" />
+                        <span className="text-base font-extrabold text-green-800">
+                          {match.winner && match.winner !== 'tie' && match.winner !== 'draw' && match.winner !== 'no_result' ? (
+                            <>
+                              {match.winner === 'teamA' ? match.teamA?.teamName : match.teamB?.teamName}
+                              {match.margin ? ` won by ${match.margin}` : ' won'}
+                            </>
+                          ) : match.winner === 'tie' ? 'Match Tied' :
+                            match.winner === 'draw' ? 'Match Drawn' : 'No Result'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -1298,109 +1320,129 @@ const handleCancelLiveMatch = async () => {
 
 
      <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent
-        className="
-          sm:max-w-md w-[95%] max-w-[500px] rounded-2xl shadow-xl 
-          p-6 sm:p-8 space-y-5 bg-white dark:bg-neutral-900
-          transition-all duration-300 ease-out
-        "
-      >
-        <DialogHeader className="space-y-1 text-center">
-          <DialogTitle className="text-lg sm:text-xl font-semibold">
-            Add New Match
-          </DialogTitle>
-          <DialogDescription className="text-xs sm:text-sm text-muted-foreground">
-            Fill out the match details and assign stage.
-          </DialogDescription>
-        </DialogHeader>
-
-        {/* Form */}
-        <div className="grid gap-4 sm:gap-5">
-          {/* Stage */}
-          <div className="space-y-1">
-            <label className="text-xs sm:text-sm font-medium">Stage</label>
-            <Select
-              value={newMatch.stage}
-              onValueChange={(val) => setNewMatch({ ...newMatch, stage: val })}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select stage" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="league">League</SelectItem>
-                <SelectItem value="playoff">Playoff</SelectItem>
-                <SelectItem value="final">Final</SelectItem>
-              </SelectContent>
-            </Select>
+      <DialogContent className="sm:max-w-lg w-[95%] rounded-3xl shadow-2xl p-0 overflow-hidden border-0">
+        {/* Header with gradient */}
+        <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 px-6 py-5 text-white">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+              <Plus className="h-5 w-5" />
+            </div>
+            <div>
+              <DialogTitle className="text-xl font-bold text-white">Add New Match</DialogTitle>
+              <DialogDescription className="text-sm text-blue-100 mt-0.5">
+                Schedule a new match with teams and timing
+              </DialogDescription>
+            </div>
           </div>
+        </div>
 
-          {/* Group Name (only for league) */}
-          {newMatch.stage === "league" && (
-            <div className="space-y-1">
-              <label className="text-xs sm:text-sm font-medium">Group</label>
+        {/* Form body */}
+        <div className="px-6 py-5 space-y-4 bg-gray-50/50">
+          {/* Stage + Group row */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-gray-600 uppercase tracking-wider">Stage</label>
               <Select
-                value={newMatch.groupName}
-                onValueChange={(val) =>
-                  setNewMatch({ ...newMatch, groupName: val })
-                }
+                value={newMatch.stage}
+                onValueChange={(val) => setNewMatch({ ...newMatch, stage: val, groupName: '', teamA: '', teamB: '' })}
               >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select group" />
+                <SelectTrigger className="h-11 rounded-xl border-2 text-sm font-medium">
+                  <SelectValue placeholder="Stage" />
                 </SelectTrigger>
                 <SelectContent>
-                  {schedule?.groups.map((g) => (
-                    <SelectItem key={g.groupName} value={g.groupName}>
-                      {g.groupName}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="league">League</SelectItem>
+                  <SelectItem value="playoff">Playoff</SelectItem>
+                  <SelectItem value="final">Final</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-          )}
-
-          {/* Team A */}
-          <div className="space-y-1">
-            <label className="text-xs sm:text-sm font-medium">Team A</label>
-            <Select
-              value={newMatch.teamA}
-              onValueChange={(val) => setNewMatch({ ...newMatch, teamA: val })}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select team A" />
-              </SelectTrigger>
-              <SelectContent>
-                  {availableTeams.map((team) => (
-                  <SelectItem key={team.team._id} value={team.team._id}>
-                    {team.teamName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {newMatch.stage === "league" && (
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-gray-600 uppercase tracking-wider">Group</label>
+                <Select
+                  value={newMatch.groupName}
+                  onValueChange={(val) =>
+                    setNewMatch({ ...newMatch, groupName: val, teamA: '', teamB: '' })
+                  }
+                >
+                  <SelectTrigger className="h-11 rounded-xl border-2 text-sm font-medium">
+                    <SelectValue placeholder="Group" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {schedule?.groups.map((g) => (
+                      <SelectItem key={g.groupName} value={g.groupName}>
+                        Group {g.groupName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
 
-          {/* Team B */}
-          <div className="space-y-1">
-            <label className="text-xs sm:text-sm font-medium">Team B</label>
-            <Select
-              value={newMatch.teamB}
-              onValueChange={(val) => setNewMatch({ ...newMatch, teamB: val })}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select team B" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableTeams.map((team) => (
-                  <SelectItem key={team.team._id} value={team.team._id}>
-                    {team.teamName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Teams */}
+          <div className="space-y-3">
+            <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">Teams</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Team A */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-indigo-600">Team A</label>
+                <Select
+                  value={newMatch.teamA}
+                  onValueChange={(val) => setNewMatch({ ...newMatch, teamA: val, teamB: newMatch.teamB === val ? '' : newMatch.teamB })}
+                >
+                  <SelectTrigger className="h-11 rounded-xl border-2 border-indigo-200 text-sm font-medium bg-white focus:border-indigo-500">
+                    <SelectValue placeholder="Select team A" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {groupTeams.map((team) => (
+                      <SelectItem key={team.team._id} value={team.team._id}>
+                        {team.teamName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Team B */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-emerald-600">Team B</label>
+                <Select
+                  value={newMatch.teamB}
+                  onValueChange={(val) => setNewMatch({ ...newMatch, teamB: val })}
+                >
+                  <SelectTrigger className="h-11 rounded-xl border-2 border-emerald-200 text-sm font-medium bg-white focus:border-emerald-500">
+                    <SelectValue placeholder={newMatch.teamA ? "Select team B" : "Select team A first"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {teamBOptions.map((team) => (
+                      <SelectItem key={team.team._id} value={team.team._id}>
+                        {team.teamName}
+                      </SelectItem>
+                    ))}
+                    {teamBOptions.length === 0 && (
+                      <div className="px-3 py-2 text-sm text-gray-400">No teams available</div>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {newMatch.teamA && newMatch.teamB && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-indigo-50 rounded-xl border border-indigo-200">
+                <span className="text-sm font-bold text-indigo-700">
+                  {groupTeams.find(t => t.team._id === newMatch.teamA)?.teamName || 'Team A'}
+                </span>
+                <span className="text-xs font-bold text-gray-400">VS</span>
+                <span className="text-sm font-bold text-emerald-700">
+                  {groupTeams.find(t => t.team._id === newMatch.teamB)?.teamName || 'Team B'}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Date & Time */}
-          <div className="space-y-1">
-            <label className="text-xs sm:text-sm font-medium">Date & Time</label>
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-gray-600 uppercase tracking-wider">Date & Time</label>
             <DateTimePicker
               value={newMatch.matchTime}
               onChange={(date) => setNewMatch({ ...newMatch, matchTime: date })}
@@ -1409,17 +1451,19 @@ const handleCancelLiveMatch = async () => {
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex justify-end gap-3 pt-2">
+        {/* Footer */}
+        <div className="flex justify-end gap-3 px-6 py-4 bg-white border-t border-gray-100">
           <Button
             variant="outline"
-            size="sm"
-            className="rounded-xl"
+            className="h-11 px-6 rounded-xl font-semibold border-2"
             onClick={() => setOpen(false)}
           >
             Cancel
           </Button>
-          <Button size="sm" className="rounded-xl" onClick={handleAddMatch}>
+          <Button
+            className="h-11 px-8 rounded-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg shadow-blue-200"
+            onClick={handleAddMatch}
+          >
             Save Match
           </Button>
         </div>
@@ -1431,19 +1475,19 @@ const handleCancelLiveMatch = async () => {
         setBallScoringDialog(open);
         if (!open) { setScoringMatch(null); setScoringMatchData(null); }
       }}>
-        <DialogContent className="max-w-full h-dvh !rounded-none p-0 flex flex-col">
+        <DialogContent className="max-w-full h-dvh !rounded-none p-0 flex flex-col" hideClose>
           <DialogHeader className="px-4 pt-3 pb-0 flex-shrink-0">
-            <DialogTitle className="flex flex-col items-center gap-1">
+            <DialogTitle className="flex flex-col items-center gap-2">
               <div className="flex items-center gap-3 flex-wrap justify-center">
                 <span className="text-xl font-bold text-blue-600">{scoringMatch?.teamA?.teamName}</span>
                 <span className="text-base font-semibold text-muted-foreground">vs</span>
                 <span className="text-xl font-bold text-blue-600">{scoringMatch?.teamB?.teamName}</span>
                 <span className="flex items-center gap-2">
                   {(scoringMatch || scoringMatchData)?.result === 'live' && (
-                    <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-300">LIVE</span>
+                    <span className="text-sm font-bold text-white bg-red-500 px-3 py-1 rounded-full animate-pulse shadow-lg shadow-red-500/50">LIVE</span>
                   )}
                   {(scoringMatch || scoringMatchData)?.currentInnings === 2 && (
-                    <span className="text-xs font-bold text-amber-600 bg-amber-50 px-3 py-1 rounded-full border border-amber-300">2nd Innings</span>
+                    <span className="text-sm font-bold text-white bg-amber-500 px-3 py-1 rounded-full shadow-lg shadow-amber-500/30">2nd Innings</span>
                   )}
                 </span>
               </div>
@@ -1453,20 +1497,25 @@ const handleCancelLiveMatch = async () => {
                 if (m?.tossWinner) {
                   const winnerName = m.tossWinner === 'teamA' ? m?.teamA?.teamName : m?.teamB?.teamName;
                   return (
-                    <>
-                      <span className="text-sm font-medium text-muted-foreground">
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="text-sm font-semibold text-white bg-gradient-to-r from-indigo-500 to-purple-500 px-4 py-1.5 rounded-full shadow">
                         {winnerName} won the toss & chose to {m?.tossDecision}
                       </span>
-                      {ci ? <span className="text-lg font-bold text-muted-foreground">Innings {ci}</span> : null}
-                    </>
+                      {ci ? <span className="text-lg font-bold text-white bg-gradient-to-r from-blue-500 to-cyan-500 px-4 py-1 rounded-full shadow">Innings {ci}</span> : null}
+                    </div>
                   );
                 }
                 return ci ? (
-                  <span className="text-lg font-bold text-muted-foreground">Innings {ci}</span>
+                  <span className="text-lg font-bold text-white bg-gradient-to-r from-blue-500 to-cyan-500 px-4 py-1 rounded-full shadow">Innings {ci}</span>
                 ) : null;
               })()}
             </DialogTitle>
           </DialogHeader>
+          {/* Custom close button */}
+          <button onClick={() => { setBallScoringDialog(false); setScoringMatch(null); setScoringMatchData(null); }}
+            className="absolute right-3 top-3 z-10 w-10 h-10 rounded-full bg-slate-200 hover:bg-slate-300 flex items-center justify-center transition-colors">
+            <X className="h-5 w-5 text-slate-700" />
+          </button>
           <div className="flex-1 overflow-y-auto p-4">
             {scoringMatch && (
               <BallScoring
@@ -1518,6 +1567,8 @@ const handleCancelLiveMatch = async () => {
           )}
         </DialogContent>
       </Dialog>
+    </>
+    )}
     </div>
   );
 };

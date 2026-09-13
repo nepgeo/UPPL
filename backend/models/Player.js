@@ -36,7 +36,8 @@ const PlayerSchema = new mongoose.Schema({
     strikeRate: { type: Number, default: 0 },
     average: { type: Number, default: 0 },
     catches: { type: Number, default: 0 },
-    stumpings: { type: Number, default: 0 }
+    stumpings: { type: Number, default: 0 },
+    manOfTheMatch: { type: Number, default: 0 },
   }
 });
 

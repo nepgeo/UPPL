@@ -63,6 +63,9 @@ router.post('/matches/:matchId/finish-over', protect, requireAdminOrSuperAdmin, 
 // Undo with recalculation
 router.delete('/matches/:matchId/score-undo', protect, requireAdminOrSuperAdmin, prof.undoBall);
 
+// Redo last undone ball
+router.post('/matches/:matchId/score-redo', protect, requireAdminOrSuperAdmin, prof.redoBall);
+
 // Full scoring state
 router.get('/matches/:matchId/scoring-state', protect, requireAdminOrSuperAdmin, prof.getScoringState);
 

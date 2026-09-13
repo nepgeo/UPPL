@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const Match = require("../models/matchModel");
 const Season = require("../models/seasonModel");
-const { aggregatePlayerStatsForMatch } = require("../utils/aggregatePlayerStats");
+const { aggregatePlayerStatsForMatch, calculatePlayerOfTheMatch } = require("../utils/aggregatePlayerStats");
 
 // ----------------------
 // Helpers
@@ -176,9 +176,24 @@ const updateMatchResult = async (req, res) => {
       match.winner = winner;
       match.margin = winner;
     } else {
-      match.winner = null;
-      match.margin = null;
+      // Auto-determine winner from scores
+      const aRuns = safeNumber(teamAResult.runs);
+      const bRuns = safeNumber(teamBResult.runs);
+      if (aRuns > bRuns) {
+        match.winner = 'teamA';
+        match.margin = computeMargin(teamAResult, teamBResult, 'teamA');
+      } else if (bRuns > aRuns) {
+        match.winner = 'teamB';
+        match.margin = computeMargin(teamAResult, teamBResult, 'teamB');
+      } else {
+        match.winner = 'tie';
+        match.margin = 'tie';
+      }
     }
+
+    // Calculate Player of the Match
+    const potm = calculatePlayerOfTheMatch(match.playerStats);
+    if (potm) match.playerOfTheMatch = potm;
 
     await match.save();
 
