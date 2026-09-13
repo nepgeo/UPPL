@@ -113,6 +113,7 @@ export default function BallScoring({ matchId, match, onUpdate }: Props) {
   const [localScore, setLocalScore] = useState<{ teamA: InningsScore; teamB: InningsScore } | null>(null);
   const [flashRun, setFlashRun] = useState<string | null>(null);
   const [commentaryLog, setCommentaryLog] = useState<string[]>([]);
+  const [showAllOversDialog, setShowAllOversDialog] = useState(false);
   const submittingRef = useRef(false);
   const formKey = `bsc_form_${matchId}`;
 
@@ -934,67 +935,86 @@ export default function BallScoring({ matchId, match, onUpdate }: Props) {
                 const evs = allEv.filter(e => e.battingTeam === team);
                 const overMap: Record<number, any[]> = {};
                 evs.forEach(e => { const ov = e.over ?? 0; if (!overMap[ov]) overMap[ov] = []; overMap[ov].push(e); });
-                const overNums = Object.keys(overMap).map(Number).sort((a, b) => a - b).slice(-3);
+                const overNums = Object.keys(overMap).map(Number).sort((a, b) => a - b);
+                const last3 = overNums.slice(-3);
                 const s = activeScore?.[team] || { runs: 0, wickets: 0, balls: 0 };
                 const teamName = team === 'teamA' ? match.teamA?.teamName : match.teamB?.teamName;
-                return { team, label, evs, overMap, overNums, score: s, teamName };
+                return { team, label, evs, overMap, overNums, last3, score: s, teamName };
               };
               const inns1 = buildInnings(firstInnTeam, '1st Innings');
               const inns2 = allEv.some(e => e.battingTeam !== firstInnTeam) ? buildInnings(secondInnTeam, '2nd Innings') : null;
               return [inns1, inns2].filter(Boolean).map(inn => {
                 if (!inn) return null;
+                const hasMoreOvers = inn.overNums.length > 3;
                 return (
-                  <Card key={inn.label} className={`border shadow-sm rounded-xl overflow-hidden ${d('border-slate-200/80', 'border-slate-700/50')}`}>
-                    <CardHeader className={`pb-1.5 ${d('bg-gradient-to-r from-slate-900 to-blue-950', 'bg-gradient-to-r from-slate-800 to-slate-900')}`}>
+                  <Card key={inn.label} className={`border shadow-sm rounded-2xl overflow-hidden ${d('border-slate-200/80', 'border-slate-700/50')}`}>
+                    <CardHeader className={`pb-2 ${d('bg-gradient-to-r from-slate-900 to-blue-950', 'bg-gradient-to-r from-slate-800 to-slate-900')}`}>
                       <div className="flex items-center justify-between">
-                        <CardTitle className="text-xs font-bold text-blue-300 uppercase tracking-wider">{inn.label}</CardTitle>
-                        <span className="text-sm font-bold text-white">
+                        <CardTitle className="text-sm font-bold text-blue-300 uppercase tracking-wider">{inn.label}</CardTitle>
+                        <span className="text-base font-bold text-white">
                           {inn.score.runs}/{inn.score.wickets}
-                          <span className="text-blue-300 text-[10px] ml-1.5 font-normal">
+                          <span className="text-blue-300 text-xs ml-1.5 font-normal">
                             ({Math.floor(inn.score.balls / 6)}.{inn.score.balls % 6})
                           </span>
                         </span>
                       </div>
-                      <div className="text-[9px] text-blue-400/70 mt-0.5">{inn.teamName}</div>
+                      <div className="text-[10px] text-blue-400/70 mt-0.5">{inn.teamName}</div>
                     </CardHeader>
-                    <CardContent className={`pb-3 pt-2.5 ${d('', 'bg-slate-800/80')}`}>
+                    <CardContent className={`pb-3 pt-3 ${d('', 'bg-slate-800/80')}`}>
                       {inn.overNums.length === 0 ? (
-                        <span className={`text-xs ${d('text-slate-400', 'text-slate-500')}`}>No overs yet</span>
+                        <span className={`text-sm ${d('text-slate-400', 'text-slate-500')}`}>No overs yet</span>
                       ) : (
-                        <div className="flex flex-wrap gap-2">
-                          {inn.overNums.map(ov => {
-                            const balls = inn.overMap[ov];
-                            const bowler = balls[0]?.bowler || '';
-                            const runs = balls.reduce((s: number, e: any) => s + (e.runs || 0) + (e.extras?.runs || 0), 0);
-                            return (
-                              <div key={ov} className={`border rounded-lg p-2 min-w-[110px] flex-1 ${d('border-slate-200 bg-white', 'border-slate-600 bg-slate-800')}`}>
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className={`text-[10px] font-bold ${d('text-slate-600', 'text-slate-300')}`}>Over {ov}</span>
-                                  <span className={`text-[10px] font-semibold ${d('text-blue-700', 'text-blue-400')}`}>{runs} runs</span>
+                        <>
+                          <div className="flex flex-wrap gap-2.5">
+                            {inn.last3.map(ov => {
+                              const balls = inn.overMap[ov];
+                              const bowler = balls[0]?.bowler || '';
+                              const runs = balls.reduce((s: number, e: any) => s + (e.runs || 0) + (e.extras?.runs || 0), 0);
+                              const wickets = balls.filter((e: any) => e.wicket).length;
+                              return (
+                                <div key={ov} className={`border rounded-xl p-3 min-w-[130px] flex-1 ${d('border-slate-200 bg-white', 'border-slate-600 bg-slate-800')}`}>
+                                  <div className="flex items-center justify-between mb-1.5">
+                                    <span className={`text-xs font-bold ${d('text-slate-600', 'text-slate-300')}`}>Over {ov}</span>
+                                    <span className={`text-xs font-bold ${d('text-blue-700', 'text-blue-400')}`}>
+                                      {runs} runs {wickets > 0 && <span className="text-red-400">, {wickets}W</span>}
+                                    </span>
+                                  </div>
+                                  <div className={`text-[10px] truncate mb-2 ${d('text-slate-400', 'text-slate-500')}`}>{bowler}</div>
+                                  <div className="flex gap-1 flex-wrap">
+                                    {balls.map((ev: any, i: number) => {
+                                      let pc = 'border-green-500 text-green-600';
+                                      if (ev.wicket) pc = 'border-red-500 text-red-600';
+                                      else if (ev.isSix) pc = 'border-purple-500 text-purple-600';
+                                      else if (ev.isFour) pc = 'border-blue-600 text-blue-700';
+                                      else if (ev.extras?.type === 'wide') pc = 'border-amber-500 text-amber-600';
+                                      else if (ev.extras?.type === 'no_ball') pc = 'border-orange-500 text-orange-600';
+                                      else if (ev.extras?.type === 'bye' || ev.extras?.type === 'leg_bye') pc = 'border-rose-400 text-rose-500';
+                                      else if (ev.runs >= 3) pc = 'border-indigo-500 text-indigo-600';
+                                      else if (ev.runs === 2) pc = 'border-sky-500 text-sky-600';
+                                      else if (ev.runs === 1) pc = 'border-sky-500 text-sky-600';
+                                      return (
+                                        <span key={i}
+                                          className={`w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold border-2 bg-white dark:bg-gray-900 shadow-sm ${pc}`}
+                                          title={`${ev.bowler} to ${ev.batsman}: ${ev.description || `${ev.runs} run`}`}
+                                        >{formatBallNotation(ev)}</span>
+                                      );
+                                    })}
+                                  </div>
                                 </div>
-                                <div className={`text-[8px] truncate mb-1.5 ${d('text-slate-400', 'text-slate-500')}`}>{bowler}</div>
-                                <div className="flex gap-0.5 flex-wrap">
-                                  {balls.map((ev: any, i: number) => {
-                                    let pc = 'border-green-500 text-green-600';
-                                    if (ev.wicket) pc = 'border-red-500 text-red-600';
-                                    else if (ev.isSix) pc = 'border-purple-500 text-purple-600';
-                                    else if (ev.isFour) pc = 'border-blue-600 text-blue-700';
-                                    else if (ev.extras?.type === 'wide') pc = 'border-amber-500 text-amber-600';
-                                    else if (ev.extras?.type === 'no_ball') pc = 'border-orange-500 text-orange-600';
-                                    else if (ev.runs >= 2) pc = 'border-sky-500 text-sky-600';
-                                    else if (ev.runs === 1) pc = 'border-sky-500 text-sky-600';
-                                    return (
-                                      <span key={i}
-                                        className={`w-[18px] h-[18px] rounded-[2px] flex items-center justify-center text-[7px] font-bold border bg-white dark:bg-gray-900 ${pc}`}
-                                        title={`${ev.bowler} to ${ev.batsman}: ${ev.runs} run${ev.runs !== 1 ? 's' : ''}${ev.wicket ? ' WICKET!' : ''}`}
-                                      >{formatBallNotation(ev)}</span>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
+                              );
+                            })}
+                          </div>
+                          {hasMoreOvers && (
+                            <button
+                              onClick={() => setShowAllOversDialog(true)}
+                              className={`w-full mt-3 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all border-2 border-dashed ${
+                                d('border-slate-300 text-slate-500 hover:bg-slate-50 hover:border-slate-400', 'border-slate-600 text-slate-400 hover:bg-slate-800 hover:border-slate-500')
+                              }`}
+                            >
+                              See All {inn.overNums.length} Overs →
+                            </button>
+                          )}
+                        </>
                       )}
                     </CardContent>
                   </Card>
@@ -1002,6 +1022,78 @@ export default function BallScoring({ matchId, match, onUpdate }: Props) {
               });
             })(match.battingFirst === 'teamA' ? 'teamA' : 'teamB', match.battingFirst === 'teamA' ? 'teamB' : 'teamA')}
           </div>
+
+          {/* All Overs Dialog */}
+          {showAllOversDialog && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowAllOversDialog(false)}>
+              <div className={`rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] mx-4 overflow-hidden flex flex-col ${d('bg-white', 'bg-slate-900')}`}
+                onClick={e => e.stopPropagation()}>
+                <div className={`flex items-center justify-between px-6 py-4 border-b ${d('border-slate-200', 'border-slate-700')}`}>
+                  <h3 className={`text-lg font-bold ${d('text-slate-900', 'text-white')}`}>All Overs</h3>
+                  <button onClick={() => setShowAllOversDialog(false)}
+                    className={`p-2 rounded-lg ${d('hover:bg-slate-100 text-slate-500', 'hover:bg-slate-800 text-slate-400')}`}>
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className={`flex-1 overflow-y-auto p-6 ${d('', 'bg-slate-800/80')}`}>
+                  {(() => {
+                    const allEv = match.events || [];
+                    const overMap: Record<number, any[]> = {};
+                    allEv.forEach((ev: any) => {
+                      const ov = ev.over ?? 0;
+                      if (!overMap[ov]) overMap[ov] = [];
+                      overMap[ov].push(ev);
+                    });
+                    const overNumbers = Object.keys(overMap).map(Number).sort((a, b) => a - b);
+                    return (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {overNumbers.map(ov => {
+                          const evs = overMap[ov];
+                          const isCurrent = ov === match.currentOverNumber;
+                          const bowler = evs[0]?.bowler || '';
+                          const runs = evs.reduce((s: number, e: any) => s + (e.runs || 0) + (e.extras?.runs || 0), 0);
+                          const wickets = evs.filter((e: any) => e.wicket).length;
+                          return (
+                            <div key={ov} className={`border rounded-xl p-3 ${
+                              isCurrent ? `${d('border-blue-400 bg-blue-50', 'border-blue-600 bg-blue-900/30')}` : `${d('border-slate-200 bg-white', 'border-slate-600 bg-slate-800')}`
+                            }`}>
+                              <div className="flex items-center justify-between mb-1">
+                                <span className={`text-xs font-bold ${d('text-slate-600', 'text-slate-300')}`}>Over {ov}</span>
+                                <span className={`text-xs font-bold ${d('text-blue-700', 'text-blue-400')}`}>
+                                  {runs}R {wickets > 0 && <span className="text-red-400">, {wickets}W</span>}
+                                </span>
+                              </div>
+                              <div className={`text-[10px] truncate mb-2 ${d('text-slate-400', 'text-slate-500')}`}>{bowler}</div>
+                              <div className="flex gap-1 flex-wrap">
+                                {evs.map((ev: any, i: number) => {
+                                  let pc = 'border-green-500 text-green-600';
+                                  if (ev.wicket) pc = 'border-red-500 text-red-600';
+                                  else if (ev.isSix) pc = 'border-purple-500 text-purple-600';
+                                  else if (ev.isFour) pc = 'border-blue-600 text-blue-700';
+                                  else if (ev.extras?.type === 'wide') pc = 'border-amber-500 text-amber-600';
+                                  else if (ev.extras?.type === 'no_ball') pc = 'border-orange-500 text-orange-600';
+                                  else if (ev.extras?.type === 'bye' || ev.extras?.type === 'leg_bye') pc = 'border-rose-400 text-rose-500';
+                                  else if (ev.runs >= 3) pc = 'border-indigo-500 text-indigo-600';
+                                  else if (ev.runs === 2) pc = 'border-sky-500 text-sky-600';
+                                  else if (ev.runs === 1) pc = 'border-sky-500 text-sky-600';
+                                  return (
+                                    <span key={i}
+                                      className={`w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold border-2 bg-white dark:bg-gray-900 shadow-sm ${pc}`}
+                                      title={`${ev.bowler} to ${ev.batsman}: ${ev.description || `${ev.runs} run`}`}
+                                    >{formatBallNotation(ev)}</span>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Batting & Bowling Scorecards — side by side */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
