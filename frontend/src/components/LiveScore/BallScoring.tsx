@@ -410,18 +410,18 @@ export default function BallScoring({ matchId, match, onUpdate }: Props) {
                 {match.result === 'live' && <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-lg shadow-emerald-400/50" />}
               </div>
               <div className="flex items-baseline gap-2 sm:gap-3">
-                <span className={`text-4xl sm:text-6xl font-black tracking-tight font-mono ${flashRun ? 'animate-ping' : ''} ${d('text-slate-900', 'text-white')}`}>
+                <span className={`text-5xl sm:text-7xl font-black tracking-tight font-mono ${flashRun ? 'animate-ping' : ''} ${d('text-slate-900', 'text-white')}`}>
                   {score.runs}
                 </span>
-                <span className={`text-2xl sm:text-3xl font-bold font-mono ${d('text-slate-400', 'text-slate-400')}`}>/{score.wickets}</span>
+                <span className={`text-3xl sm:text-4xl font-bold font-mono ${d('text-slate-400', 'text-slate-400')}`}>/{score.wickets}</span>
 
               </div>
               <div className="mt-2 space-y-1">
-                <div className={`text-sm sm:text-base font-semibold ${d('text-slate-600', 'text-slate-300')}`}>
-                  Overs: <strong className={`text-base sm:text-lg ${d('text-slate-900', 'text-white')}`}>{Math.floor(score.balls / 6)}.{score.balls % 6}</strong>
+                <div className={`text-sm font-semibold ${d('text-slate-600', 'text-slate-300')}`}>
+                  Overs: <strong className={`text-lg sm:text-xl ${d('text-slate-900', 'text-white')}`}>{Math.floor(score.balls / 6)}.{score.balls % 6}</strong>
                 </div>
-                <div className={`text-sm sm:text-base font-semibold ${d('text-slate-600', 'text-slate-300')}`}>
-                  Extras: <strong className={`text-base sm:text-lg ${d('text-slate-900', 'text-white')}`}>{score.extras}</strong>
+                <div className={`text-sm font-semibold ${d('text-slate-600', 'text-slate-300')}`}>
+                  Extras: <strong className={`text-lg sm:text-xl ${d('text-slate-900', 'text-white')}`}>{score.extras}</strong>
                 </div>
               </div>
             </div>
@@ -431,17 +431,17 @@ export default function BallScoring({ matchId, match, onUpdate }: Props) {
               <div className={`text-center text-[10px] uppercase tracking-wider font-semibold px-3 pt-2 pb-1 ${d('text-slate-500', 'text-blue-400/70')}`}>Batsmen</div>
               <div className="flex flex-col gap-1.5 px-4 py-2">
                 <div className={`flex items-center justify-center gap-3 px-3 py-1.5 rounded-lg font-medium ${d('bg-emerald-50', 'bg-emerald-900/30')}`}>
-                  <span className="text-lg">🏏</span>
-                  <span className={`text-base font-bold truncate ${d('text-slate-800', 'text-cyan-200')}`}>{match.striker || '—'}</span>
-                  <span className={`text-base font-bold ${d('text-slate-900', 'text-white')}`}>
-                    {strikerStats?.runs ?? 0}<span className={`text-sm font-normal ml-0.5 ${d('text-slate-400', 'text-slate-500')}`}>({strikerStats?.balls ?? 0})</span>
-                  </span>
-                </div>
-                <div className={`flex items-center justify-center gap-3 px-3 py-1.5 rounded-lg font-medium ${d('bg-slate-100', 'bg-slate-800/50')}`}>
-                  <span className={`w-6 text-center text-base font-bold ${d('text-slate-400', 'text-slate-500')}`}>②</span>
-                  <span className={`text-base font-bold truncate ${d('text-slate-800', 'text-cyan-200')}`}>{match.nonStriker || '—'}</span>
-                  <span className={`text-base font-bold ${d('text-slate-900', 'text-white')}`}>
-                    {nonStrikerStats?.runs ?? 0}<span className={`text-sm font-normal ml-0.5 ${d('text-slate-400', 'text-slate-500')}`}>({nonStrikerStats?.balls ?? 0})</span>
+<span className="text-lg">🏏</span>
+                   <span className={`text-sm sm:text-base font-bold truncate ${d('text-slate-800', 'text-cyan-200')}`}>{match.striker || '—'}</span>
+                   <span className={`text-sm sm:text-base font-bold ${d('text-slate-900', 'text-white')}`}>
+                     {strikerStats?.runs ?? 0}<span className={`text-xs sm:text-sm font-normal ml-0.5 ${d('text-slate-400', 'text-slate-500')}`}>({strikerStats?.balls ?? 0})</span>
+                   </span>
+                 </div>
+                 <div className={`flex items-center justify-center gap-3 px-3 py-1.5 rounded-lg font-medium ${d('bg-slate-100', 'bg-slate-800/50')}`}>
+                   <span className={`w-6 text-center text-sm sm:text-base font-bold ${d('text-slate-400', 'text-slate-500')}`}>②</span>
+                   <span className={`text-sm sm:text-base font-bold truncate ${d('text-slate-800', 'text-cyan-200')}`}>{match.nonStriker || '—'}</span>
+                   <span className={`text-sm sm:text-base font-bold ${d('text-slate-900', 'text-white')}`}>
+                     {nonStrikerStats?.runs ?? 0}<span className={`text-xs sm:text-sm font-normal ml-0.5 ${d('text-slate-400', 'text-slate-500')}`}>({nonStrikerStats?.balls ?? 0})</span>
                   </span>
                 </div>
               </div>
@@ -486,8 +486,8 @@ export default function BallScoring({ matchId, match, onUpdate }: Props) {
                   { label: 'Overs', value: currentBowlerStats ? `${Math.floor(currentBowlerStats.balls / 6)}.${currentBowlerStats.balls % 6}` : '0.0', cls: `text-xs sm:text-sm ${d('text-slate-900', 'text-white')}` },
                 ].map(s => (
                   <div key={s.label} className="flex flex-col items-center">
-                    <span className={`text-[8px] sm:text-[10px] uppercase tracking-wider font-semibold ${d('text-slate-400', 'text-blue-400/70')}`}>{s.label}</span>
-                    <span className={`text-base sm:text-xl font-black leading-none ${s.cls}`}>{s.value}</span>
+                    <span className={`text-[10px] sm:text-xs uppercase tracking-wider font-semibold ${d('text-slate-400', 'text-blue-400/70')}`}>{s.label}</span>
+                    <span className={`text-lg sm:text-2xl font-black leading-none ${s.cls}`}>{s.value}</span>
                   </div>
                 ))}
               </div>
@@ -536,15 +536,15 @@ export default function BallScoring({ matchId, match, onUpdate }: Props) {
           <div className="border-t border-blue-900/50 mt-4 pt-3" />
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <Button size="sm" variant="ghost" onClick={refreshMatch} disabled={loading}
-              className={`text-xs h-7 px-2 ${d('text-slate-400 hover:text-slate-700', 'text-slate-400 hover:text-white hover:bg-blue-900/50')}`}>
+              className={`text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-3 ${d('text-slate-400 hover:text-slate-700', 'text-slate-400 hover:text-white hover:bg-blue-900/50')}`}>
               <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
             </Button>
             <Button size="sm" variant="outline" onClick={handleFinishOver}
-              className={`text-xs h-7 px-2 ${d('border-amber-300 text-amber-700 hover:bg-amber-50', 'border-amber-700 text-amber-400 hover:bg-amber-900/30')}`}>
+              className={`text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-3 ${d('border-amber-300 text-amber-700 hover:bg-amber-50', 'border-amber-700 text-amber-400 hover:bg-amber-900/30')}`}>
               <SkipForward className="w-3 h-3 mr-1" /> Finish Over
             </Button>
             <Button size="sm" onClick={handleEndInnings}
-              className={`text-xs h-7 px-2 ${d('bg-red-600 hover:bg-red-700 text-white', 'bg-red-700 hover:bg-red-800 text-white')}`}>
+              className={`text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-3 ${d('bg-red-600 hover:bg-red-700 text-white', 'bg-red-700 hover:bg-red-800 text-white')}`}>
               <Square className="w-3 h-3 mr-1" /> {match.currentInnings === 1 ? 'End 1st Innings' : 'End Match'}
             </Button>
             <div className="relative">
@@ -555,7 +555,7 @@ export default function BallScoring({ matchId, match, onUpdate }: Props) {
                 </div>
               </div>
               <button disabled
-                className="w-full mt-2 min-h-[36px] sm:min-h-[40px] rounded-lg font-bold text-sm sm:text-base bg-indigo-600 text-white shadow-sm">
+                className="w-full mt-2 min-h-[40px] sm:min-h-[44px] rounded-xl font-bold text-sm sm:text-base bg-indigo-600 text-white shadow-sm">
                 Over {over}.{ball}
               </button>
             </div>
@@ -636,9 +636,9 @@ export default function BallScoring({ matchId, match, onUpdate }: Props) {
                           }`}
                         >
                           <span className={`text-sm sm:text-lg ${isStriker ? '' : 'opacity-50'}`}>🏏</span>
-                          <div className="text-left min-w-0">
-                            <div className={`text-xs sm:text-sm font-bold truncate ${isStriker ? 'text-white' : 'text-slate-300'}`}>{name}</div>
-                            <div className={`text-[10px] sm:text-[11px] ${isStriker ? 'text-emerald-200' : 'text-slate-400'}`}>
+<div className="text-left min-w-0">
+                             <div className={`text-sm sm:text-base font-bold truncate ${isStriker ? 'text-white' : 'text-slate-300'}`}>{name}</div>
+                             <div className={`text-[10px] sm:text-xs ${isStriker ? 'text-emerald-200' : 'text-slate-400'}`}>
                               {stats ? `${stats.runs} runs (${stats.balls} balls)` : '0 runs (0 balls)'}
                             </div>
                           </div>
@@ -755,9 +755,9 @@ export default function BallScoring({ matchId, match, onUpdate }: Props) {
                     { label: 'Bowler', value: match.currentBowler, onChange: (v: string) => handleSetBowler(v), filter: () => true, bowlers: true },
                   ].map(f => (
                     <div key={f.label} className="flex items-center gap-2">
-                      <span className={`text-xs font-medium w-20 flex-shrink-0 ${d('text-slate-500', 'text-slate-400')}`}>{f.label}</span>
+                      <span className={`text-xs sm:text-sm font-medium w-20 sm:w-24 flex-shrink-0 ${d('text-slate-500', 'text-slate-400')}`}>{f.label}</span>
                       <select value={f.value} onChange={e => f.onChange(e.target.value)}
-                        className={`flex-1 h-9 rounded-lg border-2 px-2 text-xs outline-none border-indigo-200 bg-white text-slate-900 focus:border-indigo-400`}>
+                        className={`flex-1 h-9 rounded-lg border-2 px-2 text-xs sm:text-sm outline-none border-indigo-200 bg-white text-slate-900 focus:border-indigo-400`}>
                         <option value="">Select</option>
                         {(f.bowlers ? bowlerList : availableBat).filter(f.filter).map((p, i) => (
                           <option key={p.playerName} value={p.playerName}>{i + 1}. {p.playerName}</option>
@@ -766,9 +766,9 @@ export default function BallScoring({ matchId, match, onUpdate }: Props) {
                     </div>
                   ))}
                   <div className="flex items-center gap-2">
-                    <span className={`text-xs font-medium w-20 flex-shrink-0 ${d('text-slate-500', 'text-slate-400')}`}>Fielder</span>
+                    <span className={`text-xs sm:text-sm font-medium w-20 sm:w-24 flex-shrink-0 ${d('text-slate-500', 'text-slate-400')}`}>Fielder</span>
                     <select value={fielder} onChange={e => setFielder(e.target.value)}
-                      className="flex-1 h-9 rounded-lg border-2 px-2 text-xs outline-none border-indigo-200 bg-white text-slate-900 focus:border-indigo-400">
+                      className="flex-1 h-9 rounded-lg border-2 px-2 text-xs sm:text-sm outline-none border-indigo-200 bg-white text-slate-900 focus:border-indigo-400">
                       <option value="">—</option>
                       {bowlerList.map((p, i) => (
                         <option key={p.playerName} value={p.playerName}>{i + 1}. {p.playerName}</option>
@@ -776,9 +776,9 @@ export default function BallScoring({ matchId, match, onUpdate }: Props) {
                     </select>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={`text-xs font-medium w-20 flex-shrink-0 ${d('text-slate-500', 'text-slate-400')}`}>Comment</span>
+                    <span className={`text-xs sm:text-sm font-medium w-20 sm:w-24 flex-shrink-0 ${d('text-slate-500', 'text-slate-400')}`}>Comment</span>
                     <select value={commentary} onChange={e => setCommentary(e.target.value)}
-                      className="flex-1 h-9 rounded-lg border-2 px-2 text-xs outline-none border-indigo-200 bg-white text-slate-900 focus:border-indigo-400">
+                      className="flex-1 h-9 rounded-lg border-2 px-2 text-xs sm:text-sm outline-none border-indigo-200 bg-white text-slate-900 focus:border-indigo-400">
                       <option value="">Auto</option>
                       <optgroup label="No Run">
                         <option value="Defended, no run">Defended, no run</option>
@@ -919,7 +919,7 @@ export default function BallScoring({ matchId, match, onUpdate }: Props) {
               </div>
               <div className="max-h-24 overflow-y-auto p-2 space-y-0.5">
                 {commentaryLog.map((line, i) => (
-                  <div key={i} className={`text-[11px] py-0.5 px-2 rounded ${i === 0 ? `${d('bg-blue-50 text-blue-700 font-semibold', 'bg-blue-900/30 text-blue-300')}` : `${d('text-slate-500', 'text-slate-400')}`}`}>
+                  <div key={i} className={`text-xs py-0.5 px-2 rounded ${i === 0 ? `${d('bg-blue-50 text-blue-700 font-semibold', 'bg-blue-900/30 text-blue-300')}` : `${d('text-slate-500', 'text-slate-400')}`}`}>
                     {line}
                   </div>
                 ))}
@@ -1197,7 +1197,7 @@ export default function BallScoring({ matchId, match, onUpdate }: Props) {
             return (
               <Card className={`border shadow-sm rounded-xl overflow-hidden ${d('border-slate-200/80', 'border-slate-700/50')}`}>
                 <CardHeader className={`pb-1 ${d('bg-gradient-to-r from-slate-900 to-blue-950', 'bg-gradient-to-r from-slate-800 to-slate-900')}`}>
-                  <CardTitle className="text-xs font-bold text-blue-300 uppercase tracking-wider">All Overs</CardTitle>
+                  <CardTitle className="text-sm font-bold text-blue-300 uppercase tracking-wider">All Overs</CardTitle>
                 </CardHeader>
                 <CardContent className={`pb-3 pt-3 ${d('', 'bg-slate-800/80')}`}>
                   <div className="flex flex-wrap gap-3">
@@ -1245,7 +1245,7 @@ export default function BallScoring({ matchId, match, onUpdate }: Props) {
                 return (
                   <div className="flex flex-wrap gap-2">
                     {fow.map((ev: any, i: number) => (
-                      <Badge key={i} className={`text-xs font-semibold ${d('bg-red-50 text-red-700 border-red-200', 'bg-red-900/40 text-red-300 border-red-800')}`}>
+                      <Badge key={i} className={`text-xs sm:text-sm font-semibold ${d('bg-red-50 text-red-700 border-red-200', 'bg-red-900/40 text-red-300 border-red-800')}`}>
                         {i + 1}-{(() => {
                           const runsAtWicket = match.events
                             .filter((e: any) => e.battingTeam === battingTeam && e.over <= ev.over)
