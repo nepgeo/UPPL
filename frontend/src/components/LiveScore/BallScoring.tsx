@@ -655,81 +655,85 @@ export default function BallScoring({ matchId, match, onUpdate }: Props) {
 
               {/* Run Buttons + Extras — compact row */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-start gap-2 sm:gap-3">
-                {/* Run Buttons */}
-                <div className={`rounded-xl border overflow-hidden flex-1 ${d('border-slate-200/80 bg-white', 'border-slate-700/50 bg-slate-800/80')}`}>
-                  <div className="flex items-center justify-between px-2 pt-1.5 pb-0.5">
-                    <span className={`text-xs font-semibold ${d('text-slate-600', 'text-slate-300')}`}>Runs</span>
-                    <span className={`text-[10px] ${d('text-slate-400', 'text-slate-500')}`}>O {over}.{ball}</span>
-                  </div>
-                  <div className="grid grid-cols-4 sm:grid-cols-8 gap-1 px-2 pb-2">
-                    {QUICK_RUNS.map(r => (
-                      <button key={r} type="button" onClick={() => setRuns(r)}
-                        className={`min-h-[40px] sm:min-h-[44px] rounded-lg font-bold text-sm sm:text-base transition-all duration-150 active:scale-95
-                          ${runs === r
-                            ? r === 0 ? 'bg-slate-600 text-white ring-2 ring-slate-400'
-                            : r === 4 ? 'bg-emerald-600 text-white ring-2 ring-emerald-300'
-                            : r === 6 ? 'bg-violet-600 text-white ring-2 ring-violet-300'
-                            : 'bg-indigo-600 text-white ring-2 ring-indigo-300'
-                            : 'bg-white text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 border-2 border-indigo-200 hover:border-indigo-400 shadow-sm'
-                          }`}
-                      >
-                        {r}
-                      </button>
-                    ))}
-                  </div>
+              {/* Run Buttons */}
+              <div className={`rounded-2xl border overflow-hidden flex-1 ${d('border-slate-200/80 bg-white', 'border-slate-700/50 bg-slate-800/80')}`}>
+                <div className="flex items-center justify-between px-3 pt-2 pb-1">
+                  <span className={`text-xs font-bold uppercase tracking-wider ${d('text-slate-500', 'text-slate-400')}`}>Runs</span>
+                  <span className={`text-[11px] font-mono font-semibold ${d('text-slate-400', 'text-slate-500')}`}>Over {over}.{ball}</span>
                 </div>
-
-                {/* Extras */}
-                <div className={`rounded-xl border overflow-hidden ${d('border-slate-200/80 bg-white', 'border-slate-700/50 bg-slate-800/80')}`}>
-                  <div className={`text-xs font-semibold px-2 pt-1.5 pb-0.5 ${d('text-slate-600', 'text-slate-300')}`}>Extras</div>
-                  <div className="grid grid-cols-5 gap-1 px-2 pb-1">
-                    {[
-                      { key: 'wide', label: 'Wd' },
-                      { key: 'no_ball', label: 'Nb' },
-                      { key: 'bye', label: 'Bye' },
-                      { key: 'leg_bye', label: 'LBye' },
-                      { key: 'penalty', label: 'Pen' },
-                    ].map(ex => (
-                      <button key={ex.key} type="button"
-                        onClick={() => setExtrasType(extrasType === ex.key ? null : ex.key)}
-                        className={`min-h-[40px] sm:min-h-[44px] rounded-lg text-xs sm:text-sm font-semibold transition-all
-                          ${extrasType === ex.key
-                            ? 'bg-indigo-600 text-white ring-2 ring-indigo-300'
-                            : 'bg-white text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 border-2 border-indigo-200 hover:border-indigo-400 shadow-sm'
-                          }`}
-                      >
-                        {ex.label}
-                      </button>
-                    ))}
-                  </div>
-                  {extrasType && (
-                    <div className={`flex items-center gap-1.5 px-3 pb-3 pt-1 ${d('', '')}`}>
-                      <span className={`text-xs font-medium ${d('text-blue-700', 'text-blue-300')}`}>+R:</span>
-                      <div className="flex gap-1 flex-wrap">
-                        {[0, 1, 2, 3, 4, 5, 6, 7].map(n => (
-                          <button key={n} type="button" onClick={() => setExtrasRuns(n)}
-                            className={`min-w-[32px] sm:min-w-[36px] min-h-[32px] sm:min-h-[36px] rounded text-xs sm:text-sm font-bold transition-all
-                              ${extrasRuns === n ? 'bg-blue-600 text-white' : `${d('bg-white border border-slate-300 text-slate-700 hover:bg-blue-100', 'bg-slate-700 border border-slate-600 text-slate-200 hover:bg-slate-600')}`}`}
-                          >{n}</button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 px-3 pb-3">
+                  {QUICK_RUNS.map(r => (
+                    <button key={r} type="button" onClick={() => setRuns(r)}
+                      className={`min-h-[48px] sm:min-h-[52px] rounded-xl font-black text-lg sm:text-xl transition-all duration-150 active:scale-95
+                        ${runs === r
+                          ? r === 0 ? 'bg-slate-700 text-white ring-2 ring-slate-400 shadow-lg shadow-slate-500/20'
+                          : r === 4 ? 'bg-blue-600 text-white ring-2 ring-blue-300 shadow-lg shadow-blue-500/30'
+                          : r === 6 ? 'bg-purple-600 text-white ring-2 ring-purple-300 shadow-lg shadow-purple-500/30'
+                          : 'bg-indigo-600 text-white ring-2 ring-indigo-300 shadow-lg shadow-indigo-500/30'
+                          : `${d('bg-slate-50 text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 border-2 border-slate-200 hover:border-indigo-300', 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white border-2 border-white/10 hover:border-white/20')}`
+                        }`}
+                    >
+                      {r}
+                    </button>
+                  ))}
                 </div>
               </div>
 
+              {/* Extras */}
+              <div className={`rounded-2xl border overflow-hidden ${d('border-slate-200/80 bg-white', 'border-slate-700/50 bg-slate-800/80')}`}>
+                <div className={`text-xs font-bold uppercase tracking-wider px-3 pt-2 pb-1 ${d('text-slate-500', 'text-slate-400')}`}>Extras</div>
+                <div className="grid grid-cols-5 gap-2 px-3 pb-2">
+                  {[
+                    { key: 'wide', label: 'Wd', color: 'amber' },
+                    { key: 'no_ball', label: 'Nb', color: 'orange' },
+                    { key: 'bye', label: 'Bye', color: 'rose' },
+                    { key: 'leg_bye', label: 'LBye', color: 'rose' },
+                    { key: 'penalty', label: 'Pen', color: 'red' },
+                  ].map(ex => (
+                    <button key={ex.key} type="button"
+                      onClick={() => setExtrasType(extrasType === ex.key ? null : ex.key)}
+                      className={`min-h-[48px] sm:min-h-[52px] rounded-xl text-xs sm:text-sm font-bold transition-all
+                        ${extrasType === ex.key
+                          ? `bg-${ex.color}-600 text-white ring-2 ring-${ex.color}-300 shadow-lg shadow-${ex.color}-500/20`
+                          : `${d('bg-slate-50 text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 border-2 border-slate-200 hover:border-indigo-300', 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white border-2 border-white/10 hover:border-white/20')}`
+                        }`}
+                    >
+                      {ex.label}
+                    </button>
+                  ))}
+                </div>
+                {extrasType && (
+                  <div className="flex items-center gap-2 px-3 pb-3 pt-1">
+                    <span className={`text-xs font-bold uppercase tracking-wider ${d('text-slate-500', 'text-slate-400')}`}>+Runs</span>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {[0, 1, 2, 3, 4, 5, 6, 7].map(n => (
+                        <button key={n} type="button" onClick={() => setExtrasRuns(n)}
+                          className={`min-w-[40px] min-h-[40px] rounded-xl text-sm font-bold transition-all
+                            ${extrasRuns === n
+                              ? 'bg-indigo-600 text-white ring-2 ring-indigo-300 shadow-lg shadow-indigo-500/20'
+                              : `${d('bg-slate-50 border-2 border-slate-200 text-slate-600 hover:bg-indigo-50 hover:border-indigo-300', 'bg-white/5 border-2 border-white/10 text-slate-400 hover:bg-white/10 hover:text-white')}`
+                            }`}
+                        >{n}</button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              </div>
+
               {/* Wicket Button + Submit */}
-              <div className="grid grid-cols-2 gap-2 sm:gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <button type="button" onClick={() => setShowWicketDrawer(true)}
-                  className={`min-h-[44px] rounded-xl font-bold text-sm sm:text-base transition-all w-full
-                    ${isWicket ? 'bg-red-600 text-white ring-2 ring-red-300 shadow-lg'
-                      : `${d('bg-slate-100 text-slate-700 hover:bg-red-50 hover:text-red-700 border border-slate-200', 'bg-slate-700 text-slate-200 hover:bg-red-900/30 hover:text-red-300 border border-slate-600')}`
+                  className={`min-h-[52px] rounded-2xl font-bold text-sm sm:text-base transition-all w-full
+                    ${isWicket
+                      ? 'bg-red-600 text-white ring-2 ring-red-300 shadow-lg shadow-red-500/20'
+                      : `${d('bg-slate-100 text-slate-700 hover:bg-red-50 hover:text-red-700 border-2 border-slate-200 hover:border-red-300', 'bg-white/5 text-slate-400 hover:bg-red-500/10 hover:text-red-400 border-2 border-white/10 hover:border-red-500/20')}`
                     }`}
                 >
-                  {isWicket ? `☝️ ${wicketType?.replace(/_/g, ' ') || 'Wicket'} selected [W]` : '☝️ Wicket [W]'}
+                  {isWicket ? `☝️ ${wicketType?.replace(/_/g, ' ') || 'Wicket'} [W]` : '☝️ Wicket [W]'}
                 </button>
                 <Button onClick={handleSubmit} disabled={submitting || !match.inningsStarted}
-                  className="w-full h-11 text-sm sm:text-base font-bold bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg rounded-xl">
+                  className="w-full h-[52px] text-sm sm:text-base font-bold bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg shadow-indigo-500/20 rounded-2xl">
                   <Send className="h-4 w-4 mr-1.5" />
                   {submitting ? 'Recording...' : `Record ${over}.${ball + 1}`}
                 </Button>
