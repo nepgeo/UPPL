@@ -352,6 +352,320 @@ const deleteMatchesBySeason = async (req, res) => {
   }
 };
 
+// ================== APPROVED TEAMS ==================
+
+// GET /api/teams/approved?seasonId=X
+const getApprovedTeams = async (req, res) => {
+  try {
+    const { seasonId } = req.query;
+
+    if (!seasonId || !mongoose.Types.ObjectId.isValid(seasonId)) {
+      return res.status(400).json({ success: false, message: "Invalid season ID" });
+    }
+
+    const season = await Season.findById(seasonId);
+    if (!season) {
+      return res.status(404).json({ success: false, message: "Season not found" });
+    }
+
+    const teams = await Team.find({ seasonNumber: seasonId, status: /^approved$/i })
+      .select("_id teamName teamCode teamLogo")
+      .lean();
+
+    const schedule = await GroupSchedule.findOne({ seasonNumber: seasonId });
+    const teamGroupMap = {};
+
+    if (schedule && schedule.groups) {
+      for (const group of schedule.groups) {
+        for (const t of group.teams) {
+          const teamId = t.team?.toString() || t.team;
+          teamGroupMap[teamId] = group.groupName;
+        }
+      }
+    }
+
+    const teamsWithAssignment = teams.map((t) => ({
+      ...t,
+      assignedGroup: teamGroupMap[t._id.toString()] || null,
+    }));
+
+    return res.json({ success: true, teams: teamsWithAssignment });
+  } catch (err) {
+    console.error("❌ Failed to fetch approved teams:", err);
+    res.status(500).json({ success: false, message: "Internal server error", error: err.message });
+  }
+};
+
+// ================== GROUP CRUD ==================
+
+// POST /api/groups/:seasonId/groups
+const createGroup = async (req, res) => {
+  try {
+    const { seasonId } = req.params;
+    const { groupName, teamIds } = req.body;
+
+    if (!seasonId || !mongoose.Types.ObjectId.isValid(seasonId)) {
+      return res.status(400).json({ success: false, message: "Invalid season ID" });
+    }
+
+    const season = await Season.findById(seasonId);
+    if (!season) {
+      return res.status(404).json({ success: false, message: "Season not found" });
+    }
+
+    let schedule = await GroupSchedule.findOne({ seasonNumber: seasonId });
+    if (!schedule) {
+      schedule = new GroupSchedule({ seasonNumber: seasonId, groups: [] });
+    }
+
+    const existingNames = schedule.groups.map((g) => g.groupName);
+    let finalGroupName = groupName;
+    if (!finalGroupName) {
+      const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      for (let i = 0; i < alphabet.length; i++) {
+        if (!existingNames.includes(alphabet[i])) {
+          finalGroupName = alphabet[i];
+          break;
+        }
+      }
+      if (!finalGroupName) {
+        return res.status(400).json({ success: false, message: "Maximum groups (26) reached" });
+      }
+    } else {
+      if (existingNames.includes(finalGroupName)) {
+        return res.status(400).json({ success: false, message: `Group ${finalGroupName} already exists` });
+      }
+    }
+
+    let teamsData = [];
+    if (teamIds && teamIds.length > 0) {
+      const teams = await Team.find({
+        _id: { $in: teamIds },
+        seasonNumber: seasonId,
+        status: /^approved$/i,
+      }).lean();
+
+      if (teams.length !== teamIds.length) {
+        return res.status(400).json({
+          success: false,
+          message: "One or more teams are not approved or do not belong to this season",
+        });
+      }
+
+      const assignedTeamIds = new Set();
+      for (const g of schedule.groups) {
+        for (const t of g.teams) {
+          assignedTeamIds.add(t.team?.toString() || t.team);
+        }
+      }
+
+      const alreadyAssigned = teamIds.filter((id) => assignedTeamIds.has(id));
+      if (alreadyAssigned.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: "One or more teams are already assigned to another group",
+        });
+      }
+
+      teamsData = teams.map((t) => ({
+        team: t._id,
+        teamName: t.teamName,
+        teamCode: t.teamCode,
+      }));
+    }
+
+    schedule.groups.push({ groupName: finalGroupName, teams: teamsData });
+    await schedule.save();
+
+    season.groups = schedule.groups.map((g) => ({
+      groupName: g.groupName,
+      teams: g.teams.map((t) => ({
+        team: t.team,
+        teamName: t.teamName,
+        teamCode: t.teamCode,
+      })),
+    }));
+    await season.save();
+
+    return res.json({
+      success: true,
+      message: `Group ${finalGroupName} created successfully`,
+      schedule,
+    });
+  } catch (err) {
+    console.error("❌ Failed to create group:", err);
+    res.status(500).json({ success: false, message: "Internal server error", error: err.message });
+  }
+};
+
+// PUT /api/groups/:seasonId/groups/:groupName
+const updateGroup = async (req, res) => {
+  try {
+    const { seasonId, groupName } = req.params;
+    const { newName, addTeam, removeTeam } = req.body;
+
+    if (!seasonId || !mongoose.Types.ObjectId.isValid(seasonId)) {
+      return res.status(400).json({ success: false, message: "Invalid season ID" });
+    }
+
+    const season = await Season.findById(seasonId);
+    if (!season) {
+      return res.status(404).json({ success: false, message: "Season not found" });
+    }
+
+    const schedule = await GroupSchedule.findOne({ seasonNumber: seasonId });
+    if (!schedule) {
+      return res.status(404).json({ success: false, message: "No groups found for this season" });
+    }
+
+    const groupIndex = schedule.groups.findIndex((g) => g.groupName === groupName);
+    if (groupIndex === -1) {
+      return res.status(404).json({ success: false, message: `Group ${groupName} not found` });
+    }
+
+    const group = schedule.groups[groupIndex];
+
+    if (newName && newName !== groupName) {
+      const existingNames = schedule.groups.map((g) => g.groupName);
+      if (existingNames.includes(newName)) {
+        return res.status(400).json({ success: false, message: `Group ${newName} already exists` });
+      }
+      schedule.groups[groupIndex].groupName = newName;
+    }
+
+    if (addTeam) {
+      const team = await Team.findOne({
+        _id: addTeam,
+        seasonNumber: seasonId,
+        status: /^approved$/i,
+      }).lean();
+
+      if (!team) {
+        return res.status(400).json({ success: false, message: "Team not found or not approved" });
+      }
+
+      for (const g of schedule.groups) {
+        if (g.groupName === (newName || groupName)) continue;
+        const found = g.teams.find((t) => (t.team?.toString() || t.team) === addTeam);
+        if (found) {
+          return res.status(400).json({
+            success: false,
+            message: "Team is already assigned to another group",
+          });
+        }
+      }
+
+      const alreadyInGroup = group.teams.find(
+        (t) => (t.team?.toString() || t.team) === addTeam
+      );
+      if (alreadyInGroup) {
+        return res.status(400).json({ success: false, message: "Team is already in this group" });
+      }
+
+      schedule.groups[groupIndex].teams.push({
+        team: team._id,
+        teamName: team.teamName,
+        teamCode: team.teamCode,
+      });
+    }
+
+    if (removeTeam) {
+      const teamIdx = group.teams.findIndex(
+        (t) => (t.team?.toString() || t.team) === removeTeam
+      );
+      if (teamIdx === -1) {
+        return res.status(400).json({ success: false, message: "Team not found in this group" });
+      }
+      schedule.groups[groupIndex].teams.splice(teamIdx, 1);
+    }
+
+    await schedule.save();
+
+    season.groups = schedule.groups.map((g) => ({
+      groupName: g.groupName,
+      teams: g.teams.map((t) => ({
+        team: t.team,
+        teamName: t.teamName,
+        teamCode: t.teamCode,
+      })),
+    }));
+    await season.save();
+
+    return res.json({ success: true, message: "Group updated successfully", schedule });
+  } catch (err) {
+    console.error("❌ Failed to update group:", err);
+    res.status(500).json({ success: false, message: "Internal server error", error: err.message });
+  }
+};
+
+// DELETE /api/groups/:seasonId/groups/:groupName
+const deleteGroup = async (req, res) => {
+  try {
+    const { seasonId, groupName } = req.params;
+    const { deleteMatches } = req.query;
+
+    if (!seasonId || !mongoose.Types.ObjectId.isValid(seasonId)) {
+      return res.status(400).json({ success: false, message: "Invalid season ID" });
+    }
+
+    const season = await Season.findById(seasonId);
+    if (!season) {
+      return res.status(404).json({ success: false, message: "Season not found" });
+    }
+
+    const schedule = await GroupSchedule.findOne({ seasonNumber: seasonId });
+    if (!schedule) {
+      return res.status(404).json({ success: false, message: "No groups found for this season" });
+    }
+
+    const groupIndex = schedule.groups.findIndex((g) => g.groupName === groupName);
+    if (groupIndex === -1) {
+      return res.status(404).json({ success: false, message: `Group ${groupName} not found` });
+    }
+
+    const matchCount = await Match.countDocuments({
+      seasonNumber: seasonId,
+      groupName: groupName,
+      stage: "league",
+    });
+
+    if (matchCount > 0 && deleteMatches !== "true") {
+      return res.json({
+        success: false,
+        hasMatches: true,
+        matchCount,
+        message: `${matchCount} matches exist for Group ${groupName}. Set deleteMatches=true to delete them.`,
+      });
+    }
+
+    if (matchCount > 0 && deleteMatches === "true") {
+      await Match.deleteMany({
+        seasonNumber: seasonId,
+        groupName: groupName,
+        stage: "league",
+      });
+    }
+
+    schedule.groups.splice(groupIndex, 1);
+    await schedule.save();
+
+    season.groups = schedule.groups.map((g) => ({
+      groupName: g.groupName,
+      teams: g.teams.map((t) => ({
+        team: t.team,
+        teamName: t.teamName,
+        teamCode: t.teamCode,
+      })),
+    }));
+    await season.save();
+
+    return res.json({ success: true, message: `Group ${groupName} deleted successfully`, schedule });
+  } catch (err) {
+    console.error("❌ Failed to delete group:", err);
+    res.status(500).json({ success: false, message: "Internal server error", error: err.message });
+  }
+};
+
 // ================== EXPORTS ==================
 module.exports = {
   generateGroups,
@@ -360,4 +674,8 @@ module.exports = {
   getSchedule,
   generateLeagueMatches,
   deleteMatchesBySeason,
+  getApprovedTeams,
+  createGroup,
+  updateGroup,
+  deleteGroup,
 };

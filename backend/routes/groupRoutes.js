@@ -7,6 +7,10 @@ const {
   generateLeagueMatches,
   deleteGroupsBySeason,
   deleteMatchesBySeason,
+  getApprovedTeams,
+  createGroup,
+  updateGroup,
+  deleteGroup,
 } = require('../controllers/groupController');
 
 // ✅ Generate groups manually for a season (admin only)
@@ -50,6 +54,38 @@ router.delete(
   protect,
   requireAdminOrSuperAdmin,
   deleteMatchesBySeason
+);
+
+// ✅ Get approved teams for a season (with assignment info)
+router.get(
+  '/teams/approved',
+  protect,
+  requireAdminOrSuperAdmin,
+  groupController.getApprovedTeams
+);
+
+// ✅ Create a new group (super-admin only)
+router.post(
+  '/:seasonId/groups',
+  protect,
+  requireAdminOrSuperAdmin,
+  groupController.createGroup
+);
+
+// ✅ Update a group (rename, add/remove team)
+router.put(
+  '/:seasonId/groups/:groupName',
+  protect,
+  requireAdminOrSuperAdmin,
+  groupController.updateGroup
+);
+
+// ✅ Delete a group
+router.delete(
+  '/:seasonId/groups/:groupName',
+  protect,
+  requireAdminOrSuperAdmin,
+  groupController.deleteGroup
 );
 
 module.exports = router;
