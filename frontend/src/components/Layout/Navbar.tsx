@@ -278,57 +278,58 @@ useEffect(() => {
 
   return (
     <nav className="bg-white shadow-lg sticky top-0 z-50">
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-3 sm:px-4">
         {/* First Line */}
-        <div className="flex justify-between items-center h-16 border-b border-gray-100">
-          <Link to="/" className="flex items-center space-x-2">
+        <div className="flex justify-between items-center h-14 sm:h-16 border-b border-gray-100">
+          <Link to="/" className="flex items-center shrink-0">
             <img
               src={Logo}
               alt="UPPL Logo"
-              className="h-14 sm:h-16 md:h-20 w-auto object-contain"
+              className="h-10 sm:h-12 md:h-16 w-auto object-contain"
             />
           </Link>
 
           {/* User Menu */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             {user ? (
-              <div className="flex items-center space-x-3">
-                {/* ✅ Admin link */}
+              <div className="flex items-center gap-2 sm:gap-3">
+                {/* Admin link - desktop only */}
                 {(role === "admin" || role === "super-admin") && (
                   <Link
                     to="/admin"
-                    className="hidden md:inline text-sm font-medium text-gray-700 hover:text-blue-600"
+                    className="hidden lg:inline text-sm font-medium text-gray-700 hover:text-blue-600"
                   >
-                    <span className="uppercase">Admin Dashboard</span>
+                    <span className="uppercase">Admin</span>
                   </Link>
                 )}
 
-                {/* ✅ Player Profile link */}
+                {/* Player Profile link - desktop only */}
                 {role === "player" && (
                   <Link
                     to="/player-profile"
-                    className="text-sm font-medium text-gray-700 hover:text-blue-600"
+                    className="hidden sm:inline text-sm font-medium text-gray-700 hover:text-blue-600"
                   >
-                    <span className="uppercase">My Profile</span>
+                    <span className="uppercase">Profile</span>
                   </Link>
                 )}
 
-                {/* ✅ Always show profile + logout if logged in */}
+                {/* Avatar + name */}
                 <div
-                  className="flex items-center space-x-2 cursor-pointer"
+                  className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
                   onClick={() => setIsProfileOpen(true)}
                 >
-                  <Avatar className="h-8 w-8">
+                  <Avatar className="h-7 w-7 sm:h-8 sm:w-8 ring-2 ring-gray-100">
                     <AvatarImage src={getProfileImageUrl(user?.profileImage)} alt={user?.name} />
-                    <AvatarFallback className="text-xs font-bold bg-primary/10 text-primary">
+                    <AvatarFallback className="text-[10px] sm:text-xs font-bold bg-primary/10 text-primary">
                       {user?.name?.charAt(0)?.toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="text-sm font-medium">
+                  <span className="hidden sm:inline text-sm font-medium max-w-[100px] truncate">
                     {user?.name || "Unnamed"}
                   </span>
                 </div>
 
+                {/* Logout - desktop only */}
                 <Button                 
                 className="
                   hidden md:inline-flex
@@ -342,12 +343,12 @@ useEffect(() => {
                 </Button>
               </div>
             ) : (
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
               <Link to="/login">
                 <Button
                   size="sm"
                   className="
-                    px-2 py-1 text-xs
+                    px-2.5 py-1.5 text-[11px]
                     md:px-4 md:py-2 md:text-sm
                     transition-all duration-300 ease-in-out
                     hover:scale-105 hover:text-white
@@ -366,7 +367,7 @@ useEffect(() => {
                 <Button
                   size="sm"
                   className="
-                    px-2 py-1 text-xs
+                    px-2.5 py-1.5 text-[11px]
                     md:px-4 md:py-2 md:text-sm
                   "
                 >
@@ -380,21 +381,21 @@ useEffect(() => {
             <Button
               variant="ghost"
               size="sm"
-              className="md:hidden"
+              className="md:hidden h-9 w-9 p-0"
               onClick={() => setIsOpen(!isOpen)}
             >
-              {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
           </div>
         </div>
 
-        {/* Second Line */}
-        <div className="hidden md:flex items-center justify-center h-12 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800">
+        {/* Second Line - Desktop Nav */}
+        <div className="hidden md:flex items-center justify-center h-11 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800">
           {publicLinks.map((link) => (
             <Link
               key={link.path}
               to={link.path}
-              className={`mx-5 text-sm font-medium transition-colors hover:text-blue-200 ${
+              className={`mx-4 lg:mx-5 text-[13px] font-medium transition-colors hover:text-blue-200 ${
                 isActive(link.path)
                   ? "text-white font-semibold"
                   : "text-blue-100"
@@ -424,34 +425,34 @@ useEffect(() => {
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
-              transition={{ duration: 0.35, ease: "easeInOut" }}
-              className="fixed inset-y-0 right-0 z-50 w-[85%] sm:w-80 md:w-96 
+              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+              className="fixed inset-y-0 right-0 z-50 w-[80%] max-w-[320px] 
                         bg-gradient-to-br from-blue-700 via-purple-700 to-pink-600 
-                        text-white shadow-2xl flex flex-col rounded-l-2xl"
+                        text-white shadow-2xl flex flex-col"
             >
               {/* Header */}
-              <div className="flex items-center justify-between p-4 border-b border-white/20 sticky top-0 bg-gradient-to-br from-blue-700 via-purple-700 to-pink-600 z-50">
-                <h2 className="text-lg font-bold tracking-wide">Menu</h2>
+              <div className="flex items-center justify-between p-4 border-b border-white/20 shrink-0">
+                <h2 className="text-base font-bold tracking-wide">Menu</h2>
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="hover:scale-110 transition"
+                  className="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-white/20 transition-colors"
                 >
-                  <X className="h-6 w-6" />
+                  <X className="h-5 w-5" />
                 </button>
               </div>
 
               {/* Links */}
-              <div className="flex-1 overflow-y-auto px-4 py-6 space-y-5">
-                <nav className="space-y-2">
+              <div className="flex-1 overflow-y-auto px-3 py-4">
+                <nav className="space-y-1">
                   {publicLinks.map((link) => (
                     <Link
                       key={link.path}
                       to={link.path}
                       onClick={() => setIsOpen(false)}
-                      className={`block px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 uppercase ${
+                      className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 uppercase ${
                         isActive(link.path)
-                          ? "bg-white text-blue-700 shadow-md"
-                          : "hover:bg-white/20 hover:translate-x-2"
+                          ? "bg-white text-blue-700 shadow-md font-bold"
+                          : "hover:bg-white/15 active:bg-white/25"
                       }`}
                     >
                       {link.name}
@@ -460,11 +461,11 @@ useEffect(() => {
                 </nav>
 
                 {(role === "admin" || role === "super-admin") && (
-                  <div className="bg-white/10 rounded-xl p-4 shadow-inner">
-                    <p className="text-xs font-semibold uppercase text-yellow-300 mb-3 tracking-wider">
+                  <div className="mt-4 bg-white/10 rounded-xl p-3">
+                    <p className="text-[10px] font-bold uppercase text-yellow-300 mb-2 tracking-widest">
                       Admin Panel
                     </p>
-                    <div className="flex flex-col space-y-2">
+                    <div className="space-y-0.5">
                       {[
                         { label: "Overview", tab: "overview" },
                         { label: "Verifications", tab: "players" },
@@ -478,7 +479,7 @@ useEffect(() => {
                           key={item.tab}
                           to={`/admin?tab=${item.tab}`}
                           onClick={() => setIsOpen(false)}
-                          className="px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 transition uppercase"
+                          className="block px-3 py-2 rounded-lg text-sm hover:bg-white/20 transition-colors uppercase"
                         >
                           {item.label}
                         </Link>
@@ -490,15 +491,15 @@ useEffect(() => {
 
               {/* Footer with user/logout */}
               {user && (
-                <div className="border-t border-white/20 p-4 space-y-3">
-                  <p className="text-sm font-medium">
-                    Logged in as <span className="font-bold">{user?.name}</span>
+                <div className="border-t border-white/20 p-3 shrink-0">
+                  <p className="text-xs font-medium mb-2 truncate">
+                    Signed in as <span className="font-bold">{user?.name}</span>
                   </p>
                   <Button
                     onClick={logout}
                     variant="outline"
                     size="sm"
-                    className="w-full bg-white text-red-600 font-semibold rounded-lg hover:bg-red-500 hover:text-white transition"
+                    className="w-full bg-white/10 text-white border-white/30 font-semibold rounded-lg hover:bg-red-500 hover:text-white hover:border-red-500 transition-all text-xs"
                   >
                     Logout
                   </Button>
