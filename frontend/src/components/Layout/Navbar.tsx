@@ -278,10 +278,10 @@ useEffect(() => {
 
   return (
     <nav className="bg-white shadow-lg sticky top-0 z-50">
-      <div className="container mx-auto px-3 sm:px-4">
+      <div className="px-3 sm:px-4">
         {/* First Line */}
-        <div className="flex justify-between items-center h-14 sm:h-16 border-b border-gray-100">
-          <Link to="/" className="flex items-center shrink-0">
+        <div className="flex items-center justify-between h-14 sm:h-16 border-b border-gray-100 overflow-x-auto">
+          <Link to="/" className="flex items-center shrink-0 mr-2">
             <img
               src={Logo}
               alt="UPPL Logo"
@@ -290,9 +290,9 @@ useEffect(() => {
           </Link>
 
           {/* User Menu */}
-          <div className="flex items-center gap-1.5 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             {user ? (
-              <div className="flex items-center gap-2 sm:gap-3">
+              <>
                 {/* Admin link - desktop only */}
                 {(role === "admin" || role === "super-admin") && (
                   <Link
@@ -341,9 +341,9 @@ useEffect(() => {
                 onClick={logout} variant="outline" size="sm">
                   Logout
                 </Button>
-              </div>
+              </>
             ) : (
-              <div className="flex items-center gap-1.5 sm:gap-2">
+              <>
               <Link to="/login">
                 <Button
                   size="sm"
@@ -374,14 +374,14 @@ useEffect(() => {
                   <span className="uppercase">Register</span>
                 </Button>
               </Link>
-            </div>
+            </>
 
             )}
             {/* Mobile Menu Button */}
             <Button
               variant="ghost"
               size="sm"
-              className="md:hidden h-9 w-9 p-0"
+              className="md:hidden h-9 w-9 p-0 shrink-0"
               onClick={() => setIsOpen(!isOpen)}
             >
               {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -390,6 +390,7 @@ useEffect(() => {
         </div>
 
         {/* Second Line - Desktop Nav */}
+        </div>
         <div className="hidden md:flex items-center justify-center h-11 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800">
           {publicLinks.map((link) => (
             <Link
@@ -509,8 +510,6 @@ useEffect(() => {
           </>
         )}
       </AnimatePresence>
-
-      </div>
 
       {/* Profile Dialog */}
       <Dialog open={isProfileOpen} onOpenChange={(open) => { setIsProfileOpen(open); if (!open) setPreviewUrl(null); }}>
