@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const { protect, requireAdminOrSuperAdmin } = require('../middleware/authMiddleware');
+const { protect, requireAdminOrSuperAdmin, requireRole } = require('../middleware/authMiddleware');
 const groupController = require('../controllers/groupController');
 const {
   generateLeagueMatches,
@@ -68,7 +68,7 @@ router.get(
 router.post(
   '/:seasonId/groups',
   protect,
-  requireAdminOrSuperAdmin,
+  requireRole('super-admin'),
   groupController.createGroup
 );
 
@@ -76,7 +76,7 @@ router.post(
 router.put(
   '/:seasonId/groups/:groupName',
   protect,
-  requireAdminOrSuperAdmin,
+  requireRole('super-admin'),
   groupController.updateGroup
 );
 
@@ -84,7 +84,7 @@ router.put(
 router.delete(
   '/:seasonId/groups/:groupName',
   protect,
-  requireAdminOrSuperAdmin,
+  requireRole('super-admin'),
   groupController.deleteGroup
 );
 
