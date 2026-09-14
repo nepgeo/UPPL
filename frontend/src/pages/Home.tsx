@@ -281,24 +281,38 @@ const getInitials = (name: string) => name.split(" ").map((n) => n[0]).join("").
       </section>
 
       {/* Top Performers */}
-      {(topBatsmen.length > 0 || topBowlers.length > 0) && (
-        <section className="py-12 sm:py-16 bg-gradient-to-b from-gray-50 to-white overflow-hidden">
-          <div className="container mx-auto px-4 max-w-6xl">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-              className="text-center mb-10"
-            >
-              <div className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-purple-600 text-white text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full mb-4">
-                <Zap className="h-3.5 w-3.5" />
-                Leaderboard
-              </div>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-gray-900">TOP PERFORMERS</h2>
-              <div className="w-20 h-1 bg-gradient-to-r from-orange-400 to-purple-500 mx-auto mt-3 rounded-full" />
-            </motion.div>
+      <section className="py-12 sm:py-16 bg-gradient-to-b from-gray-50 to-white overflow-hidden">
+        <div className="container mx-auto px-4 max-w-6xl">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-10"
+          >
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-purple-600 text-white text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full mb-4">
+              <Zap className="h-3.5 w-3.5" />
+              Leaderboard
+            </div>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-gray-900">TOP PERFORMERS</h2>
+            <div className="w-20 h-1 bg-gradient-to-r from-orange-400 to-purple-500 mx-auto mt-3 rounded-full" />
+          </motion.div>
 
+          {(topBatsmen.length === 0 && topBowlers.length === 0) ? (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex flex-col items-center justify-center py-16"
+            >
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-orange-50 to-purple-50 flex items-center justify-center mb-5 ring-4 ring-orange-100/50">
+                <Trophy className="w-9 h-9 text-gray-300" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-700 mb-1">Matches Coming Soon</h3>
+              <p className="text-sm text-gray-400 text-center max-w-xs">
+                Top performer stats will appear here once matches are played.
+              </p>
+            </motion.div>
+          ) : (
             <div className="grid md:grid-cols-2 gap-6 sm:gap-8">
               {/* Orange Cap — Most Runs */}
               <motion.div
@@ -521,9 +535,9 @@ const getInitials = (name: string) => name.split(" ").map((n) => n[0]).join("").
                 <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </Link>
             </motion.div>
+            )}
           </div>
         </section>
-      )}
 
       {/* Latest Result */}
       {latestResult && (
