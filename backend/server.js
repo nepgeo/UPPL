@@ -39,16 +39,9 @@ const pointsTableRoutes = require('./routes/pointsTableRoutes');
 const teamMemberRoutes = require('./routes/teamMemberRoutes');
 const videoRoutes = require('./routes/videoRoutes');
 
-const { startAutoGroupScheduler } = require('./utils/scheduleGroupGeneration');
 const { startNewsScheduler } = require('./utils/newsScheduler');
 
 // Start background schedulers
-try {
-  startAutoGroupScheduler(10); // runs every 10 minutes
-} catch (err) {
-  console.warn('Failed to start group scheduler:', err?.message || err);
-}
-
 try {
   startNewsScheduler(); // 5 top cricket news at 6 AM & 6 PM
 } catch (err) {
