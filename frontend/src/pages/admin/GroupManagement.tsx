@@ -14,12 +14,12 @@ interface TeamData {
   _id: string;
   teamName: string;
   teamCode: string;
-  teamLogo?: string;
+  teamLogo?: { url: string; public_id: string };
   assignedGroup?: string;
 }
 
 interface GroupTeam {
-  team: { _id: string; teamName: string; teamCode: string; teamLogo?: string };
+  team: { _id: string; teamName: string; teamCode: string; teamLogo?: { url: string; public_id: string } };
   teamName: string;
   teamCode: string;
 }
@@ -44,6 +44,17 @@ interface Season {
   number: number;
   year: string;
 }
+
+const GROUP_COLORS = [
+  { bg: 'bg-blue-50', border: 'border-blue-200', accent: 'from-blue-500 to-blue-600', badge: 'bg-blue-100 text-blue-700', text: 'text-blue-700' },
+  { bg: 'bg-emerald-50', border: 'border-emerald-200', accent: 'from-emerald-500 to-emerald-600', badge: 'bg-emerald-100 text-emerald-700', text: 'text-emerald-700' },
+  { bg: 'bg-amber-50', border: 'border-amber-200', accent: 'from-amber-500 to-amber-600', badge: 'bg-amber-100 text-amber-700', text: 'text-amber-700' },
+  { bg: 'bg-rose-50', border: 'border-rose-200', accent: 'from-rose-500 to-rose-600', badge: 'bg-rose-100 text-rose-700', text: 'text-rose-700' },
+  { bg: 'bg-violet-50', border: 'border-violet-200', accent: 'from-violet-500 to-violet-600', badge: 'bg-violet-100 text-violet-700', text: 'text-violet-700' },
+  { bg: 'bg-cyan-50', border: 'border-cyan-200', accent: 'from-cyan-500 to-cyan-600', badge: 'bg-cyan-100 text-cyan-700', text: 'text-cyan-700' },
+  { bg: 'bg-pink-50', border: 'border-pink-200', accent: 'from-pink-500 to-pink-600', badge: 'bg-pink-100 text-pink-700', text: 'text-pink-700' },
+  { bg: 'bg-orange-50', border: 'border-orange-200', accent: 'from-orange-500 to-orange-600', badge: 'bg-orange-100 text-orange-700', text: 'text-orange-700' },
+];
 
 const GroupManagement = () => {
   const { toast } = useToast();
@@ -302,63 +313,71 @@ const GroupManagement = () => {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {schedule.groups.map(group => (
-            <Card key={group.groupName} className="hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">Group {group.groupName}</CardTitle>
-                  <div className="flex items-center gap-2">
-                    {isSuperAdmin && (
-                      <>
-                        <Button variant="ghost" size="sm" onClick={() => { setSelectedGroup(group); setEditGroupName(group.groupName); setEditDialogOpen(true); }}>
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleOpenDeleteDialog(group.groupName)}>
-                          <Trash2 className="w-4 h-4 text-red-500" />
-                        </Button>
-                      </>
-                    )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          {schedule.groups.map((group, i) => {
+            const color = GROUP_COLORS[i % GROUP_COLORS.length];
+            return (
+              <Card key={group.groupName} className={`relative overflow-hidden hover:shadow-xl transition-all duration-200 border ${color.border}`}>
+                <div className={`h-2 bg-gradient-to-r ${color.accent}`} />
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className={`text-lg font-bold ${color.text}`}>Group {group.groupName}</CardTitle>
+                    <div className="flex items-center gap-2">
+                      <Badge className={`${color.badge} font-semibold`}>{group.teams.length} {group.teams.length === 1 ? 'team' : 'teams'}</Badge>
+                      {isSuperAdmin && (
+                        <>
+                          <Button variant="ghost" size="sm" onClick={() => { setSelectedGroup(group); setEditGroupName(group.groupName); setEditDialogOpen(true); }}>
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleOpenDeleteDialog(group.groupName)}>
+                            <Trash2 className="w-4 h-4 text-red-500" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {group.teams.length === 0 ? (
-                  <div className="text-center py-4 text-gray-400 text-sm">No teams assigned</div>
-                ) : (
-                  <div className="space-y-2">
-                    {group.teams.map(team => (
-                      <div key={team.team._id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold overflow-hidden">
-                            {team.teamLogo ? (
-                              <img src={team.teamLogo} alt="" className="w-full h-full object-cover" />
-                            ) : (
-                              team.teamName[0]
+                </CardHeader>
+                <CardContent>
+                  {group.teams.length === 0 ? (
+                    <div className="text-center py-6 text-gray-400 text-sm border-2 border-dashed border-gray-200 rounded-lg">No teams assigned</div>
+                  ) : (
+                    <div className="space-y-2">
+                      {group.teams.map(team => {
+                        const logoUrl = team.team?.teamLogo?.url;
+                        return (
+                          <div key={team.team._id} className="flex items-center justify-between p-2.5 bg-white rounded-lg border border-gray-100 shadow-sm">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${color.accent} flex items-center justify-center text-white text-sm font-bold overflow-hidden shadow-sm`}>
+                                {logoUrl ? (
+                                  <img src={logoUrl} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                  team.teamName[0]
+                                )}
+                              </div>
+                              <div>
+                                <p className="text-sm font-semibold text-gray-800">{team.teamName}</p>
+                                <p className="text-xs text-gray-500">{team.teamCode}</p>
+                              </div>
+                            </div>
+                            {isSuperAdmin && (
+                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleRemoveTeamFromGroup(group.groupName, team.team._id)}>
+                                <X className="w-3.5 h-3.5 text-gray-400 hover:text-red-500" />
+                              </Button>
                             )}
                           </div>
-                          <div>
-                            <p className="text-sm font-medium text-gray-800">{team.teamName}</p>
-                            <p className="text-xs text-gray-500">{team.teamCode}</p>
-                          </div>
-                        </div>
-                        {isSuperAdmin && (
-                          <Button variant="ghost" size="sm" onClick={() => handleRemoveTeamFromGroup(group.groupName, team.team._id)}>
-                            <X className="w-4 h-4 text-gray-400" />
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {isSuperAdmin && (
-                  <Button variant="outline" size="sm" className="w-full mt-3" onClick={() => { setAddTeamGroupId(group.groupName); setSelectedTeamToAdd(''); setAddTeamDialogOpen(true); }}>
-                    <Plus className="w-4 h-4 mr-2" /> Add Team
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+                        );
+                      })}
+                    </div>
+                  )}
+                  {isSuperAdmin && (
+                    <Button variant="outline" size="sm" className={`w-full mt-3 border-dashed ${color.border} ${color.text} hover:${color.bg}`} onClick={() => { setAddTeamGroupId(group.groupName); setSelectedTeamToAdd(''); setAddTeamDialogOpen(true); }}>
+                      <Plus className="w-4 h-4 mr-2" /> Add Team
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 
@@ -376,7 +395,7 @@ const GroupManagement = () => {
                 <p className="text-sm font-medium text-gray-700">Assign Teams (optional)</p>
                 <div className="max-h-48 overflow-y-auto space-y-2 border rounded-md p-3">
                   {getUnassignedTeams().map(team => (
-                    <label key={team._id} className="flex items-center gap-2 cursor-pointer">
+                    <label key={team._id} className="flex items-center gap-2 cursor-pointer p-1.5 rounded hover:bg-gray-50">
                       <Checkbox
                         checked={selectedCreateTeamIds.includes(team._id)}
                         onCheckedChange={(checked) => {
@@ -387,6 +406,13 @@ const GroupManagement = () => {
                           }
                         }}
                       />
+                      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center text-white text-[10px] font-bold overflow-hidden">
+                        {team.teamLogo?.url ? (
+                          <img src={team.teamLogo.url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          team.teamName[0]
+                        )}
+                      </div>
                       <span className="text-sm">{team.teamName} ({team.teamCode})</span>
                     </label>
                   ))}
@@ -471,7 +497,18 @@ const GroupManagement = () => {
                 </SelectTrigger>
                 <SelectContent>
                   {getUnassignedTeams().map(team => (
-                    <SelectItem key={team._id} value={team._id}>{team.teamName} ({team.teamCode})</SelectItem>
+                    <SelectItem key={team._id} value={team._id}>
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center text-white text-[9px] font-bold overflow-hidden">
+                          {team.teamLogo?.url ? (
+                            <img src={team.teamLogo.url} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            team.teamName[0]
+                          )}
+                        </div>
+                        <span>{team.teamName} ({team.teamCode})</span>
+                      </div>
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
