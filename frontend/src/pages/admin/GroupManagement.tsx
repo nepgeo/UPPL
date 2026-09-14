@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Pencil, Trash2, X, RefreshCcw, Users } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/components/ui/use-toast';
 import api from '@/lib/api';
 
@@ -61,9 +62,12 @@ const GroupManagement = () => {
   const [newGroupName, setNewGroupName] = useState('');
   const [editGroupName, setEditGroupName] = useState('');
   const [deleteGroupName, setDeleteGroupName] = useState('');
+  const [selectedCreateTeamIds, setSelectedCreateTeamIds] = useState<string[]>([]);
   const [addTeamGroupId, setAddTeamGroupId] = useState('');
   const [selectedTeamToAdd, setSelectedTeamToAdd] = useState('');
   const [hasExistingMatches, setHasExistingMatches] = useState(false);
+  const [deleteMatchCount, setDeleteMatchCount] = useState<number | null>(null);
+  const [deleteWithMatches, setDeleteWithMatches] = useState(false);
 
   useEffect(() => {
     fetchSeasons();
@@ -82,6 +86,7 @@ const GroupManagement = () => {
         id: s._id,
         number: s.seasonNumber,
         year: new Date(s.entryDeadline).getFullYear(),
+        isCurrent: s.isCurrent,
       }));
       setSeasons(mapped);
       const current = mapped.find((s: any) => s.isCurrent);
@@ -141,10 +146,15 @@ const GroupManagement = () => {
       return;
     }
     try {
-      await api.post(`/groups/${selectedSeasonId}/groups`, { groupName: newGroupName.trim() });
+      const payload: any = { groupName: newGroupName.trim() };
+      if (selectedCreateTeamIds.length > 0) {
+        payload.teamIds = selectedCreateTeamIds;
+      }
+      await api.post(`/groups/${selectedSeasonId}/groups`, payload);
       toast({ title: 'Success', description: `Group ${newGroupName.trim()} created` });
       setCreateDialogOpen(false);
       setNewGroupName('');
+      setSelectedCreateTeamIds([]);
       await refreshData();
     } catch (err: any) {
       toast({ title: 'Error', description: err.response?.data?.message || 'Failed to create group', variant: 'destructive' });
@@ -154,7 +164,7 @@ const GroupManagement = () => {
   const handleUpdateGroup = async () => {
     if (!selectedGroup || !editGroupName.trim()) return;
     try {
-      await api.put(`/groups/${selectedSeasonId}/groups/${selectedGroup.groupName}`, { groupName: editGroupName.trim() });
+      await api.put(`/groups/${selectedSeasonId}/groups/${selectedGroup.groupName}`, { newName: editGroupName.trim() });
       toast({ title: 'Success', description: `Group renamed to ${editGroupName.trim()}` });
       setEditDialogOpen(false);
       setSelectedGroup(null);
@@ -189,15 +199,25 @@ const GroupManagement = () => {
     }
   };
 
-  const handleDeleteGroup = async () => {
+  const handleDeleteGroup = async (forceDelete = false) => {
     if (!deleteGroupName) return;
     try {
-      await api.delete(`/groups/${selectedSeasonId}/groups/${deleteGroupName}`);
+      const url = forceDelete
+        ? `/groups/${selectedSeasonId}/groups/${deleteGroupName}?deleteMatches=true`
+        : `/groups/${selectedSeasonId}/groups/${deleteGroupName}`;
+      await api.delete(url);
       toast({ title: 'Success', description: `Group ${deleteGroupName} deleted` });
       setDeleteDialogOpen(false);
       setDeleteGroupName('');
+      setDeleteMatchCount(null);
+      setDeleteWithMatches(false);
       await refreshData();
     } catch (err: any) {
+      if (err?.response?.data?.hasMatches === true) {
+        setDeleteMatchCount(err.response.data.matchCount);
+        setDeleteWithMatches(true);
+        return;
+      }
       toast({ title: 'Error', description: err.response?.data?.message || 'Failed to delete group', variant: 'destructive' });
     }
   };
@@ -348,6 +368,28 @@ const GroupManagement = () => {
           </DialogHeader>
           <div className="space-y-4">
             <Input placeholder="Group Name" value={newGroupName} onChange={e => setNewGroupName(e.target.value)} />
+            {getUnassignedTeams().length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-gray-700">Assign Teams (optional)</p>
+                <div className="max-h-48 overflow-y-auto space-y-2 border rounded-md p-3">
+                  {getUnassignedTeams().map(team => (
+                    <label key={team._id} className="flex items-center gap-2 cursor-pointer">
+                      <Checkbox
+                        checked={selectedCreateTeamIds.includes(team._id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedCreateTeamIds(prev => [...prev, team._id]);
+                          } else {
+                            setSelectedCreateTeamIds(prev => prev.filter(id => id !== team._id));
+                          }
+                        }}
+                      />
+                      <span className="text-sm">{team.teamName} ({team.teamCode})</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
@@ -379,12 +421,14 @@ const GroupManagement = () => {
           <DialogHeader>
             <DialogTitle>Delete Group</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete Group {deleteGroupName}? This action cannot be undone.
+              {deleteWithMatches && deleteMatchCount !== null
+                ? `Group ${deleteGroupName} has ${deleteMatchCount} existing match(es). Deleting the group will also remove these matches. Are you sure?`
+                : `Are you sure you want to delete Group ${deleteGroupName}? This action cannot be undone.`}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDeleteGroup}>Delete</Button>
+            <Button variant="outline" onClick={() => { setDeleteDialogOpen(false); setDeleteWithMatches(false); setDeleteMatchCount(null); }}>Cancel</Button>
+            <Button variant="destructive" onClick={() => handleDeleteGroup(deleteWithMatches)}>Delete</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
