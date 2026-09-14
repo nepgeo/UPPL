@@ -747,7 +747,35 @@ useEffect(() => {
                     })}
                   </SelectContent>
                 </Select>
-              </div>              {/* Overview Tab */}
+              </div>
+
+              {/* Mobile Sub-tab for Schedule */}
+              {activeTab === 'matches' && (
+                <div className="lg:hidden mb-4 flex bg-gray-100 rounded-lg p-0.5">
+                  <button
+                    onClick={() => setScheduleSubTab('groups')}
+                    className={`flex-1 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-all duration-200 ${
+                      scheduleSubTab === 'groups'
+                        ? 'bg-white text-indigo-700 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    Groups
+                  </button>
+                  <button
+                    onClick={() => setScheduleSubTab('matches')}
+                    className={`flex-1 py-2 rounded-md text-xs font-bold uppercase tracking-wider transition-all duration-200 ${
+                      scheduleSubTab === 'matches'
+                        ? 'bg-white text-indigo-700 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    Match Schedule
+                  </button>
+                </div>
+              )}
+
+              {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
 
             {/* Row 1: Key Metrics */}
