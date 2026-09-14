@@ -1,6 +1,7 @@
 // controllers/pointsTableController.js
 const Match = require("../models/matchModel");
 const Season = require("../models/seasonModel");
+const GroupSchedule = require("../models/groupScheduleModel");
 
 // ----------------------
 // Helpers
@@ -41,11 +42,23 @@ exports.getPointsTable = async (req, res) => {
   try {
     const { seasonId } = req.params;
 
-    const season = await Season.findById(seasonId)
+    const season = await Season.findById(seasonId).lean();
+
+    if (!season) {
+      return res.json({ success: true, groups: {}, all: [] });
+    }
+
+    // Read groups from GroupSchedule (the admin CRUD writes here)
+    let groupSchedule = await GroupSchedule.findOne({ seasonNumber: seasonId })
       .populate("groups.teams.team", "teamName teamCode teamLogo")
       .lean();
 
-    if (!season || !season.groups?.length) {
+    // Fallback to Season.groups if no GroupSchedule exists
+    const seasonGroups = groupSchedule?.groups?.length
+      ? groupSchedule.groups
+      : (season.groups || []);
+
+    if (!seasonGroups.length) {
       return res.json({ success: true, groups: {}, all: [] });
     }
 
@@ -53,7 +66,7 @@ exports.getPointsTable = async (req, res) => {
     // Initialize team table
     // ----------------------
     const table = {};
-    season.groups.forEach((group) => {
+    seasonGroups.forEach((group) => {
       group.teams.forEach((t) => {
         if (!t.team) return;
         table[String(t.team._id)] = {
@@ -202,7 +215,7 @@ exports.getPointsTable = async (req, res) => {
     // Group-wise sorting
     // ----------------------
     const groups = {};
-    season.groups.forEach((g) => {
+    seasonGroups.forEach((g) => {
       groups[g.groupName] = allArray
         .filter((t) => t.groupName === g.groupName)
         .sort(sortFn)
