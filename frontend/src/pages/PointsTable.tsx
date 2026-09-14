@@ -429,7 +429,6 @@ const PointsTable = () => {
                                       </div>
                                       <div className="flex flex-col">
                                         <span className="text-sm md:text-base font-semibold text-gray-800 group-hover:text-blue-600 transition-colors leading-tight">{team.team}</span>
-                                        {team.teamCode && <span className="text-xs text-gray-400 font-mono">{team.teamCode}</span>}
                                       </div>
                                     </div>
                                   </td>

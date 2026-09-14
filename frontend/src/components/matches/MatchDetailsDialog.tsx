@@ -94,7 +94,6 @@ const MatchDetailsDialog: React.FC<Props> = ({ match, matchIndex }) => {
         <span className="font-bold text-sm sm:text-base text-gray-900 truncate max-w-[120px] sm:max-w-[180px]">
           {team.teamName}
         </span>
-        <span className="text-xs text-gray-500">{team.teamCode || "UPPL"}</span>
       </div>
     </div>
   );

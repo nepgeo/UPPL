@@ -291,7 +291,6 @@ const TeamManagement = () => {
                     <p className="text-xs text-gray-500 flex items-center gap-1.5"><Phone className="w-3 h-3" /> {team.contactNumber || '—'}</p>
                     <div className="flex items-center justify-between pt-1.5 border-t border-gray-100 mt-1.5">
                       <span className="text-xs text-gray-400">{team.players?.length || 0} players</span>
-                      <span className="text-xs font-mono text-gray-400">{team.teamCode || '—'}</span>
                     </div>
                   </div>
                 </div>
@@ -314,7 +313,7 @@ const TeamManagement = () => {
                   {teamStatusBadge(selectedTeam.status)}
                 </div>
               </div>
-              <p className="text-xs text-blue-300 mt-0.5">Team Code: {selectedTeam.teamCode || '—'}</p>
+              <p className="text-xs text-blue-300 mt-0.5">{selectedTeam.teamName}</p>
             </div>
 
             <div className="flex-1 overflow-y-auto p-5">
@@ -558,7 +557,6 @@ const TeamManagement = () => {
                 <div><Label className="text-xs">Coach</Label><Input value={editableTeam.coachName} onChange={(e) => setEditableTeam({ ...editableTeam, coachName: e.target.value })} className="h-9 text-sm" /></div>
                 <div><Label className="text-xs">Manager</Label><Input value={editableTeam.managerName} onChange={(e) => setEditableTeam({ ...editableTeam, managerName: e.target.value })} className="h-9 text-sm" /></div>
                 <div><Label className="text-xs">Contact</Label><Input value={editableTeam.contactNumber} onChange={(e) => setEditableTeam({ ...editableTeam, contactNumber: e.target.value })} className="h-9 text-sm" /></div>
-                <div><Label className="text-xs">Team Code</Label><Input value={editableTeam.teamCode} onChange={(e) => setEditableTeam({ ...editableTeam, teamCode: e.target.value })} className="h-9 text-sm" /></div>
                 <div>
                   <Label className="text-xs">Registered By</Label>
                   <Input value={editableTeam.email || ''} disabled className="h-9 text-sm bg-gray-50" />

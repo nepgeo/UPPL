@@ -356,7 +356,6 @@ const GroupManagement = () => {
                               </div>
                               <div>
                                 <p className="text-sm font-semibold text-gray-800">{team.teamName}</p>
-                                <p className="text-xs text-gray-500">{team.teamCode}</p>
                               </div>
                             </div>
                             {isSuperAdmin && (
@@ -413,7 +412,7 @@ const GroupManagement = () => {
                           team.teamName[0]
                         )}
                       </div>
-                      <span className="text-sm">{team.teamName} ({team.teamCode})</span>
+                      <span className="text-sm">{team.teamName}</span>
                     </label>
                   ))}
                 </div>
@@ -506,7 +505,7 @@ const GroupManagement = () => {
                             team.teamName[0]
                           )}
                         </div>
-                        <span>{team.teamName} ({team.teamCode})</span>
+                        <span>{team.teamName}</span>
                       </div>
                     </SelectItem>
                   ))}
