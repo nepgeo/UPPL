@@ -25,6 +25,7 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import api from '@/lib/api';
 import BallScoring from '@/components/LiveScore/BallScoring';
+import GroupManagement from './GroupManagement';
 import MatchSetupWizard from '@/components/LiveScore/MatchSetupWizard';
 import { DateTimePicker } from '@/components/ui/date-time-picker';
 
@@ -726,95 +727,7 @@ const handleCancelLiveMatch = async () => {
   return (
     <div className="p-6">
     {subTab === 'groups' ? (
-      <>
-      {/* ======= GROUPS HEADER ======= */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 border-b border-gray-200 pb-4">
-        <div className="space-y-1 sm:space-y-2">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900 flex items-center gap-3">
-            <span className="text-indigo-600 text-3xl sm:text-4xl">🏆</span>
-            <span>
-              UPPL Season{" "}
-              {selectedSeasonId ? (
-                <select
-                  value={selectedSeasonId}
-                  onChange={async (e) => {
-                    const sid = e.target.value;
-                    setSelectedSeasonId(sid);
-                    const schedId = await fetchSchedule(sid);
-                    fetchMatches(schedId || sid);
-                  }}
-                  className="ml-2 bg-white border border-gray-300 rounded-lg px-3 py-1 text-lg font-semibold text-gray-800 cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                >
-                  {seasons.map((s) => (
-                    <option key={s._id} value={s._id}>
-                      {s.seasonNumber}{s.isCurrent ? ' (Current)' : ''}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                schedule?.seasonNumber?.seasonNumber ?? (
-                  <span className="text-gray-400">N/A</span>
-                )
-              )}
-            </span>
-          </h2>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-gray-600 text-xs sm:text-sm md:text-base">
-            <p>📅 Year: {schedule?.seasonNumber?.entryDeadline ? new Date(schedule.seasonNumber.entryDeadline).getFullYear() : "N/A"}</p>
-            <span className="hidden sm:block text-gray-400">|</span>
-            <p>⏰ Entry Deadline: {schedule?.seasonNumber?.entryDeadline ? new Date(schedule.seasonNumber.entryDeadline).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }) : "Not Set"}</p>
-            <span className="hidden sm:block text-gray-400">|</span>
-            <p>🏅 Status: {schedule?.groups?.length > 0 ? <span className="text-green-600 font-semibold">Active</span> : <span className="text-gray-500 font-medium">No Schedule Yet</span>}</p>
-          </div>
-        </div>
-        <div className="flex flex-col sm:flex-row flex-wrap gap-3 items-center">
-          {user?.role === "super-admin" && (
-            <Button variant="outline" disabled className="flex items-center gap-2 w-full sm:w-auto border-indigo-300 text-indigo-400 bg-gray-100 cursor-not-allowed font-semibold transition" onClick={handleGenerateAll}>
-              <RefreshCcw size={16} /> Generate Schedule
-            </Button>
-          )}
-          <div className="relative group w-full sm:w-auto mt-2 sm:mt-0">
-            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 hover:bg-indigo-100 cursor-pointer transition mx-auto sm:mx-0 border border-gray-200 shadow-sm">
-              <DownloadIcon className="w-5 h-5 text-gray-700 group-hover:text-indigo-600" />
-            </div>
-            <div className="absolute top-12 right-0 hidden group-hover:flex flex-col bg-white border border-gray-200 rounded-lg shadow-xl text-sm min-w-[140px] z-10">
-              <button className="px-4 py-2 hover:bg-indigo-50 text-left transition" onClick={() => handleDownload("jpg")}>📷 Download JPG</button>
-              <button className="px-4 py-2 hover:bg-indigo-50 text-left transition" onClick={() => handleDownload("pdf")}>📄 Download PDF</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Groups Content */}
-      <div ref={scheduleRef} className="space-y-4 sm:space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-6">
-          {schedule?.groups.map((group, i) => (
-            <div key={group.groupName} className={`rounded-md p-2 sm:p-4 shadow ${groupColors[i % groupColors.length]}`}>
-              <h3 className="text-sm sm:text-lg font-semibold mb-1 sm:mb-2">Group {group.groupName}</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full table-auto text-left border-collapse text-xs sm:text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-300 text-gray-700">
-                      <th className="py-1 pr-2 sm:pr-4">#</th>
-                      <th className="py-1">Team Name</th>
-                      <th className="py-1 pr-2 sm:pr-4 font-bold">Team Code</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {group.teams.map((team, index) => (
-                      <tr key={team.team._id} className="text-xs sm:text-sm">
-                        <td className="py-1 pr-2 sm:pr-4">{index + 1}</td>
-                        <td className="py-1">{team.teamName}</td>
-                        <td className="py-1 pr-2 sm:pr-4 font-bold">{team.teamCode}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-      </>
+      <GroupManagement />
     ) : (
       <>
       {/* ======= MATCH SCHEDULE HEADER ======= */}
