@@ -1,0 +1,5 @@
+[dotenv@17.2.2] injecting env (20) from .env -- tip: ⚙️  override existing env vars with { override: true }
+☁️ Cloudinary env check: { cloud_name: 'SET', api_key: 'SET', api_secret: 'SET' }
+⏸️  News scheduler disabled — set NEWS_API_KEY in .env to enable
+⚡ Socket.IO initialized with allowed origins: [ 'http://localhost:5173' ]
+MongoDB connected
