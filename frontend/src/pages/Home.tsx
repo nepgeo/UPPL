@@ -313,6 +313,7 @@ const getInitials = (name: string) => name.split(" ").map((n) => n[0]).join("").
               </p>
             </motion.div>
           ) : (
+            <>
             <div className="grid md:grid-cols-2 gap-6 sm:gap-8">
               {/* Orange Cap — Most Runs */}
               <motion.div
@@ -535,6 +536,7 @@ const getInitials = (name: string) => name.split(" ").map((n) => n[0]).join("").
                 <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </Link>
             </motion.div>
+            </>
             )}
           </div>
         </section>
