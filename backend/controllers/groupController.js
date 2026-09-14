@@ -630,7 +630,7 @@ const deleteGroup = async (req, res) => {
     });
 
     if (matchCount > 0 && deleteMatches !== "true") {
-      return res.json({
+      return res.status(409).json({
         success: false,
         hasMatches: true,
         matchCount,

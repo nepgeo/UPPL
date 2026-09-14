@@ -82,18 +82,18 @@ const GroupManagement = () => {
   const fetchSeasons = async () => {
     try {
       const res = await api.get('/seasons');
-      const mapped = res.data.map((s: any) => ({
+      const allSeasons = (res.data?.seasons || res.data || []).map((s: any) => ({
         id: s._id,
         number: s.seasonNumber,
         year: new Date(s.entryDeadline).getFullYear(),
         isCurrent: s.isCurrent,
       }));
-      setSeasons(mapped);
-      const current = mapped.find((s: any) => s.isCurrent);
+      setSeasons(allSeasons);
+      const current = allSeasons.find((s: any) => s.isCurrent);
       if (current) {
         setSelectedSeasonId(current.id);
-      } else if (mapped.length > 0) {
-        setSelectedSeasonId(mapped[0].id);
+      } else if (allSeasons.length > 0) {
+        setSelectedSeasonId(allSeasons[0].id);
       }
     } catch (err) {
       console.error('Failed to load seasons:', err);
@@ -126,9 +126,12 @@ const GroupManagement = () => {
 
   const getNextGroupName = () => {
     if (!schedule || !schedule.groups || schedule.groups.length === 0) return 'A';
-    const existing = schedule.groups.map(g => g.groupName).sort();
-    const last = existing[existing.length - 1];
-    return String.fromCharCode(last.charCodeAt(0) + 1);
+    const existing = new Set(schedule.groups.map(g => g.groupName));
+    for (let i = 0; i < 26; i++) {
+      const letter = String.fromCharCode(65 + i);
+      if (!existing.has(letter)) return letter;
+    }
+    return String.fromCharCode(65 + existing.size);
   };
 
   const getUnassignedTeams = () => {
