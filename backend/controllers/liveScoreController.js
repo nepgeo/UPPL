@@ -269,6 +269,11 @@ exports.getLiveMatches = async (req, res) => {
       .sort({ matchTime: -1 });
 
     const enriched = matches.map((match) => {
+      // Recompute live score from events so balls/overs are accurate
+      const battingFirst = match.battingFirst || 'teamA';
+      const state = computeMatchState(match.events || [], battingFirst);
+      const liveScore = state.score || { teamA: { runs: 0, wickets: 0, balls: 0, runRate: 0 }, teamB: { runs: 0, wickets: 0, balls: 0, runRate: 0 } };
+
       const teamA = match.teamA
         ? {
             ...match.teamA.toObject(),
@@ -289,6 +294,9 @@ exports.getLiveMatches = async (req, res) => {
         ...match.toObject(),
         teamA,
         teamB,
+        score: liveScore,
+        currentOver: state.currentOver || match.currentOver || [],
+        currentOverNumber: state.currentOverNumber ?? match.currentOverNumber ?? 0,
       };
     });
 

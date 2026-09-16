@@ -55,10 +55,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Load user on mount
+  // Load user on mount + validate token
   useEffect(() => {
     const savedUser = localStorage.getItem("pplt20_user");
-    if (savedUser) {
+    const savedToken = localStorage.getItem("pplt20_token");
+    if (savedUser && savedToken) {
+      // Decode JWT to check expiry without a network request
+      try {
+        const payload = JSON.parse(atob(savedToken.split(".")[1]));
+        if (payload.exp && payload.exp * 1000 < Date.now()) {
+          localStorage.removeItem("pplt20_user");
+          localStorage.removeItem("pplt20_token");
+          setLoading(false);
+          return;
+        }
+      } catch {
+        localStorage.removeItem("pplt20_user");
+        localStorage.removeItem("pplt20_token");
+        setLoading(false);
+        return;
+      }
       setUser(JSON.parse(savedUser));
     }
     setLoading(false);

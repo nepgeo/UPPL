@@ -212,39 +212,39 @@ export default function LiveScores() {
       <div className="container mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <div className="flex justify-center mb-8">
-            <div className="flex items-center gap-4 bg-white/5 backdrop-blur-md border border-white/10 rounded-xl px-4 py-2">
+            <div className="flex items-center gap-2 sm:gap-4 bg-white/5 backdrop-blur-md border border-white/10 rounded-xl px-3 sm:px-4 py-2">
               <TabsList className="flex items-center gap-1 bg-transparent h-auto p-0">
                 <TabsTrigger value="live"
-                  className="relative px-4 py-2 text-sm font-medium text-gray-400 data-[state=active]:text-red-400 transition-colors
+                  className="relative px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold uppercase tracking-wider text-gray-400 data-[state=active]:text-red-400 transition-colors
                     after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:h-0.5 after:w-0 after:bg-red-500
                     data-[state=active]:after:w-full after:transition-all inline-flex items-center justify-center whitespace-nowrap rounded-none bg-transparent data-[state=active]:bg-transparent ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
                 >
-                  <span className="w-1.5 h-1.5 bg-red-500 rounded-full inline-block mr-1.5" />
-                  Live {liveMatches.length > 0 && `(${liveMatches.length})`}
+                  <span className="w-1.5 h-1.5 bg-red-500 rounded-full inline-block mr-1 sm:mr-1.5" />
+                  Live<span className="hidden sm:inline">{liveMatches.length > 0 && ` (${liveMatches.length})`}</span>
                 </TabsTrigger>
                 <TabsTrigger value="upcoming"
-                  className="relative px-4 py-2 text-sm font-medium text-gray-400 data-[state=active]:text-blue-400 transition-colors
+                  className="relative px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold uppercase tracking-wider text-gray-400 data-[state=active]:text-blue-400 transition-colors
                     after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:h-0.5 after:w-0 after:bg-blue-500
                     data-[state=active]:after:w-full after:transition-all inline-flex items-center justify-center whitespace-nowrap rounded-none bg-transparent data-[state=active]:bg-transparent ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
                 >
-                  <span className="w-1.5 h-1.5 bg-blue-500 rounded-full inline-block mr-1.5" />
-                  Upcoming ({upcomingMatches.length})
+                  <span className="w-1.5 h-1.5 bg-blue-500 rounded-full inline-block mr-1 sm:mr-1.5" />
+                  Upcoming<span className="hidden sm:inline">{upcomingMatches.length > 0 && ` (${upcomingMatches.length})`}</span>
                 </TabsTrigger>
                 <TabsTrigger value="recent"
-                  className="relative px-4 py-2 text-sm font-medium text-gray-400 data-[state=active]:text-green-400 transition-colors
+                  className="relative px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold uppercase tracking-wider text-gray-400 data-[state=active]:text-green-400 transition-colors
                     after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:h-0.5 after:w-0 after:bg-green-500
                     data-[state=active]:after:w-full after:transition-all inline-flex items-center justify-center whitespace-nowrap rounded-none bg-transparent data-[state=active]:bg-transparent ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
                 >
-                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full inline-block mr-1.5" />
+                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full inline-block mr-1 sm:mr-1.5" />
                   Recent
                 </TabsTrigger>
               </TabsList>
               <div className="w-px h-6 bg-white/10" />
               <Button
                 onClick={() => navigate('/watch-live')}
-                className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white border-0 rounded-lg px-4 h-8 text-xs font-semibold shadow-lg shadow-red-600/20"
+                className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white border-0 rounded-lg px-3 sm:px-4 h-8 text-[10px] sm:text-xs font-bold uppercase tracking-wider shadow-lg shadow-red-600/20"
               >
-                <Play className="h-3.5 w-3.5 mr-1" /> Watch Live
+                <Play className="h-3.5 w-3.5 mr-1" /> <span className="hidden sm:inline">Watch </span>Live
               </Button>
             </div>
           </div>
@@ -258,14 +258,14 @@ export default function LiveScores() {
                     <Activity className="h-16 w-16 mx-auto mb-4 text-gray-500" />
                     <h3 className="text-2xl font-bold text-white mb-2">No Live Matches</h3>
                     <p className="text-gray-400 mb-6">There are no matches currently in progress. Check the upcoming matches.</p>
-                    <Button onClick={() => setActiveTab('upcoming')} variant="outline" className="border-white/20 text-white">
-                      View Upcoming Matches <ChevronRight className="h-4 w-4 ml-1" />
+                    <Button onClick={() => setActiveTab('upcoming')} variant="outline" className="border-white/20 text-white uppercase tracking-wider text-xs font-semibold">
+                      View Upcoming <ChevronRight className="h-4 w-4 ml-1" />
                     </Button>
                   </CardContent>
                 </Card>
               </motion.div>
             ) : (
-              <div className="grid gap-4">
+              <div className="grid md:grid-cols-2 gap-5">
                 {liveMatches.map((match, idx) => {
                   const teamAScore = match.score?.teamA || { runs: 0, wickets: 0, balls: 0, overs: 0, runRate: 0 };
                   const teamBScore = match.score?.teamB || { runs: 0, wickets: 0, balls: 0, overs: 0, runRate: 0 };
@@ -276,84 +276,79 @@ export default function LiveScores() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.1 }}
                     >
-                      <Card className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl text-white hover:border-white/20 transition-all">
+                      <Card className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl text-white hover:border-white/20 hover:shadow-[0_8px_40px_rgba(59,130,246,0.15)] shadow-[0_8px_32px_rgba(0,0,0,0.3)] transition-all duration-300">
                         <CardContent className="p-4 sm:p-5">
-                          {/* Top bar: stage + status + RR */}
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-2">
+                          {/* Centered header */}
+                          <div className="flex flex-col items-center mb-4">
+                            <div className="flex items-center gap-2 mb-1">
                               <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                              <span className="text-xs font-bold uppercase tracking-wider text-red-400">Live</span>
-                              <span className="text-xs text-gray-400">| {match.stage || 'League'} Match</span>
+                              <span className="text-sm font-bold uppercase tracking-widest text-red-400">Live</span>
                             </div>
-                            <span className="text-xs text-gray-400">
-                              RR: {match.battingFirst === 'teamA'
-                                ? teamAScore.runRate?.toFixed(2)
-                                : teamBScore.runRate?.toFixed(2)}
-                            </span>
+                            <span className="text-xs text-gray-400 uppercase tracking-wider">{match.stage || 'League'} Match{match.matchNumber ? ` #${match.matchNumber}` : ''}</span>
                           </div>
 
                           {/* Team A row */}
-                          <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-3 min-w-0 flex-1">
-                              <div className="w-8 h-8 rounded-full bg-white/10 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/[0.06] border border-white/10 flex-shrink-0 flex items-center justify-center overflow-hidden">
                                 {getTeamLogo(match.teamA?.teamLogo) ? (
-                                  <img src={getTeamLogo(match.teamA?.teamLogo)} alt="" className="w-full h-full object-contain p-0.5" />
+                                  <img src={getTeamLogo(match.teamA?.teamLogo)} alt="" className="w-full h-full object-contain p-1" />
                                 ) : (
-                                  <span className="text-xs font-bold text-gray-400">
+                                  <span className="text-sm font-bold text-gray-400">
                                     {match.teamA?.teamName?.split(' ').map((w: string) => w[0]).join('').slice(0, 2)}
                                   </span>
                                 )}
                               </div>
-                              <span className="font-semibold text-sm truncate">{match.teamA?.teamName || 'Team A'}</span>
+                              <div className="min-w-0">
+                                <p className="font-semibold text-sm sm:text-base truncate">{match.teamA?.teamName || 'Team A'}</p>
+                                <p className="text-xs text-gray-500">{formatOvers(teamAScore.balls)} ov</p>
+                              </div>
                             </div>
                             <div className="text-right flex-shrink-0 ml-3">
-                              <span className="text-2xl font-extrabold tracking-tight">
+                              <span className="text-2xl sm:text-3xl font-extrabold tracking-tight">
                                 {teamAScore.runs}<span className="text-gray-500">/{teamAScore.wickets}</span>
                               </span>
-                              <div className="text-xs text-gray-400">
-                                {formatOvers(teamAScore.balls)} ov | RR: {teamAScore.runRate?.toFixed(2)}
-                              </div>
                             </div>
                           </div>
 
                           {/* Team B row */}
-                          <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-3 min-w-0 flex-1">
-                              <div className="w-8 h-8 rounded-full bg-white/10 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/[0.06] border border-white/10 flex-shrink-0 flex items-center justify-center overflow-hidden">
                                 {getTeamLogo(match.teamB?.teamLogo) ? (
-                                  <img src={getTeamLogo(match.teamB?.teamLogo)} alt="" className="w-full h-full object-contain p-0.5" />
+                                  <img src={getTeamLogo(match.teamB?.teamLogo)} alt="" className="w-full h-full object-contain p-1" />
                                 ) : (
-                                  <span className="text-xs font-bold text-gray-400">
+                                  <span className="text-sm font-bold text-gray-400">
                                     {match.teamB?.teamName?.split(' ').map((w: string) => w[0]).join('').slice(0, 2)}
                                   </span>
                                 )}
                               </div>
-                              <span className="font-semibold text-sm truncate">{match.teamB?.teamName || 'Team B'}</span>
+                              <div className="min-w-0">
+                                <p className="font-semibold text-sm sm:text-base truncate">{match.teamB?.teamName || 'Team B'}</p>
+                                <p className="text-xs text-gray-500">{formatOvers(teamBScore.balls)} ov</p>
+                              </div>
                             </div>
                             <div className="text-right flex-shrink-0 ml-3">
-                              <span className="text-2xl font-extrabold tracking-tight">
+                              <span className="text-2xl sm:text-3xl font-extrabold tracking-tight">
                                 {teamBScore.runs}<span className="text-gray-500">/{teamBScore.wickets}</span>
                               </span>
-                              <div className="text-xs text-gray-400">
-                                {formatOvers(teamBScore.balls)} ov | RR: {teamBScore.runRate?.toFixed(2)}
-                              </div>
                             </div>
                           </div>
 
                           {/* Current Over */}
                           {match.currentOver && match.currentOver.length > 0 && (
-                            <div className="mb-4">
-                              <p className="text-xs text-gray-500 mb-1.5">Over {match.currentOverNumber}:</p>
-                              <div className="flex gap-1.5">
+                            <div className="mb-4 p-3 bg-white/[0.03] rounded-xl border border-white/5">
+                              <p className="text-xs text-gray-500 mb-2 font-medium">Over {match.currentOverNumber}</p>
+                              <div className="flex gap-1.5 flex-wrap">
                                 {match.currentOver.map((ev: BallEvent, i: number) => (
                                   <span
                                     key={i}
-                                    className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold
-                                      ${ev.wicket ? 'bg-red-600 text-white' :
-                                        ev.isSix ? 'bg-purple-600 text-white' :
-                                        ev.isFour ? 'bg-emerald-500 text-white' :
-                                        ev.runs === 0 ? 'bg-gray-700 text-gray-300' :
-                                        'bg-blue-600 text-white'}`}
+                                    className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-[10px] sm:text-xs font-bold
+                                      ${ev.wicket ? 'bg-red-500/80 text-white shadow-[0_0_8px_rgba(239,68,68,0.4)]' :
+                                        ev.isSix ? 'bg-purple-500/80 text-white shadow-[0_0_8px_rgba(168,85,247,0.4)]' :
+                                        ev.isFour ? 'bg-emerald-500/80 text-white shadow-[0_0_8px_rgba(16,185,129,0.4)]' :
+                                        ev.runs === 0 ? 'bg-white/[0.06] text-gray-400 border border-white/5' :
+                                        'bg-blue-500/80 text-white shadow-[0_0_8px_rgba(59,130,246,0.3)]'}`}
                                   >
                                     {ev.wicket ? 'W' : ev.runs + (ev.extras?.runs || 0)}
                                   </span>
@@ -365,7 +360,7 @@ export default function LiveScores() {
                           {/* Button */}
                           <Button
                             onClick={() => navigate(`/match/${match._id}`)}
-                            className="w-full bg-white/5 hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-600 border border-white/20 text-white hover:text-white hover:border-transparent transition-all"
+                            className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white border-0 rounded-xl h-11 text-xs font-bold uppercase tracking-wider shadow-lg shadow-red-600/20 transition-all duration-300"
                           >
                             <Eye className="h-4 w-4 mr-2" /> View Live Score
                           </Button>
@@ -391,7 +386,7 @@ export default function LiveScores() {
                 </Card>
               </motion.div>
             ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid md:grid-cols-2 gap-5">
                 {upcomingMatches.map((match, idx) => {
                   const dt = formatDateTime(match.matchTime);
                   return (
@@ -401,58 +396,58 @@ export default function LiveScores() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.05 }}
                     >
-                      <Card className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl text-white h-full hover:border-white/20 transition-all">
-                        <CardContent className="p-5 flex flex-col h-full">
+                      <Card className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl text-white hover:border-white/20 hover:shadow-[0_8px_40px_rgba(59,130,246,0.15)] shadow-[0_8px_32px_rgba(0,0,0,0.3)] transition-all duration-300 h-full">
+                        <CardContent className="p-4 sm:p-5 flex flex-col h-full">
                           {/* Top row: stage badge + status */}
-                          <div className="flex items-center justify-between mb-4">
-                            <span className="text-xs text-gray-400 font-medium">
+                          <div className="flex items-center justify-between mb-5">
+                            <span className="text-xs sm:text-sm text-gray-400 font-medium uppercase tracking-wider">
                               {match.stage || 'League'} Match{match.matchNumber ? ` #${match.matchNumber}` : ''}
                             </span>
-                            <span className="text-xs text-blue-300 bg-blue-600/20 border border-blue-500/30 rounded-full px-2.5 py-0.5 font-medium">
+                            <span className="text-xs uppercase tracking-wider text-blue-300 bg-blue-500/10 border border-blue-500/20 rounded-full px-2.5 py-0.5 font-bold">
                               Upcoming
                             </span>
                           </div>
 
                           {/* Teams */}
-                          <div className="flex items-center justify-between gap-3 mb-4">
+                          <div className="flex items-center justify-between gap-3 sm:gap-4 mb-5">
                             <div className="text-center flex-1 min-w-0">
-                              <div className="w-12 h-12 rounded-full bg-white/10 mx-auto mb-2 flex items-center justify-center overflow-hidden">
+                              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/[0.06] border border-white/10 mx-auto mb-2 flex items-center justify-center overflow-hidden">
                                 {getTeamLogo(match.teamA?.teamLogo) ? (
-                                  <img src={getTeamLogo(match.teamA?.teamLogo)} alt="" className="w-full h-full object-contain p-1" />
+                                  <img src={getTeamLogo(match.teamA?.teamLogo)} alt="" className="w-full h-full object-contain p-1.5" />
                                 ) : (
-                                  <span className="text-lg font-bold text-gray-500">
+                                  <span className="text-xl font-bold text-gray-500">
                                     {match.teamA?.teamName?.charAt(0) || 'A'}
                                   </span>
                                 )}
                               </div>
-                              <p className="text-sm font-semibold truncate">{match.teamA?.teamName || 'TBD'}</p>
+                              <p className="text-sm sm:text-base font-semibold truncate">{match.teamA?.teamName || 'TBD'}</p>
                             </div>
                             <div className="flex-shrink-0">
-                              <span className="text-lg font-extrabold text-yellow-400">VS</span>
+                              <span className="text-xl sm:text-2xl font-extrabold bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">VS</span>
                             </div>
                             <div className="text-center flex-1 min-w-0">
-                              <div className="w-12 h-12 rounded-full bg-white/10 mx-auto mb-2 flex items-center justify-center overflow-hidden">
+                              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/[0.06] border border-white/10 mx-auto mb-2 flex items-center justify-center overflow-hidden">
                                 {getTeamLogo(match.teamB?.teamLogo) ? (
-                                  <img src={getTeamLogo(match.teamB?.teamLogo)} alt="" className="w-full h-full object-contain p-1" />
+                                  <img src={getTeamLogo(match.teamB?.teamLogo)} alt="" className="w-full h-full object-contain p-1.5" />
                                 ) : (
-                                  <span className="text-lg font-bold text-gray-500">
+                                  <span className="text-xl font-bold text-gray-500">
                                     {match.teamB?.teamName?.charAt(0) || 'B'}
                                   </span>
                                 )}
                               </div>
-                              <p className="text-sm font-semibold truncate">{match.teamB?.teamName || 'TBD'}</p>
+                              <p className="text-sm sm:text-base font-semibold truncate">{match.teamB?.teamName || 'TBD'}</p>
                             </div>
                           </div>
 
                           {/* Date/Time */}
-                          <div className="text-center mb-4 text-sm text-gray-400 space-y-1">
+                          <div className="text-center mb-5 text-sm sm:text-base text-gray-300 space-y-1.5 p-3 bg-white/[0.03] rounded-xl border border-white/5">
                             <div className="flex items-center justify-center gap-1.5">
-                              <Calendar className="h-3.5 w-3.5" />
-                              <span>{dt.day}, {dt.date}</span>
+                              <Calendar className="h-4 w-4" />
+                              <span className="font-medium">{dt.day}, {dt.date}</span>
                             </div>
                             <div className="flex items-center justify-center gap-1.5">
-                              <Clock className="h-3.5 w-3.5" />
-                              <span>{dt.time}</span>
+                              <Clock className="h-4 w-4" />
+                              <span className="font-medium">{dt.time}</span>
                             </div>
                           </div>
 
@@ -460,7 +455,7 @@ export default function LiveScores() {
                           <div className="flex-1" />
                           <Button
                             onClick={() => navigate(`/match/${match._id}`)}
-                            className="w-full bg-white/10 hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-600 border border-white/20 text-white hover:text-white hover:border-transparent transition-all"
+                            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 rounded-xl h-11 text-xs font-bold uppercase tracking-wider shadow-lg shadow-blue-600/20 transition-all duration-300"
                           >
                             <Eye className="h-4 w-4 mr-2" /> Match Details
                           </Button>
@@ -486,7 +481,7 @@ export default function LiveScores() {
                 </Card>
               </motion.div>
             ) : (
-              <div className="grid gap-4">
+              <div className="grid md:grid-cols-2 gap-5">
                 {recentMatches.map((match, idx) => {
                   const dt = formatDateTime(match.matchTime);
                   const winnerName = match.winner === 'teamA'
@@ -501,65 +496,65 @@ export default function LiveScores() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.05 }}
                     >
-                      <Card className="bg-white/5 backdrop-blur-md border border-white/10 rounded-xl text-white hover:border-white/20 transition-all">
+                      <Card className={`bg-white/[0.03] backdrop-blur-xl border rounded-2xl text-white hover:border-white/20 hover:shadow-[0_8px_40px_rgba(59,130,246,0.15)] shadow-[0_8px_32px_rgba(0,0,0,0.3)] transition-all duration-300 ${winnerName && winnerName !== 'Match Tied' ? 'border-green-500/20' : 'border-white/10'}`}>
                         <CardContent className="p-4 sm:p-5">
                           {/* Top row: date + status */}
-                          <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-2">
                               <Trophy className="h-4 w-4 text-yellow-500" />
-                              <span className="text-xs text-gray-400">{dt.date}</span>
+                              <span className="text-xs sm:text-sm text-gray-400 font-medium">{dt.date}</span>
                             </div>
-                            <span className="text-xs text-green-300 bg-green-600/20 border border-green-500/30 rounded-full px-2.5 py-0.5 font-medium">
+                            <span className="text-xs uppercase tracking-wider text-green-300 bg-green-500/10 border border-green-500/20 rounded-full px-2.5 py-0.5 font-bold">
                               Completed
                             </span>
                           </div>
 
                           {/* Team A */}
-                          <div className="flex items-center justify-between mb-1.5">
+                          <div className="flex items-center justify-between mb-2.5">
                             <div className="flex items-center gap-3 min-w-0 flex-1">
-                              <div className="w-8 h-8 rounded-full bg-white/10 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/[0.06] border border-white/10 flex-shrink-0 flex items-center justify-center overflow-hidden">
                                 {getTeamLogo(match.teamA?.teamLogo) ? (
-                                  <img src={getTeamLogo(match.teamA?.teamLogo)} alt="" className="w-full h-full object-contain p-0.5" />
+                                  <img src={getTeamLogo(match.teamA?.teamLogo)} alt="" className="w-full h-full object-contain p-1" />
                                 ) : <span className="text-xs text-gray-500">A</span>}
                               </div>
-                              <span className="font-semibold text-sm truncate">{match.teamA?.teamName}</span>
+                              <div className="min-w-0">
+                                <p className="font-semibold text-sm sm:text-base truncate">{match.teamA?.teamName}</p>
+                                <p className="text-xs text-gray-500">{match.teamA?.overs ? `${match.teamA.overs} ov` : ''}</p>
+                              </div>
                             </div>
                             <div className="text-right flex-shrink-0 ml-3">
-                              <span className="text-lg font-extrabold">
+                              <span className="text-xl sm:text-2xl font-extrabold">
                                 {match.teamA?.runs ?? 0}<span className="text-gray-500">/{match.teamA?.wickets ?? 0}</span>
                               </span>
-                              <div className="text-xs text-gray-400">
-                                {match.teamA?.overs ? `${match.teamA.overs} ov` : ''}
-                              </div>
                             </div>
                           </div>
 
                           {/* Team B */}
-                          <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-3 min-w-0 flex-1">
-                              <div className="w-8 h-8 rounded-full bg-white/10 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/[0.06] border border-white/10 flex-shrink-0 flex items-center justify-center overflow-hidden">
                                 {getTeamLogo(match.teamB?.teamLogo) ? (
-                                  <img src={getTeamLogo(match.teamB?.teamLogo)} alt="" className="w-full h-full object-contain p-0.5" />
+                                  <img src={getTeamLogo(match.teamB?.teamLogo)} alt="" className="w-full h-full object-contain p-1" />
                                 ) : <span className="text-xs text-gray-500">B</span>}
                               </div>
-                              <span className="font-semibold text-sm truncate">{match.teamB?.teamName}</span>
+                              <div className="min-w-0">
+                                <p className="font-semibold text-sm sm:text-base truncate">{match.teamB?.teamName}</p>
+                                <p className="text-xs text-gray-500">{match.teamB?.overs ? `${match.teamB.overs} ov` : ''}</p>
+                              </div>
                             </div>
                             <div className="text-right flex-shrink-0 ml-3">
-                              <span className="text-lg font-extrabold">
+                              <span className="text-xl sm:text-2xl font-extrabold">
                                 {match.teamB?.runs ?? 0}<span className="text-gray-500">/{match.teamB?.wickets ?? 0}</span>
                               </span>
-                              <div className="text-xs text-gray-400">
-                                {match.teamB?.overs ? `${match.teamB.overs} ov` : ''}
-                              </div>
                             </div>
                           </div>
 
                           {/* Result + Button row */}
-                          <div className="flex items-center justify-between pt-3 border-t border-white/10">
+                          <div className="flex items-center justify-between pt-3 border-t border-white/5">
                             <div className="flex items-center gap-2 min-w-0 flex-1">
                               <Trophy className="h-4 w-4 text-yellow-500 flex-shrink-0" />
                               {winnerName ? (
-                                <span className="text-sm font-semibold text-green-400 truncate">
+                                <span className="text-sm sm:text-base font-semibold text-green-400 truncate">
                                   {winnerName} won{ match.margin ? ` by ${match.margin}` : '' }
                                 </span>
                               ) : (
@@ -568,10 +563,10 @@ export default function LiveScores() {
                             </div>
                             <Button
                               onClick={() => navigate(`/match/${match._id}`)}
-                              className="bg-white/10 hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-600 border border-white/20 text-white hover:text-white hover:border-transparent transition-all text-xs flex-shrink-0 ml-3"
+                              className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white border-0 text-xs sm:text-xs flex-shrink-0 ml-3 rounded-xl h-9 font-bold uppercase tracking-wider shadow-lg shadow-green-600/20 transition-all duration-300"
                               size="sm"
                             >
-                              View Scorecard <ArrowRight className="h-3 w-3 ml-1" />
+                              Scorecard <ArrowRight className="h-3 w-3 ml-1" />
                             </Button>
                           </div>
                         </CardContent>

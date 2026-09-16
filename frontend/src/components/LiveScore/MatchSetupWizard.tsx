@@ -50,6 +50,14 @@ export default function MatchSetupWizard({ matchId, match, onComplete }: Props) 
         const captainA = teamARes.data?.captainName || teamARes.data?.data?.captainName || '';
         const captainB = teamBRes.data?.captainName || teamBRes.data?.data?.captainName || '';
 
+        const normalizeRole = (raw: string): 'batsman' | 'bowler' | 'all-rounder' | 'wk' => {
+          const r = (raw || '').toLowerCase();
+          if (r.includes('wk') || r.includes('keeper') || r.includes('wicket')) return 'wk';
+          if (r.includes('all')) return 'all-rounder';
+          if (r.includes('bowl')) return 'bowler';
+          return 'batsman';
+        };
+
         const extractPlayers = (teamData: any, teamCaptain: string): Player[] => {
           const raw = teamData?.players || teamData?.data?.players || [];
           if (!Array.isArray(raw)) return [];
@@ -58,7 +66,7 @@ export default function MatchSetupWizard({ matchId, match, onComplete }: Props) 
             return {
               playerId: p.user?._id || p._id || '',
               playerName: name,
-              role: p.position || p.role || 'batsman',
+              role: normalizeRole(p.position || p.role || ''),
               isCaptain: name === teamCaptain,
               isKeeper: false,
               battingOrder: 0,

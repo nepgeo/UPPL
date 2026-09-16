@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { getProfileImageUrl } from "@/utils/getProfileImageUrl";
 import api from "@/lib/api";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useSearchParams } from "react-router-dom";
 
 interface CareerStats {
   matches: number;
@@ -91,7 +92,8 @@ const statCard = (label: string, value: string | number, accent: string) => (
 const PlayersPage = () => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchParams] = useSearchParams();
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || "");
   const [positionFilter, setPositionFilter] = useState("all");
   const [loading, setLoading] = useState(true);
 
@@ -232,7 +234,9 @@ const PlayersPage = () => {
           <div className="text-center py-20">
             <User className="w-12 h-12 mx-auto text-gray-300 mb-4" />
             <h3 className="text-lg font-semibold text-gray-600 mb-1">No players found</h3>
-            <p className="text-sm text-gray-400">Try adjusting your search or filter.</p>
+            <p className="text-sm text-gray-400">
+              {searchTerm ? `No player found matching "${searchTerm}"` : 'Try adjusting your search or filter.'}
+            </p>
           </div>
         ) : (
           <motion.div

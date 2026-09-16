@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Trophy, ArrowLeft } from 'lucide-react';
+import { Trophy } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
 import LiveScoreDisplay from '@/components/LiveScore/LiveScoreDisplay';
 import ScoreHeader from '@/components/LiveScore/ScoreHeader';
@@ -35,19 +35,40 @@ interface MatchData {
   playerStats: any;
 }
 
+function getTeamLogo(logo: any): string {
+  if (!logo) return '';
+  if (typeof logo === 'string') return logo;
+  return logo.url || logo.secure_url || '';
+}
+
 export default function MatchDetails() {
   const { matchId } = useParams();
+  const navigate = useNavigate();
   const [match, setMatch] = useState<MatchData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [selectedInnings, setSelectedInnings] = useState(1);
+  const [selectedInnings, setSelectedInnings] = useState<1 | 2>(1);
+  const [userSelectedInnings, setUserSelectedInnings] = useState(false);
 
   useEffect(() => {
     if (!matchId) return;
     const fetchMatch = async () => {
       try {
         const res = await api.get(`/matches/${matchId}/live-score`);
-        setMatch(res.data.match);
+        const computed = res.data.computed;
+        const matchData = { ...res.data.match };
+        // Merge computed state for accurate live data
+        if (computed) {
+          matchData.score = computed.score;
+          matchData.playerStats = computed.playerStats;
+          matchData.currentOver = computed.currentOver;
+          matchData.currentOverNumber = computed.currentOverNumber;
+          matchData.fallOfWickets = computed.fallOfWickets;
+          matchData.partnerships = computed.partnerships;
+          matchData.last6Balls = computed.last6Balls;
+          matchData.commentary = computed.commentary;
+        }
+        setMatch(matchData);
       } catch (err: any) {
         setError(err.response?.data?.message || 'Failed to load match');
       } finally {
@@ -58,85 +79,84 @@ export default function MatchDetails() {
   }, [matchId]);
 
   useEffect(() => {
-    if (match && (match.currentInnings || 1) > 1) {
+    if (match && !userSelectedInnings && (match.currentInnings || 1) > 1) {
       setSelectedInnings(match.currentInnings!);
     }
-  }, [match]);
+  }, [match, userSelectedInnings]);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
       </div>
     );
   }
 
   if (error || !match) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-        <p className="text-red-500">{error || 'Match not found'}</p>
-        <Button asChild><Link to="/live-scores">Back to Live Scores</Link></Button>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <p className="text-red-400 text-lg">{error || 'Match not found'}</p>
+        <Button onClick={() => navigate('/live-scores')} className="bg-gradient-to-r from-blue-600 to-purple-600 text-white border-0 rounded-xl font-bold uppercase tracking-wider">
+          Back to Live Scores
+        </Button>
       </div>
     );
   }
 
+  const teamAName = match.teamA?.teamName || 'Team A';
+  const teamBName = match.teamB?.teamName || 'Team B';
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-6">
-        <Button variant="ghost" asChild className="mb-4">
-          <Link to="/live-scores"><ArrowLeft className="h-4 w-4 mr-2" /> Back to Live Scores</Link>
-        </Button>
-
-        {/* Match Title — Toss & Innings Info */}
-        <div className="flex flex-col items-center gap-1 mb-4">
-          <div className="flex items-center gap-3 flex-wrap justify-center">
-            <span className="text-xl font-bold text-blue-600">{match.teamA?.teamName}</span>
-            <span className="text-base font-semibold text-muted-foreground">vs</span>
-            <span className="text-xl font-bold text-blue-600">{match.teamB?.teamName}</span>
-            <span className="flex items-center gap-2">
-              {match.result === 'live' && (
-                <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-300">LIVE</span>
-              )}
-              {match.currentInnings === 2 && (
-                <span className="text-xs font-bold text-amber-600 bg-amber-50 px-3 py-1 rounded-full border border-amber-300">2nd Innings</span>
-              )}
-            </span>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      {/* Header Card */}
+      <div className="container mx-auto px-4 pt-6 pb-4">
+        <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-2xl p-5 sm:p-6 shadow-xl shadow-blue-600/20">
+          {/* Team VS Team */}
+          <div className="flex items-center justify-center gap-4 sm:gap-6 mb-3">
+            <span className="text-lg sm:text-2xl font-extrabold uppercase tracking-wider text-white text-right">{teamAName}</span>
+            <div className="flex flex-col items-center">
+              <span className="text-base sm:text-xl font-black uppercase tracking-widest text-white/60">VS</span>
+            </div>
+            <span className="text-lg sm:text-2xl font-extrabold uppercase tracking-wider text-white text-left">{teamBName}</span>
           </div>
-          {(() => {
-            const ci = match.currentInnings;
-            if (match.tossWinner) {
-              const winnerName = match.tossWinner === 'teamA' ? match.teamA?.teamName : match.teamB?.teamName;
-              return (
-                <>
-                  <span className="text-sm font-medium text-muted-foreground">
-                    {winnerName} won the toss & chose to {match.tossDecision}
-                  </span>
-                  {ci ? <span className="text-lg font-bold text-muted-foreground">Innings {ci}</span> : null}
-                </>
-              );
-            }
-            return ci ? (
-              <span className="text-lg font-bold text-muted-foreground">Innings {ci}</span>
-            ) : null;
-          })()}
-        </div>
 
+          {/* Badges row */}
+          <div className="flex items-center justify-center gap-2 flex-wrap">
+            {match.result === 'completed' && (
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-white bg-white/20 px-3 py-1 rounded-full backdrop-blur-sm">
+                Completed
+              </span>
+            )}
+            {match.currentInnings === 2 && (
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-white bg-white/20 px-3 py-1 rounded-full backdrop-blur-sm">
+                2nd Innings
+              </span>
+            )}
+            {match.tossWinner && (
+              <span className="text-sm sm:text-base font-medium text-white/90 mt-1 uppercase">
+                {match.tossWinner === 'teamA' ? teamAName : teamBName} won toss & chose to {match.tossDecision}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 pb-6">
         {/* Innings Toggle */}
-        <div className="flex items-center gap-2 mb-4 justify-center">
+        <div className="flex items-center gap-2 mb-5 justify-center">
           {[1, 2].map(inn => {
             const isActive = selectedInnings === inn;
             const isOngoing = match.result === 'live' && inn === (match.currentInnings || 1);
-            const isStarted = inn === 1 || (match.currentInnings || 1) >= 2 || match.result === 'completed';
             return (
               <button
                 key={inn}
-                onClick={() => setSelectedInnings(inn)}
-                className={`px-5 py-2 rounded-lg font-bold text-sm transition-all ${
+                onClick={() => { setSelectedInnings(inn); setUserSelectedInnings(true); }}
+                className={`px-3 sm:px-5 py-1.5 sm:py-2 rounded-lg font-bold text-xs sm:text-sm uppercase tracking-wider transition-all duration-300 ${
                   isActive
                     ? isOngoing
-                      ? 'bg-emerald-600 text-white shadow-md'
-                      : 'bg-blue-600 text-white shadow-md'
-                    : 'bg-white text-slate-600 border border-slate-300 hover:bg-slate-100'
+                      ? 'bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-lg shadow-red-500/30'
+                      : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/30'
+                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-900 shadow-sm'
                 }`}
               >
                 {inn === 1 ? '1st Innings' : '2nd Innings'}
@@ -146,14 +166,14 @@ export default function MatchDetails() {
           })}
         </div>
 
-        {/* Score Header — filtered by selected innings */}
+        {/* Score Header */}
         {(() => {
           const isStarted = selectedInnings === 1 || (match.currentInnings || 1) >= 2 || match.result === 'completed';
           if (!isStarted) {
             return (
-              <Card className="mb-4">
-                <CardContent className="p-8 text-center">
-                  <p className="text-gray-500 text-base">2nd innings hasn't started yet</p>
+              <Card className="mb-6 bg-white border border-slate-200 rounded-2xl shadow-sm">
+                <CardContent className="p-8 sm:p-12 text-center">
+                  <p className="text-slate-500 text-lg sm:text-xl font-medium">2nd innings hasn't started yet</p>
                 </CardContent>
               </Card>
             );
@@ -171,10 +191,10 @@ export default function MatchDetails() {
 
         {/* Winner Banner */}
         {match.result === 'completed' && match.winner && (
-          <div className="mb-6 p-3 bg-green-50 rounded-lg border border-green-200 text-center">
+          <div className="mb-6 p-4 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-2xl border border-amber-200 text-center shadow-sm">
             <Trophy className="h-5 w-5 text-amber-500 inline mr-2" />
-            <span className="font-bold text-green-800">
-              {match.winner === 'teamA' ? match.teamA?.teamName : match.winner === 'teamB' ? match.teamB?.teamName : match.winner} won
+            <span className="font-bold text-base sm:text-lg uppercase tracking-wider text-amber-700">
+              {match.winner === 'teamA' ? teamAName : match.winner === 'teamB' ? teamBName : match.winner} won
               {match.margin ? ` by ${match.margin}` : ''}
             </span>
           </div>
@@ -182,13 +202,31 @@ export default function MatchDetails() {
 
         {/* Live Score Display */}
         {(match.result === 'live' || match.result === 'completed') && (
-          <LiveScoreDisplay matchId={match._id} initialData={match} />
+          <LiveScoreDisplay
+            matchId={match._id}
+            initialData={match}
+            viewInnings={selectedInnings as 1 | 2}
+            onMatchUpdate={(rawMatch, computed) => {
+              const merged = { ...rawMatch };
+              if (computed) {
+                merged.score = computed.score;
+                merged.playerStats = computed.playerStats;
+                merged.currentOver = computed.currentOver;
+                merged.currentOverNumber = computed.currentOverNumber;
+                merged.fallOfWickets = computed.fallOfWickets;
+                merged.partnerships = computed.partnerships;
+                merged.last6Balls = computed.last6Balls;
+                merged.commentary = computed.commentary;
+              }
+              setMatch(merged);
+            }}
+          />
         )}
 
         {match.result === 'upcoming' && (
-          <Card>
-            <CardContent className="p-12 text-center">
-              <p className="text-gray-500 text-lg">This match hasn't started yet. Check back on match day for live updates!</p>
+          <Card className="bg-white border border-slate-200 rounded-2xl shadow-sm">
+            <CardContent className="p-12 sm:p-16 text-center">
+              <p className="text-slate-500 text-lg sm:text-xl font-medium">This match hasn't started yet. Check back on match day for live updates!</p>
             </CardContent>
           </Card>
         )}

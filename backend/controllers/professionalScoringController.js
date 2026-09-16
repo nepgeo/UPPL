@@ -112,23 +112,31 @@ exports.setPlayingXI = async (req, res) => {
     if (!['teamA', 'teamB'].includes(team)) return res.status(400).json({ message: 'Invalid team' });
     if (!players || players.length < 11) return res.status(400).json({ message: 'Need at least 11 players' });
 
+    const validRoles = ['batsman', 'bowler', 'all-rounder', 'wk'];
+    const sanitizedPlayers = players.map(p => ({
+      ...p,
+      role: validRoles.includes(p.role) ? p.role : 'batsman',
+    }));
+
     let xi = await PlayingXI.findOne({ matchId, team });
     if (xi) {
-      xi.players = players;
+      xi.players = sanitizedPlayers;
       await xi.save();
     } else {
-      xi = await PlayingXI.create({ matchId, team, players });
+      xi = await PlayingXI.create({ matchId, team, players: sanitizedPlayers });
     }
 
-    // Update match batting order
     const match = await Match.findById(matchId);
-    if (team === 'teamA') match.battingOrderA = players.map(p => p.playerName);
-    else match.battingOrderB = players.map(p => p.playerName);
-    await match.save({ validateBeforeSave: false });
+    if (match) {
+      if (team === 'teamA') match.battingOrderA = sanitizedPlayers.map(p => p.playerName);
+      else match.battingOrderB = sanitizedPlayers.map(p => p.playerName);
+      await match.save({ validateBeforeSave: false });
+    }
 
-    await logAction(matchId, req.user, 'set_playing_xi', {}, { team, count: players.length }, 'Playing XI set');
+    await logAction(matchId, req.user, 'set_playing_xi', {}, { team, count: sanitizedPlayers.length }, 'Playing XI set');
     res.json({ success: true, playingXI: xi });
   } catch (err) {
+    console.error('setPlayingXI error:', err.message);
     res.status(500).json({ message: err.message });
   }
 };
@@ -472,13 +480,32 @@ exports.scoreBall = async (req, res) => {
       } else {
         match.teamBResult = { runs: score.runs, wickets: score.wickets, overs: allOutOvers };
       }
-      // If both innings completed, mark match completed
-      if (match.currentInnings === 2 || match.firstInningsCompleted) {
-        if (match.currentInnings === 2 || (match.currentInnings === 1 && match.firstInningsCompleted)) {
-          match.result = 'completed';
-          const potm2 = calculatePlayerOfTheMatch(match.playerStats);
-          if (potm2) match.playerOfTheMatch = potm2;
-        }
+      // If 1st innings all out, advance to 2nd innings (same as endInnings endpoint)
+      if (match.currentInnings === 1) {
+        match.currentInnings = 2;
+        match.currentOverNumber = 0;
+        match.legalBallsInOver = 0;
+        match.overCompleted = false;
+        match.currentOverRuns = 0;
+        match.currentOverExtras = false;
+        match.currentOver = [];
+        match.freeHit = false;
+        match.powerplayActive = true;
+        // Reset 2nd innings score
+        const secondBattingTeam = match.battingFirst === 'teamA' ? 'teamB' : 'teamA';
+        match.score[secondBattingTeam] = { battingTeam: secondBattingTeam, runs: 0, wickets: 0, balls: 0, extras: 0, fours: 0, sixes: 0, runRate: 0 };
+        // Reset dismissed players and batting order for 2nd innings
+        match.dismissedPlayers = [];
+        match.nextBatAIndex = 0;
+        match.nextBatBIndex = 0;
+        // Reset player stats for 2nd innings (keep 1st innings stats in events)
+        match.playerStats = { batting: [], bowling: [] };
+      }
+      // If 2nd innings all out, mark match completed
+      else if (match.currentInnings === 2) {
+        match.result = 'completed';
+        const potm2 = calculatePlayerOfTheMatch(match.playerStats);
+        if (potm2) match.playerOfTheMatch = potm2;
       }
     }
 
