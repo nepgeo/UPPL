@@ -205,7 +205,7 @@ async function aggregateAllPlayerStats() {
  * - Bowling: wickets * 25 + (wickets >= 3 ? 10 : 0) + (wickets >= 5 ? 20 : 0) + (economy < 6 ? 10 : 0) + (economy < 4 ? 10 : 0)
  * - All-round: bonus for contributing with both bat and ball
  */
-function calculatePlayerOfTheMatch(playerStats) {
+function calculatePlayerOfTheMatch(playerStats, winner) {
   const batting = playerStats?.batting || [];
   const bowling = playerStats?.bowling || [];
 
@@ -266,6 +266,10 @@ function calculatePlayerOfTheMatch(playerStats) {
     // All-round bonus: contributing with both bat and ball
     if (p.batPoints > 10 && p.bowlPoints > 10) {
       p.totalPoints += 15;
+    }
+    // Winning team bonus: prefer players from the winning team
+    if (winner && p.team === winner) {
+      p.totalPoints += 20;
     }
     if (p.totalPoints > bestPoints) {
       bestPoints = p.totalPoints;

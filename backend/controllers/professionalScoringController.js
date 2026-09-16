@@ -255,7 +255,23 @@ exports.endInnings = async (req, res) => {
     await match.save({ validateBeforeSave: false });
 
     if (match.result === 'completed') {
-      const potm = calculatePlayerOfTheMatch(match.playerStats);
+      // Determine winner if not set
+      if (!match.winner) {
+        const firstTeam = match.battingFirst;
+        const secondTeam = firstTeam === 'teamA' ? 'teamB' : 'teamA';
+        const firstScore = match.score[firstTeam]?.runs || 0;
+        const secondScore = match.score[secondTeam]?.runs || 0;
+        if (firstScore > secondScore) {
+          match.winner = firstTeam;
+          match.margin = `${firstScore - secondScore} runs`;
+        } else if (secondScore > firstScore) {
+          match.winner = secondTeam;
+          match.margin = `${10 - (match.score[secondTeam]?.wickets || 0)} wickets`;
+        } else {
+          match.winner = 'tie';
+        }
+      }
+      const potm = calculatePlayerOfTheMatch(match.playerStats, match.winner);
       if (potm) match.playerOfTheMatch = potm;
       aggregatePlayerStatsForMatch(match._id).catch(err =>
         console.warn('Player stats aggregation failed:', err?.message)
@@ -504,7 +520,21 @@ exports.scoreBall = async (req, res) => {
       // If 2nd innings all out, mark match completed
       else if (match.currentInnings === 2) {
         match.result = 'completed';
-        const potm2 = calculatePlayerOfTheMatch(match.playerStats);
+        // When 2nd innings is all out, first batting team wins
+        const firstTeam = match.battingFirst;
+        const firstScore = match.score[firstTeam]?.runs || 0;
+        const secondTeam = firstTeam === 'teamA' ? 'teamB' : 'teamA';
+        const secondScore = match.score[secondTeam]?.runs || 0;
+        if (firstScore > secondScore) {
+          match.winner = firstTeam;
+          match.margin = `${firstScore - secondScore} runs`;
+        } else if (secondScore > firstScore) {
+          match.winner = secondTeam;
+          match.margin = `${10 - (match.score[secondTeam]?.wickets || 0)} wickets`;
+        } else {
+          match.winner = 'tie';
+        }
+        const potm2 = calculatePlayerOfTheMatch(match.playerStats, match.winner);
         if (potm2) match.playerOfTheMatch = potm2;
       }
     }
@@ -605,7 +635,7 @@ exports.scoreBall = async (req, res) => {
           match.inningsStarted = false;
           match.winner = battingTeam;
           match.margin = `${10 - score.wickets} wickets`;
-          const potm3 = calculatePlayerOfTheMatch(match.playerStats);
+          const potm3 = calculatePlayerOfTheMatch(match.playerStats, match.winner);
           if (potm3) match.playerOfTheMatch = potm3;
           match.striker = '';
           match.nonStriker = '';
@@ -943,7 +973,7 @@ exports.getScoringState = async (req, res) => {
 
     // Auto-calculate POTM for completed matches missing it
     if (match.result === 'completed' && (!match.playerOfTheMatch || !match.playerOfTheMatch.playerName)) {
-      const potm = calculatePlayerOfTheMatch(match.playerStats);
+      const potm = calculatePlayerOfTheMatch(match.playerStats, match.winner);
       if (potm) {
         match.playerOfTheMatch = potm;
     await match.save({ validateBeforeSave: false });

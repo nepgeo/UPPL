@@ -192,7 +192,7 @@ const updateMatchResult = async (req, res) => {
     }
 
     // Calculate Player of the Match
-    const potm = calculatePlayerOfTheMatch(match.playerStats);
+    const potm = calculatePlayerOfTheMatch(match.playerStats, match.winner);
     if (potm) match.playerOfTheMatch = potm;
 
     await match.save();
