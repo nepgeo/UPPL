@@ -205,9 +205,40 @@ async function aggregateAllPlayerStats() {
  * - Bowling: wickets * 25 + (wickets >= 3 ? 10 : 0) + (wickets >= 5 ? 20 : 0) + (economy < 6 ? 10 : 0) + (economy < 4 ? 10 : 0)
  * - All-round: bonus for contributing with both bat and ball
  */
-function calculatePlayerOfTheMatch(playerStats, winner) {
-  const batting = playerStats?.batting || [];
-  const bowling = playerStats?.bowling || [];
+function calculatePlayerOfTheMatch(playerStats, winner, events) {
+  // If playerStats is empty or incomplete (only current innings), aggregate from events
+  let batting = playerStats?.batting || [];
+  let bowling = playerStats?.bowling || [];
+
+  if (events && events.length > 0 && batting.length === 0) {
+    // Aggregate batting from events
+    const batMap = {};
+    for (const ev of events) {
+      const name = ev.batsman;
+      const team = ev.battingTeam;
+      if (!name || !team) continue;
+      if (!batMap[name]) batMap[name] = { playerName: name, team, runs: 0, balls: 0, fours: 0, sixes: 0 };
+      batMap[name].runs += (ev.runs || 0) + (ev.extras?.runs || 0);
+      batMap[name].balls += 1;
+      if (ev.isFour) batMap[name].fours += 1;
+      if (ev.isSix) batMap[name].sixes += 1;
+    }
+    batting = Object.values(batMap);
+
+    // Aggregate bowling from events
+    const bowlMap = {};
+    for (const ev of events) {
+      const name = ev.bowler;
+      // Bowling team is the opposite of batting team
+      const team = ev.battingTeam === 'teamA' ? 'teamB' : 'teamA';
+      if (!name) continue;
+      if (!bowlMap[name]) bowlMap[name] = { playerName: name, team, wickets: 0, runs: 0, balls: 0, maidens: 0 };
+      bowlMap[name].runs += (ev.runs || 0) + (ev.extras?.runs || 0);
+      bowlMap[name].balls += 1;
+      if (ev.wicket) bowlMap[name].wickets += 1;
+    }
+    bowling = Object.values(bowlMap);
+  }
 
   // Build a map of all players
   const playerMap = {};

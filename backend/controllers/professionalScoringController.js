@@ -271,7 +271,7 @@ exports.endInnings = async (req, res) => {
           match.winner = 'tie';
         }
       }
-      const potm = calculatePlayerOfTheMatch(match.playerStats, match.winner);
+      const potm = calculatePlayerOfTheMatch(match.playerStats, match.winner, match.events);
       if (potm) match.playerOfTheMatch = potm;
       aggregatePlayerStatsForMatch(match._id).catch(err =>
         console.warn('Player stats aggregation failed:', err?.message)
@@ -534,7 +534,7 @@ exports.scoreBall = async (req, res) => {
         } else {
           match.winner = 'tie';
         }
-        const potm2 = calculatePlayerOfTheMatch(match.playerStats, match.winner);
+        const potm2 = calculatePlayerOfTheMatch(match.playerStats, match.winner, match.events);
         if (potm2) match.playerOfTheMatch = potm2;
       }
     }
@@ -635,7 +635,7 @@ exports.scoreBall = async (req, res) => {
           match.inningsStarted = false;
           match.winner = battingTeam;
           match.margin = `${10 - score.wickets} wickets`;
-          const potm3 = calculatePlayerOfTheMatch(match.playerStats, match.winner);
+          const potm3 = calculatePlayerOfTheMatch(match.playerStats, match.winner, match.events);
           if (potm3) match.playerOfTheMatch = potm3;
           match.striker = '';
           match.nonStriker = '';
@@ -973,7 +973,7 @@ exports.getScoringState = async (req, res) => {
 
     // Auto-calculate POTM for completed matches missing it
     if (match.result === 'completed' && (!match.playerOfTheMatch || !match.playerOfTheMatch.playerName)) {
-      const potm = calculatePlayerOfTheMatch(match.playerStats, match.winner);
+      const potm = calculatePlayerOfTheMatch(match.playerStats, match.winner, match.events);
       if (potm) {
         match.playerOfTheMatch = potm;
     await match.save({ validateBeforeSave: false });
