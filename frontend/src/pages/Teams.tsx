@@ -119,11 +119,11 @@ const Teams = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Page Header */}
-      <div className="bg-gradient-to-r from-[#8fa2ff] via-[#b15cff] to-[#ff8aa1] text-white py-8">
+      <div className="bg-gradient-to-r from-blue-700 via-purple-800 to-indigo-900 text-white py-10 sm:py-16">
         <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl font-bold mb-4">UPPL T20 Teams</h1>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 uppercase">UPPL T20 Teams</h1>
           {seasonNumber && (
-            <p className="text-xl opacity-90">
+            <p className="text-lg sm:text-xl opacity-90 uppercase">
               Explore registered teams for Season {seasonNumber}
             </p>
           )}
@@ -131,49 +131,48 @@ const Teams = () => {
       </div>
 
       {/* Teams Grid */}
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 py-8 sm:py-12">
         {loading ? (
-          <p className="text-center text-gray-500">Loading teams...</p>
+          <p className="text-center text-gray-500 uppercase font-bold">Loading teams...</p>
         ) : teams.length === 0 ? (
-          <p className="text-center text-muted-foreground">
+          <p className="text-center text-muted-foreground uppercase font-bold">
             No teams registered for this season.
           </p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6">
             {teams.map((team, index) => {
               const logoUrl = getImageUrl(team.teamLogo);
 
-
               return (
-                <Card key={team._id} className="hover:shadow-lg transition-shadow">
+                <Card key={team._id} className="hover:shadow-xl transition-all duration-300 rounded-2xl overflow-hidden border-2 border-gray-100 hover:border-purple-200">
                   <CardHeader
-                    className={`${gradients[index % gradients.length]} text-white rounded-t-lg space-y-0 p-5`}
+                    className={`${gradients[index % gradients.length]} text-white rounded-t-2xl space-y-0 p-5 sm:p-6`}
                   >
                     <div className="flex items-center justify-between gap-3">
-                      <CardTitle className="text-lg">{team.teamName}</CardTitle>
+                      <CardTitle className="text-lg sm:text-xl md:text-2xl font-bold uppercase">{team.teamName}</CardTitle>
                       <button
                         type="button"
-                        className="w-24 h-20 bg-white/20 rounded-md flex items-center justify-center"
+                        className="w-20 h-16 sm:w-24 sm:h-20 bg-white/20 rounded-lg flex items-center justify-center hover:bg-white/30 transition-colors"
                         onClick={() => logoUrl && setZoomImage(logoUrl)}
                       >
                         {logoUrl ? (
                           <img src={logoUrl} alt={team.teamName} className="w-full h-full object-contain" />
                         ) : (
-                          <div className="text-white/80">No Logo</div>
+                          <div className="text-white/80 text-xs uppercase">No Logo</div>
                         )}
                       </button>
                     </div>
                   </CardHeader>
 
-                  <CardContent className="p-4 space-y-2">
-                    <p className="text-sm text-gray-700">
+                  <CardContent className="p-4 sm:p-5 space-y-2">
+                    <p className="text-sm sm:text-base text-gray-700 uppercase">
                       <strong>Captain:</strong> {team.captainName}
                     </p>
-                    <p className="text-sm text-gray-700">
+                    <p className="text-sm sm:text-base text-gray-700 uppercase">
                       <strong>Contact:</strong> {team.contactNumber}
                     </p>
                     <Button
-                      className="w-full mt-3 bg-black text-white"
+                      className="w-full mt-3 bg-black text-white hover:bg-gray-800 uppercase font-bold text-sm sm:text-base py-2.5 sm:py-3 rounded-xl"
                       size="sm"
                       onClick={() => setSelectedTeam(team)}
                     >
@@ -222,26 +221,26 @@ const Teams = () => {
               {/* Scrollable Content */}
               <div className="flex-1 overflow-y-auto">
                 {/* Team Info */}
-                <div className="py-4 bg-white px-6">
-                  <h2 className="text-2xl sm:text-3xl font-bold text-center mb-3">
+                <div className="py-4 sm:py-6 bg-white px-6">
+                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-3 uppercase">
                     {selectedTeam.teamName}
                   </h2>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 text-sm sm:text-lg text-gray-800 p-4 sm:p-6 bg-gray-50 rounded-lg shadow-sm mt-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 text-sm sm:text-base md:text-lg text-gray-800 p-4 sm:p-6 bg-gray-50 rounded-lg shadow-sm mt-3">
                     <div className="space-y-3">
-                      <p className="flex items-center gap-2">
+                      <p className="flex items-center gap-2 uppercase">
                         <strong className="text-gray-900">Captain:</strong> {selectedTeam.captainName || "N/A"}
                       </p>
-                      <p className="flex items-center gap-2">
+                      <p className="flex items-center gap-2 uppercase">
                         <strong className="text-gray-900">Contact:</strong> {selectedTeam.contactNumber || "N/A"}
                       </p>
                     </div>
 
                     <div className="text-right space-y-3">
-                      <p className="flex items-center gap-2 justify-end">
+                      <p className="flex items-center gap-2 justify-end uppercase">
                         <strong className="text-gray-900">Coach:</strong> {selectedTeam.coachName || "N/A"}
                       </p>
-                      <p className="flex items-center gap-2 justify-end">
+                      <p className="flex items-center gap-2 justify-end uppercase">
                         <strong className="text-gray-900">Manager:</strong> {selectedTeam.managerName || "N/A"}
                       </p>
                     </div>
@@ -263,26 +262,26 @@ const Teams = () => {
                     return (
                       <div
                         key={idx}
-                        className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg border border-gray-200 bg-white"
+                        className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-colors"
                       >
                         {pic ? (
                           <img
                             src={pic}
                             alt={player?.name}
-                            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border"
+                            className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full object-cover border"
                             onError={(e) => {
                               e.currentTarget.onerror = null;
                               e.currentTarget.src = "/placeholder.svg";
                             }}
                           />
                         ) : (
-                          <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center text-gray-600">
+                          <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-gray-300 flex items-center justify-center text-gray-600">
                             <User size={24} />
                           </div>
                         )}
 
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold truncate flex items-center gap-2">
+                          <p className="font-semibold truncate flex items-center gap-2 text-sm sm:text-base md:text-lg uppercase">
                             {idx + 1}. {player?.name || "Unnamed Player"}
                             {player?.isCaptain && (
                               <span className="ml-2 px-2 py-0.5 bg-purple-600 text-white text-xs rounded-full">
@@ -290,13 +289,13 @@ const Teams = () => {
                               </span>
                             )}
                           </p>
-                          <p className="text-sm text-gray-600 capitalize flex items-center gap-1">
+                          <p className="text-sm sm:text-base text-gray-600 uppercase flex items-center gap-1">
                             {roleIcon(role)} {role}
                           </p>
                         </div>
 
                         {player?.jerseyNumber && (
-                          <span className="text-sm sm:text-base text-gray-800">
+                          <span className="text-sm sm:text-base md:text-lg text-gray-800 uppercase">
                             Jersey No <strong>#{player.jerseyNumber}</strong>
                           </span>
                         )}

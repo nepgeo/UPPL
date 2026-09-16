@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Play, Film, X, Youtube, ExternalLink, Clock, Tv } from 'lucide-react';
+import { ArrowLeft, Play, Film, X, Youtube, ExternalLink, Clock, Tv, Radio } from 'lucide-react';
 import api from '@/lib/api';
 
 function getVideoType(url: string): 'direct' | 'youtube' | 'vimeo' | 'facebook' | 'unknown' {
@@ -39,11 +39,11 @@ function getEmbedUrl(video: any): string {
 }
 
 const platformMeta: Record<string, { label: string; color: string; icon: any }> = {
-  youtube: { label: 'YouTube', color: 'bg-red-600', icon: Youtube },
-  vimeo: { label: 'Vimeo', color: 'bg-blue-600', icon: Film },
-  facebook: { label: 'Facebook', color: 'bg-blue-800', icon: Film },
-  direct: { label: 'Video', color: 'bg-green-600', icon: Tv },
-  unknown: { label: 'Link', color: 'bg-gray-600', icon: ExternalLink },
+  youtube: { label: 'YOUTUBE', color: 'bg-red-600', icon: Youtube },
+  vimeo: { label: 'VIMEO', color: 'bg-blue-600', icon: Film },
+  facebook: { label: 'FACEBOOK', color: 'bg-blue-800', icon: Film },
+  direct: { label: 'VIDEO', color: 'bg-green-600', icon: Tv },
+  unknown: { label: 'LINK', color: 'bg-gray-600', icon: ExternalLink },
 };
 
 export default function WatchLive() {
@@ -60,31 +60,28 @@ export default function WatchLive() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
       {/* Hero */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-red-900 via-red-800 to-purple-900">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 left-10 w-72 h-72 bg-red-500 rounded-full blur-3xl" />
-          <div className="absolute bottom-10 right-10 w-96 h-96 bg-purple-500 rounded-full blur-3xl" />
+      <div className="relative overflow-hidden bg-gradient-to-r from-blue-700 via-purple-800 to-indigo-900">
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute top-10 left-10 w-72 h-72 bg-white rounded-full blur-3xl" />
+          <div className="absolute bottom-10 right-10 w-96 h-96 bg-white rounded-full blur-3xl" />
         </div>
-        <div className="container mx-auto px-4 py-10 md:py-14 relative">
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
-            <Button onClick={() => navigate('/live-scores')} variant="ghost" className="text-white/70 hover:text-white mb-4 -ml-2">
-              <ArrowLeft className="h-4 w-4 mr-2" /> Back to Live Scores
-            </Button>
-            <div className="flex items-center gap-3 mb-2">
-              <Play className="h-6 w-6 text-red-400" />
-              <span className="text-red-400 font-semibold text-sm uppercase tracking-widest">Watch Live</span>
+        <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-10 md:py-14 relative">
+          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center">
+            <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2">
+              <Radio className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white animate-pulse" />
+              <span className="text-white font-bold text-[10px] sm:text-xs md:text-sm uppercase tracking-widest animate-pulse">Watch Live</span>
             </div>
-            <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-3 tracking-tight">Live & Videos</h1>
-            <p className="text-gray-300 text-lg max-w-xl">Watch matches live and catch up with highlights and interviews.</p>
+            <h1 className="text-2xl sm:text-3xl md:text-5xl font-extrabold text-white mb-2 sm:mb-3 tracking-tight uppercase">Live & Videos</h1>
+            <p className="text-white/70 text-xs sm:text-sm md:text-lg max-w-xl mx-auto uppercase">Watch matches live and catch up with highlights and interviews.</p>
           </motion.div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-3 sm:px-4 py-5 sm:py-8">
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {[1, 2, 3, 4, 5, 6].map(i => (
               <div key={i} className="space-y-3">
                 <Skeleton className="w-full aspect-video bg-white/5 rounded-xl" />
@@ -94,18 +91,18 @@ export default function WatchLive() {
             ))}
           </div>
         ) : videos.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-6">
-              <Film className="h-10 w-10 text-gray-500" />
+          <div className="text-center py-16 sm:py-20">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-5 sm:mb-6">
+              <Film className="h-8 w-8 sm:h-10 sm:w-10 text-gray-500" />
             </div>
-            <h2 className="text-2xl font-bold text-white mb-2">No Videos Available</h2>
-            <p className="text-gray-400 mb-6">There are no live streams or videos added yet. Check back later.</p>
-            <Button onClick={() => navigate('/live-scores')} variant="outline" className="border-gray-700 text-white">
-              <ArrowLeft className="h-4 w-4 mr-2" /> Back to Live Scores
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-2 uppercase">No Videos Available</h2>
+            <p className="text-gray-400 mb-5 sm:mb-6 text-xs sm:text-sm uppercase">There are no live streams or videos added yet. Check back later.</p>
+            <Button onClick={() => navigate('/live-scores')} variant="outline" className="border-gray-700 text-white text-xs sm:text-sm">
+              <ArrowLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-2 uppercase" /> BACK TO LIVE SCORES
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {videos.map((video, idx) => {
               const type = getVideoType(video.url);
               const meta = platformMeta[type] || platformMeta.unknown;
@@ -119,36 +116,33 @@ export default function WatchLive() {
                 >
                   <div
                     onClick={() => setSelectedVideo(video)}
-                    className="group cursor-pointer bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700/50 overflow-hidden hover:border-red-500/50 hover:shadow-lg hover:shadow-red-600/10 transition-all duration-300"
+                    className="group cursor-pointer bg-white/5 backdrop-blur-xl rounded-xl border border-white/10 overflow-hidden hover:border-[#b15cff]/50 hover:shadow-lg hover:shadow-[#b15cff]/10 transition-all duration-300"
                   >
                     <div className="aspect-video bg-black relative flex items-center justify-center overflow-hidden">
                       {video.thumbnail ? (
                         <img src={video.thumbnail} alt={video.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
-                          <Icon className="h-14 w-14 text-gray-600" />
+                          <Icon className="h-12 w-12 sm:h-14 sm:w-14 text-gray-600" />
                         </div>
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-16 h-16 rounded-full bg-red-600/90 flex items-center justify-center shadow-lg shadow-red-600/30 opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all duration-300">
-                          <Play className="h-8 w-8 text-white ml-1" />
+                        <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full bg-gradient-to-r from-[#8fa2ff] to-[#ff8aa1] flex items-center justify-center shadow-lg shadow-[#b15cff]/30 opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all duration-300">
+                          <Play className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-white ml-1" />
                         </div>
                       </div>
-                      <Badge className={`absolute top-3 left-3 ${meta.color} text-white border-0 text-xs font-semibold`}>
-                        <Icon className="h-3 w-3 mr-1" /> {meta.label}
-                      </Badge>
+                    </div>
+                    <div className="p-3 sm:p-4">
+                      <h3 className="font-semibold text-white text-sm sm:text-base md:text-lg group-hover:text-[#ff8aa1] transition-colors uppercase">{video.title}</h3>
+                      {video.description && (
+                        <p className="text-xs sm:text-sm md:text-base text-gray-400 mt-1.5 line-clamp-2 uppercase">{video.description}</p>
+                      )}
                       {video.createdAt && (
-                        <div className="absolute bottom-3 right-3 flex items-center gap-1 text-xs text-white/70 bg-black/60 px-2 py-1 rounded-full">
-                          <Clock className="h-3 w-3" />
+                        <div className="flex items-center gap-1 text-[9px] sm:text-xs text-gray-500 mt-2 uppercase">
+                          <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                           {new Date(video.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </div>
-                      )}
-                    </div>
-                    <div className="p-4">
-                      <h3 className="font-semibold text-white truncate group-hover:text-red-400 transition-colors">{video.title}</h3>
-                      {video.description && (
-                        <p className="text-sm text-gray-400 mt-1 line-clamp-2">{video.description}</p>
                       )}
                     </div>
                   </div>
@@ -164,30 +158,30 @@ export default function WatchLive() {
         {selectedVideo && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-2 sm:p-4"
             onClick={() => setSelectedVideo(null)}
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-              className="w-full max-w-5xl bg-gray-900 rounded-2xl overflow-hidden shadow-2xl border border-gray-700/50"
+              className="w-full max-w-5xl bg-gray-900 rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl border border-white/10"
               onClick={e => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-5 py-4 bg-gray-800/80 border-b border-gray-700/50">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className={`w-8 h-8 rounded-lg ${(platformMeta[getVideoType(selectedVideo.url)] || platformMeta.unknown).color} flex items-center justify-center flex-shrink-0`}>
+              <div className="flex items-center justify-between px-3 sm:px-5 py-3 sm:py-4 bg-gray-800/80 border-b border-white/10">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                  <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg ${(platformMeta[getVideoType(selectedVideo.url)] || platformMeta.unknown).color} flex items-center justify-center flex-shrink-0`}>
                     {(() => {
                       const Icon = (platformMeta[getVideoType(selectedVideo.url)] || platformMeta.unknown).icon;
-                      return <Icon className="h-4 w-4 text-white" />;
+                      return <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />;
                     })()}
                   </div>
                   <div className="min-w-0">
-                    <h3 className="text-white font-semibold truncate text-sm">{selectedVideo.title}</h3>
-                    <p className="text-gray-400 text-xs">{(platformMeta[getVideoType(selectedVideo.url)] || platformMeta.unknown).label}</p>
+                    <h3 className="text-white font-semibold truncate text-xs sm:text-sm uppercase">{selectedVideo.title}</h3>
+                    <p className="text-gray-400 text-[10px] sm:text-xs uppercase">{(platformMeta[getVideoType(selectedVideo.url)] || platformMeta.unknown).label}</p>
                   </div>
                 </div>
-                <button onClick={() => setSelectedVideo(null)} className="text-gray-400 hover:text-white hover:bg-white/10 p-2 rounded-lg transition-colors flex-shrink-0">
-                  <X className="h-5 w-5" />
+                <button onClick={() => setSelectedVideo(null)} className="text-gray-400 hover:text-white hover:bg-white/10 p-1.5 sm:p-2 rounded-lg transition-colors flex-shrink-0">
+                  <X className="h-4 w-4 sm:h-5 sm:w-5" />
                 </button>
               </div>
 
@@ -196,12 +190,12 @@ export default function WatchLive() {
                 {getVideoType(selectedVideo.url) === 'direct' ? (
                   <video src={selectedVideo.url} className="w-full h-full" controls autoPlay playsInline />
                 ) : getVideoType(selectedVideo.url) === 'unknown' ? (
-                  <div className="w-full h-full flex flex-col items-center justify-center gap-4 text-gray-400 p-8">
-                    <ExternalLink className="h-12 w-12" />
-                    <p className="text-sm text-center">This video type can't be played in the browser.</p>
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-3 sm:gap-4 text-gray-400 p-6 sm:p-8">
+                    <ExternalLink className="h-10 w-10 sm:h-12 sm:w-12" />
+                    <p className="text-xs sm:text-sm text-center uppercase">This video type can't be played in the browser.</p>
                     <a href={selectedVideo.url} target="_blank" rel="noopener noreferrer"
-                      className="bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-lg font-semibold text-sm transition-colors inline-flex items-center gap-2">
-                      Open Video <ExternalLink className="h-4 w-4" />
+                      className="bg-gradient-to-r from-[#8fa2ff] to-[#ff8aa1] hover:opacity-90 text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg font-semibold text-xs sm:text-sm transition-colors inline-flex items-center gap-2 uppercase">
+                      OPEN VIDEO <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4" />
                     </a>
                   </div>
                 ) : (
@@ -216,15 +210,15 @@ export default function WatchLive() {
                   />
                 )}
                 <a href={selectedVideo.url} target="_blank" rel="noopener noreferrer"
-                  className="absolute bottom-3 right-3 bg-black/70 text-white text-xs px-3 py-1.5 rounded-full hover:bg-black/90 transition-colors z-10 inline-flex items-center gap-1">
-                  Open in new tab <ExternalLink className="h-3 w-3" />
+                  className="absolute bottom-2 right-2 sm:bottom-3 sm:right-3 bg-black/70 text-white text-[9px] sm:text-xs px-2 sm:px-3 py-1 sm:py-1.5 rounded-full hover:bg-black/90 transition-colors z-10 inline-flex items-center gap-1 uppercase">
+                  OPEN IN NEW TAB <ExternalLink className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                 </a>
               </div>
 
               {/* Description */}
               {selectedVideo.description && (
-                <div className="px-5 py-4 bg-gray-800/50 border-t border-gray-700/50">
-                  <p className="text-sm text-gray-400">{selectedVideo.description}</p>
+                <div className="px-3 sm:px-5 py-3 sm:py-4 bg-gray-800/50 border-t border-white/10">
+                  <p className="text-[10px] sm:text-xs md:text-sm text-gray-400 uppercase">{selectedVideo.description}</p>
                 </div>
               )}
             </motion.div>

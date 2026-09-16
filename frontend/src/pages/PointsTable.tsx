@@ -43,9 +43,15 @@ function getInitials(name: string): string {
 }
 
 function formatNrr(nrr: number): string {
-  if (nrr === 0) return "0.000";
+  if (nrr === 0) return "0.00";
   const sign = nrr > 0 ? "+" : "";
   return `${sign}${nrr.toFixed(3)}`;
+}
+
+function formatNrrMobile(nrr: number): string {
+  if (nrr === 0) return "0.00";
+  const sign = nrr > 0 ? "+" : "";
+  return `${sign}${nrr.toFixed(2)}`;
 }
 
 function safeArray<T>(arr: T[] | undefined | null): T[] {
@@ -112,12 +118,12 @@ function normalizeTeamRow(row: any, idx: number): TeamRow {
 
 const Skeleton = () => (
   <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 pb-12">
-    <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-700 text-white py-16 mb-8" />
+    <div className="bg-gradient-to-r from-blue-700 via-purple-800 to-indigo-900 text-white py-16 mb-8" />
     <div className="container mx-auto px-4">
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden animate-pulse">
-        <div className="h-14 bg-gray-100" />
+      <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/40 shadow-sm overflow-hidden animate-pulse">
+        <div className="h-14 bg-gray-100/60" />
         {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-          <div key={i} className="flex items-center gap-4 px-6 py-4 border-b border-gray-50">
+          <div key={i} className="flex items-center gap-4 px-6 py-4 border-b border-white/20">
             <div className="w-8 h-8 rounded-full bg-gray-100" />
             <div className="h-4 bg-gray-100 rounded w-48" />
             <div className="flex-1" />
@@ -253,7 +259,7 @@ const PointsTable = () => {
       r === "L" ? "bg-red-500 text-white shadow-sm shadow-red-200" :
       "bg-gray-300 text-white";
     return (
-      <span className={`inline-flex items-center justify-center w-7 h-7 md:w-8 md:h-8 rounded-lg text-xs md:text-sm font-bold ${styles}`}>
+      <span className={`inline-flex items-center justify-center w-4 h-4 sm:w-7 sm:h-7 md:w-9 md:h-9 rounded sm:rounded-md md:rounded-lg text-[7px] sm:text-xs md:text-base font-bold ${styles}`}>
         {r}
       </span>
     );
@@ -266,17 +272,17 @@ const PointsTable = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/20 pb-12">
       {/* Hero Header */}
-      <div className="relative bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-700 text-white overflow-hidden">
+      <div className="relative bg-gradient-to-r from-blue-700 via-purple-800 to-indigo-900 text-white overflow-hidden">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNCI+PHBhdGggZD0iTTM2IDM0djItSDJ2LTJoMzRtMCA0djJIMnYtMmgzNG0wIDRoMlYySDJ2MmgzNG0wIDRoMlY2SDJ2MmgzNCIvPjwvZz48L2c+PC9zdmc+')] opacity-30" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.15),transparent_60%)]" />
-        <div className="container mx-auto px-4 py-12 sm:py-16 relative">
-          <div className="flex flex-col items-center text-center gap-4">
-            <div className="p-3 bg-white/15 rounded-2xl backdrop-blur-sm ring-1 ring-white/20">
-              <Trophy className="w-8 h-8 text-yellow-300" />
+        <div className="container mx-auto px-3 py-6 sm:py-16 relative">
+          <div className="flex flex-col items-center text-center gap-3 sm:gap-4">
+            <div className="p-2 sm:p-3 bg-white/15 rounded-2xl backdrop-blur-sm ring-1 ring-white/20">
+              <Trophy className="w-6 h-6 sm:w-10 sm:h-10 text-yellow-300" />
             </div>
             <div>
-              <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Points Table</h1>
-              <p className="text-blue-100/80 mt-2 text-sm sm:text-base max-w-md mx-auto">
+              <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tight uppercase">Points Table</h1>
+              <p className="text-white/80 mt-1.5 sm:mt-2 text-xs sm:text-lg md:text-xl max-w-md mx-auto uppercase">
                 {seasonLabel ? `${seasonLabel} standings` : "Current standings by group"}
               </p>
             </div>
@@ -285,17 +291,17 @@ const PointsTable = () => {
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
       </div>
 
-      <div className="container mx-auto px-4 -mt-6 relative z-10">
+      <div className="container mx-auto px-3 sm:px-4 -mt-5 sm:-mt-6 relative z-10">
         {/* Controls Bar */}
         <motion.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white/90 backdrop-blur-md rounded-2xl shadow-lg shadow-gray-200/50 border border-gray-100 p-2 mb-8 flex items-center justify-between"
+          className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg shadow-gray-200/50 border border-white/40 p-1 sm:p-2 mb-5 sm:mb-8 flex items-center justify-between"
         >
-          <div className="flex bg-gray-100 rounded-xl p-0.5">
+          <div className="flex bg-gray-100 rounded-lg p-0.5">
             <button
               onClick={() => setViewType("current")}
-              className={`px-5 py-2 rounded-lg text-xs font-bold transition-all duration-200 ${
+              className={`px-2.5 sm:px-5 py-1 sm:py-2.5 rounded-md text-[10px] sm:text-sm font-bold uppercase tracking-wider transition-all duration-200 ${
                 viewType === "current"
                   ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-md shadow-blue-200"
                   : "text-gray-500 hover:text-gray-700"
@@ -305,7 +311,7 @@ const PointsTable = () => {
             </button>
             <button
               onClick={() => setViewType("form")}
-              className={`px-5 py-2 rounded-lg text-xs font-bold transition-all duration-200 ${
+              className={`px-2.5 sm:px-5 py-1 sm:py-2.5 rounded-md text-[10px] sm:text-sm font-bold uppercase tracking-wider transition-all duration-200 ${
                 viewType === "form"
                   ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-md shadow-blue-200"
                   : "text-gray-500 hover:text-gray-700"
@@ -324,15 +330,15 @@ const PointsTable = () => {
                 if (season) handleSeasonChange(season);
               }}
             >
-              <SelectTrigger className="w-[180px] h-9 text-xs font-semibold bg-gray-50 border-gray-200 rounded-xl">
-                <SelectValue placeholder="Select season" />
+              <SelectTrigger className="w-[100px] sm:w-[180px] h-7 sm:h-10 text-[10px] sm:text-sm font-bold uppercase bg-gray-50/80 backdrop-blur border-gray-200/60 rounded-lg">
+                <SelectValue placeholder="Season" />
               </SelectTrigger>
               <SelectContent>
                 {allSeasons.map((s) => {
                   const sid = s?._id || s?.id || s?.seasonNumber;
                   const label = s?.seasonLabel || s?.name || `Season ${s?.seasonNumber || ""}`;
                   return (
-                    <SelectItem key={sid} value={sid} className="text-sm">
+                    <SelectItem key={sid} value={sid} className="text-sm uppercase font-semibold">
                       {label}
                     </SelectItem>
                   );
@@ -347,13 +353,13 @@ const PointsTable = () => {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
           >
-            <Card className="border border-gray-100 shadow-sm rounded-2xl overflow-hidden">
-              <div className="flex flex-col items-center justify-center py-20 px-4">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center mb-4 ring-4 ring-blue-100/50">
-                  <Trophy className="w-7 h-7 text-gray-300" />
+            <Card className="border border-white/40 shadow-sm rounded-2xl overflow-hidden bg-white/60 backdrop-blur-xl">
+              <div className="flex flex-col items-center justify-center py-12 sm:py-20 px-4">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center mb-3 sm:mb-4 ring-4 ring-blue-100/50">
+                  <Trophy className="w-5 h-5 sm:w-7 sm:h-7 text-gray-300" />
                 </div>
-                <h3 className="text-lg font-bold text-gray-700 mb-1">No Standings Yet</h3>
-                <p className="text-sm text-gray-400 text-center max-w-xs">
+                <h3 className="text-base sm:text-xl font-bold text-gray-700 mb-1 uppercase">No Standings Yet</h3>
+                <p className="text-xs sm:text-base text-gray-400 text-center max-w-xs uppercase">
                   Standings will appear once matches are played in the current season.
                 </p>
               </div>
@@ -363,7 +369,7 @@ const PointsTable = () => {
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            className="space-y-6"
+            className="space-y-4 sm:space-y-6"
           >
             {groupEntries.map(([groupName, groupTeams], gi) => {
               const teams = safeArray(groupTeams);
@@ -378,32 +384,29 @@ const PointsTable = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: gi * 0.08 }}
                 >
-                  <Card className="border border-gray-100/80 shadow-lg shadow-gray-100/50 rounded-2xl overflow-hidden">
+                  <Card className="border border-white/40 shadow-lg shadow-gray-200/50 rounded-2xl overflow-hidden bg-white/50 backdrop-blur-xl">
                     {/* Group header */}
-                    <div className={`px-5 py-3.5 border-b border-gray-100 bg-gradient-to-r ${color.light} flex items-center gap-2.5`}>
-                      <div className={`w-1.5 h-6 rounded-full bg-gradient-to-b ${color.accent}`} />
-                      <Medal className={`w-4 h-4 ${color.text}`} />
-                      <span className={`text-base md:text-lg font-extrabold ${color.text} uppercase tracking-wider`}>{label}</span>
-                      <Badge variant="secondary" className={`ml-auto ${color.light} ${color.text} border-0 text-[10px] font-bold`}>
-                        {teams.length} {teams.length === 1 ? "team" : "teams"}
-                      </Badge>
+                    <div className={`px-3 sm:px-5 py-2.5 sm:py-4 border-b border-white/30 bg-gradient-to-r ${color.light}/50 flex items-center gap-2 sm:gap-2.5`}>
+                      <div className={`w-1 sm:w-1.5 h-5 sm:h-7 rounded-full bg-gradient-to-b ${color.accent}`} />
+                      <Medal className={`w-4 h-4 sm:w-5 sm:h-5 ${color.text}`} />
+                      <span className={`text-base sm:text-xl md:text-2xl font-extrabold ${color.text} uppercase tracking-wider`}>{label}</span>
                     </div>
 
                     <CardContent className="p-0">
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-sm md:text-base">
+                      <div className="">
+                        <table className="w-full text-xs sm:text-lg md:text-xl">
                           <thead>
-                            <tr className="border-b border-gray-100 bg-gray-50/60">
-                              <th className="text-left py-3.5 px-4 text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-widest w-12">#</th>
-                              <th className="text-left py-3.5 px-2 text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-widest">Team</th>
-                              <th className="text-center py-3.5 px-2 text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-widest w-12">M</th>
-                              <th className="text-center py-3.5 px-2 text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-widest w-12">W</th>
-                              <th className="text-center py-3.5 px-2 text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-widest w-12">L</th>
-                              <th className="text-center py-3.5 px-2 text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-widest w-12">T</th>
-                              <th className="text-center py-3.5 px-2 text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-widest w-24">NRR</th>
-                              <th className="text-center py-3.5 px-3 text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-widest w-16">Pts</th>
+                            <tr className="border-b border-white/30 bg-white/40">
+                              <th className="text-left py-2 sm:py-4 px-1 sm:px-4 text-[8px] sm:text-sm md:text-base font-bold text-gray-400 uppercase tracking-widest w-6 sm:w-12">#</th>
+                              <th className="text-left py-2 sm:py-4 px-1 sm:px-2 text-[8px] sm:text-sm md:text-base font-bold text-gray-400 uppercase tracking-widest">Team</th>
+                              <th className="text-center py-2 sm:py-4 px-0.5 sm:px-2 text-[8px] sm:text-sm md:text-base font-bold text-gray-400 uppercase tracking-widest w-6 sm:w-12">M</th>
+                              <th className="text-center py-2 sm:py-4 px-0.5 sm:px-2 text-[8px] sm:text-sm md:text-base font-bold text-gray-400 uppercase tracking-widest w-6 sm:w-12">W</th>
+                              <th className="text-center py-2 sm:py-4 px-0.5 sm:px-2 text-[8px] sm:text-sm md:text-base font-bold text-gray-400 uppercase tracking-widest w-6 sm:w-12">L</th>
+                              <th className="text-center py-2 sm:py-4 px-0.5 sm:px-2 text-[8px] sm:text-sm md:text-base font-bold text-gray-400 uppercase tracking-widest w-6 sm:w-12">T</th>
+                              <th className="text-center py-2 sm:py-4 px-0.5 sm:px-2 text-[8px] sm:text-sm md:text-base font-bold text-gray-400 uppercase tracking-widest w-12 sm:w-24">NRR</th>
+                              <th className="text-center py-2 sm:py-4 px-0.5 sm:px-3 text-[8px] sm:text-sm md:text-base font-bold text-gray-400 uppercase tracking-widest w-8 sm:w-16">Pts</th>
                               {viewType === "form" && (
-                                <th className="text-center py-3.5 px-2 text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-widest w-36">Form</th>
+                                <th className="text-center py-2 sm:py-4 px-0.5 sm:px-2 text-[8px] sm:text-sm md:text-base font-bold text-gray-400 uppercase tracking-widest w-20 sm:w-36">Form</th>
                               )}
                             </tr>
                           </thead>
@@ -419,66 +422,67 @@ const PointsTable = () => {
                                   initial={{ opacity: 0, x: -8 }}
                                   animate={{ opacity: 1, x: 0 }}
                                   transition={{ delay: i * 0.03 }}
-                                  className={`group border-b border-gray-50/80 transition-all duration-200 ${
+                                  className={`group border-b border-white/20 transition-all duration-200 ${
                                     isQualified ? "bg-emerald-50/40 hover:bg-emerald-50/80" :
                                     isEliminated ? "bg-red-50/30 hover:bg-red-50/60" :
                                     isFirst ? "bg-gradient-to-r from-blue-50/50 to-indigo-50/30 hover:from-blue-50/80 hover:to-indigo-50/50" :
-                                    "hover:bg-gray-50/80"
+                                    "hover:bg-white/60"
                                   }`}
                                 >
-                                  <td className="py-4 px-4">
-                                    <span className={`text-sm md:text-base font-bold ${isFirst ? "text-blue-600" : "text-gray-400"}`}>
+                                  <td className="py-1.5 sm:py-4 px-1 sm:px-4">
+                                    <span className={`text-xs sm:text-lg md:text-xl font-bold ${isFirst ? "text-blue-600" : "text-gray-400"}`}>
                                       {team.position}
                                     </span>
                                   </td>
-                                  <td className="py-4 px-2">
-                                    <div className="flex items-center gap-3">
+                                  <td className="py-1.5 sm:py-4 px-1 sm:px-2">
+                                    <div className="flex items-center gap-1 sm:gap-3">
                                       <div className="relative flex-shrink-0">
                                         {team.teamLogo ? (
                                           <img
                                             src={getProfileImageUrl(team.teamLogo)}
                                             alt={team.team}
-                                            className="w-10 h-10 md:w-11 md:h-11 rounded-xl object-cover ring-2 ring-gray-100 shadow-sm"
+                                            className="w-5 h-5 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded sm:rounded-xl object-cover ring-1 sm:ring-2 ring-white/60 shadow-sm"
                                             onError={(e) => { e.currentTarget.style.display = "none"; (e.currentTarget.nextElementSibling as HTMLElement)?.classList.remove("hidden"); }}
                                           />
                                         ) : null}
-                                        <div className={`w-10 h-10 md:w-11 md:h-11 rounded-xl flex items-center justify-center text-sm md:text-base font-bold text-white shadow-sm ${team.teamLogo ? "hidden" : ""}`}
+                                        <div className={`w-5 h-5 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded sm:rounded-xl flex items-center justify-center text-[7px] sm:text-sm md:text-lg font-bold text-white shadow-sm ${team.teamLogo ? "hidden" : ""}`}
                                           style={{ backgroundColor: hashColor(team.team) }}>
                                           {getInitials(team.team)}
                                         </div>
                                       </div>
-                                      <div className="flex flex-col">
-                                        <span className="text-sm md:text-base font-bold text-gray-800 group-hover:text-blue-600 transition-colors leading-tight">{team.team}</span>
+                                      <div className="flex flex-col min-w-0">
+                                        <span className="text-[10px] sm:text-base md:text-xl font-bold text-gray-800 group-hover:text-blue-600 transition-colors leading-tight uppercase whitespace-nowrap">{team.team}</span>
                                       </div>
                                     </div>
                                   </td>
-                                  <td className="text-center py-4 px-2 font-semibold text-gray-600 text-sm md:text-base">{team.matches}</td>
-                                  <td className="text-center py-4 px-2 font-bold text-emerald-600 text-sm md:text-base">{team.won}</td>
-                                  <td className="text-center py-4 px-2 font-bold text-red-500 text-sm md:text-base">{team.lost}</td>
-                                  <td className="text-center py-4 px-2 text-gray-400 text-sm md:text-base">{team.tied}</td>
-                                  <td className="text-center py-4 px-2">
-                                    <span className={`inline-block px-2.5 py-1 rounded-lg text-xs md:text-sm font-bold ${
+                                  <td className="text-center py-1.5 sm:py-4 px-0.5 sm:px-2 font-semibold text-gray-600 text-xs sm:text-lg md:text-xl">{team.matches}</td>
+                                  <td className="text-center py-1.5 sm:py-4 px-0.5 sm:px-2 font-bold text-emerald-600 text-xs sm:text-lg md:text-xl">{team.won}</td>
+                                  <td className="text-center py-1.5 sm:py-4 px-0.5 sm:px-2 font-bold text-red-500 text-xs sm:text-lg md:text-xl">{team.lost}</td>
+                                  <td className="text-center py-1.5 sm:py-4 px-0.5 sm:px-2 text-gray-400 text-xs sm:text-lg md:text-xl">{team.tied}</td>
+                                  <td className="text-center py-1.5 sm:py-4 px-0.5 sm:px-2">
+                                    <span className={`inline-block px-0.5 sm:px-3 py-0 sm:py-1.5 rounded sm:rounded-lg text-[10px] sm:text-base md:text-lg font-bold ${
                                       team.nrr > 0 ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/50" :
                                       team.nrr < 0 ? "bg-red-50 text-red-600 ring-1 ring-red-200/50" :
                                       "bg-gray-50 text-gray-400 ring-1 ring-gray-200/50"
                                     }`}>
-                                      {formatNrr(team.nrr)}
+                                      <span className="sm:hidden">{formatNrrMobile(team.nrr)}</span>
+                                      <span className="hidden sm:inline">{formatNrr(team.nrr)}</span>
                                     </span>
                                   </td>
-                                  <td className="text-center py-4 px-3">
-                                    <span className={`text-base md:text-lg font-extrabold ${isFirst ? "text-blue-600" : "text-gray-800"}`}>
+                                  <td className="text-center py-1.5 sm:py-4 px-0.5 sm:px-3">
+                                    <span className={`text-sm sm:text-xl md:text-2xl font-extrabold ${isFirst ? "text-blue-600" : "text-gray-800"}`}>
                                       {team.points}
                                     </span>
                                   </td>
                                   {viewType === "form" && (
-                                    <td className="text-center py-3.5 px-2">
-                                      <div className="flex items-center justify-center gap-1">
+                                    <td className="text-center py-1.5 sm:py-4 px-0.5 sm:px-2">
+                                      <div className="flex items-center justify-center gap-px sm:gap-1.5">
                                         {safeArray(team.form).length > 0 ? (
                                           safeArray(team.form).slice(0, 5).map((r, fi) => (
                                             <span key={fi}>{getFormBadge(r)}</span>
                                           ))
                                         ) : (
-                                          <span className="text-sm text-gray-300">—</span>
+                                          <span className="text-[8px] sm:text-sm text-gray-300">—</span>
                                         )}
                                       </div>
                                     </td>
@@ -494,14 +498,14 @@ const PointsTable = () => {
 
                   {/* Qualification legend */}
                   {gi === groupEntries.length - 1 && (
-                    <div className="flex items-center gap-5 mt-3 px-2 justify-center">
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-3 h-3 rounded bg-emerald-500/20 border border-emerald-500/40" />
-                        <span className="text-[11px] font-medium text-gray-400">Playoff / Qualified</span>
+                    <div className="flex items-center gap-3 sm:gap-5 mt-3 sm:mt-4 px-2 justify-center">
+                      <div className="flex items-center gap-1 sm:gap-1.5">
+                        <span className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded bg-emerald-500/20 border border-emerald-500/40" />
+                        <span className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase">Playoff / Qualified</span>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-3 h-3 rounded bg-red-500/20 border border-red-500/40" />
-                        <span className="text-[11px] font-medium text-gray-400">Eliminated</span>
+                      <div className="flex items-center gap-1 sm:gap-1.5">
+                        <span className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded bg-red-500/20 border border-red-500/40" />
+                        <span className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase">Eliminated</span>
                       </div>
                     </div>
                   )}

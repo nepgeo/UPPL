@@ -280,12 +280,12 @@ useEffect(() => {
     <nav className="bg-white shadow-lg sticky top-0 z-50">
       <div className="px-3 sm:px-4">
         {/* First Line */}
-        <div className="flex items-center justify-between h-14 sm:h-16 border-b border-gray-100 overflow-x-auto">
+        <div className="flex items-center justify-between h-14 sm:h-16 border-b border-gray-100">
           <Link to="/" className="flex items-center shrink-0 mr-2">
             <img
               src={Logo}
               alt="UPPL Logo"
-              className="h-10 sm:h-12 md:h-16 w-auto object-contain"
+              className="h-12 sm:h-12 md:h-16 w-auto object-contain"
             />
           </Link>
 
@@ -299,7 +299,7 @@ useEffect(() => {
                     to="/admin"
                     className="hidden lg:inline text-sm font-medium text-gray-700 hover:text-blue-600"
                   >
-                    <span className="uppercase">Admin</span>
+                    <span className="uppercase">Dashboard</span>
                   </Link>
                 )}
 
@@ -318,9 +318,9 @@ useEffect(() => {
                   className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
                   onClick={() => setIsProfileOpen(true)}
                 >
-                  <Avatar className="h-7 w-7 sm:h-8 sm:w-8 ring-2 ring-gray-100">
+                  <Avatar className="h-6 w-6 sm:h-8 sm:w-8 ring-2 ring-gray-100">
                     <AvatarImage src={getProfileImageUrl(user?.profileImage)} alt={user?.name} />
-                    <AvatarFallback className="text-[10px] sm:text-xs font-bold bg-primary/10 text-primary">
+                    <AvatarFallback className="text-[9px] sm:text-xs font-bold bg-primary/10 text-primary">
                       {user?.name?.charAt(0)?.toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
@@ -381,10 +381,10 @@ useEffect(() => {
             <Button
               variant="ghost"
               size="sm"
-              className="md:hidden h-9 w-9 p-0 shrink-0"
+              className="md:hidden h-10 w-10 p-0 shrink-0"
               onClick={() => setIsOpen(!isOpen)}
             >
-              {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </Button>
           </div>
         </div>
@@ -427,30 +427,30 @@ useEffect(() => {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-              className="fixed inset-y-0 right-0 z-50 w-[80%] max-w-[320px] 
+              className="fixed inset-y-0 right-0 z-50 w-[50%] max-w-[220px] 
                         bg-gradient-to-br from-blue-700 via-purple-700 to-pink-600 
                         text-white shadow-2xl flex flex-col"
             >
               {/* Header */}
-              <div className="flex items-center justify-between p-4 border-b border-white/20 shrink-0">
-                <h2 className="text-base font-bold tracking-wide">Menu</h2>
+              <div className="flex items-center justify-between p-3 border-b border-white/20 shrink-0">
+                <h2 className="text-sm font-bold tracking-wide uppercase">Menu</h2>
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-white/20 transition-colors"
+                  className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-white/20 transition-colors"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="h-4 w-4" />
                 </button>
               </div>
 
               {/* Links */}
-              <div className="flex-1 overflow-y-auto px-3 py-4">
-                <nav className="space-y-1">
+              <div className="flex-1 overflow-y-auto px-2 py-3">
+                <nav className="space-y-0.5">
                   {publicLinks.map((link) => (
                     <Link
                       key={link.path}
                       to={link.path}
                       onClick={() => setIsOpen(false)}
-                      className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 uppercase ${
+                      className={`block px-2.5 py-2 rounded-lg text-xs font-medium transition-all duration-200 uppercase ${
                         isActive(link.path)
                           ? "bg-white text-blue-700 shadow-md font-bold"
                           : "hover:bg-white/15 active:bg-white/25"
@@ -462,25 +462,28 @@ useEffect(() => {
                 </nav>
 
                 {(role === "admin" || role === "super-admin") && (
-                  <div className="mt-4 bg-white/10 rounded-xl p-3">
-                    <p className="text-[10px] font-bold uppercase text-yellow-300 mb-2 tracking-widest">
+                  <div className="mt-3 bg-white/10 rounded-xl p-2.5">
+                    <p className="text-[10px] font-bold uppercase text-yellow-300 mb-1.5 tracking-widest">
                       Admin Panel
                     </p>
                     <div className="space-y-0.5">
                       {[
                         { label: "Overview", tab: "overview" },
+                        { label: "Users", tab: "users" },
                         { label: "Verifications", tab: "players" },
-                        { label: "Season", tab: "season" },
-                        { label: "Schedule", tab: "schedule" },
+                        { label: "Season", tab: "teams" },
+                        { label: "Team Management", tab: "team-management" },
+                        { label: "Schedule", tab: "matches" },
                         { label: "Gallery", tab: "gallery" },
                         { label: "News", tab: "news" },
                         { label: "Sponsor", tab: "sponsor" },
+                        { label: "Videos", tab: "videos" },
                       ].map((item) => (
                         <Link
                           key={item.tab}
                           to={`/admin?tab=${item.tab}`}
                           onClick={() => setIsOpen(false)}
-                          className="block px-3 py-2 rounded-lg text-sm hover:bg-white/20 transition-colors uppercase"
+                          className="block px-2.5 py-2 rounded-lg text-xs font-medium hover:bg-white/20 transition-colors uppercase"
                         >
                           {item.label}
                         </Link>
@@ -492,15 +495,15 @@ useEffect(() => {
 
               {/* Footer with user/logout */}
               {user && (
-                <div className="border-t border-white/20 p-3 shrink-0">
-                  <p className="text-xs font-medium mb-2 truncate">
+                <div className="border-t border-white/20 p-2.5 shrink-0">
+                  <p className="text-[10px] font-medium mb-1.5 truncate">
                     Signed in as <span className="font-bold">{user?.name}</span>
                   </p>
                   <Button
                     onClick={logout}
                     variant="outline"
                     size="sm"
-                    className="w-full bg-white/10 text-white border-white/30 font-semibold rounded-lg hover:bg-red-500 hover:text-white hover:border-red-500 transition-all text-xs"
+                    className="w-full bg-white/10 text-white border-white/30 font-semibold rounded-lg hover:bg-red-500 hover:text-white hover:border-red-500 transition-all text-[10px] py-1"
                   >
                     Logout
                   </Button>

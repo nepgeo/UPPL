@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Search, Camera, Image as ImageIcon, Play, FolderOpen, ChevronLeft, X } from "lucide-react";
+import { Search, Camera, Image as ImageIcon, Play, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
@@ -48,9 +48,12 @@ const itemVariants = {
 };
 
 const SkeletonCard = () => (
-  <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden animate-pulse">
+  <div className="bg-white/60 backdrop-blur-xl rounded-2xl border border-white/40 overflow-hidden animate-pulse">
     <div className="aspect-square bg-gray-100" />
-    <div className="p-4 space-y-2"><div className="h-3 bg-gray-100 rounded w-20" /><div className="h-4 bg-gray-100 rounded w-3/4" /></div>
+    <div className="p-3 sm:p-4 space-y-2">
+      <div className="h-3 bg-gray-100 rounded w-20" />
+      <div className="h-4 bg-gray-100 rounded w-3/4" />
+    </div>
   </div>
 );
 
@@ -93,57 +96,59 @@ const Gallery = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Hero */}
-      <div className="relative bg-gradient-to-r from-slate-900 via-blue-900 to-slate-800 text-white overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(59,130,246,0.15),transparent_50%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(139,92,246,0.1),transparent_50%)]" />
-        <div className="container mx-auto px-4 py-14 sm:py-18 relative">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2.5 bg-white/10 rounded-xl backdrop-blur-sm">
-              <Camera className="w-6 h-6 text-blue-300" />
+      <div className="relative bg-gradient-to-r from-blue-700 via-purple-800 to-indigo-900 text-white overflow-hidden">
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute top-10 left-10 w-72 h-72 bg-white rounded-full blur-3xl" />
+          <div className="absolute bottom-10 right-10 w-96 h-96 bg-white rounded-full blur-3xl" />
+        </div>
+        <div className="container mx-auto px-3 sm:px-4 py-8 sm:py-14 relative text-center">
+          <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2">
+            <div className="p-2 sm:p-2.5 bg-white/15 rounded-xl backdrop-blur-sm ring-1 ring-white/20">
+              <Camera className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">UPPL T20 Gallery</h1>
           </div>
-          <p className="text-blue-200/80 max-w-xl text-sm sm:text-base">
+          <h1 className="text-2xl sm:text-3xl md:text-5xl font-extrabold tracking-tight uppercase mb-2 sm:mb-3">UPPL T20 Gallery</h1>
+          <p className="text-white/70 max-w-xl text-xs sm:text-sm md:text-lg mx-auto uppercase">
             Capturing the moments that make UPPL T20 unforgettable
           </p>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 -mt-7 relative z-10">
+      <div className="container mx-auto px-3 sm:px-4 -mt-6 sm:-mt-7 relative z-10">
         {/* Search & Filters */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100/80 p-4 sm:p-5 mb-8">
-          <div className="flex flex-col sm:flex-row gap-3 mb-4">
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-sm border border-white/40 p-3 sm:p-5 mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row gap-3 mb-3 sm:mb-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 sm:left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" />
               <Input
-                placeholder={view === "albums" ? "Search albums..." : "Search by title or tag..."}
+                placeholder={view === "albums" ? "SEARCH ALBUMS..." : "SEARCH BY TITLE OR TAG..."}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 border-gray-200 bg-gray-50 focus:bg-white rounded-xl"
+                className="pl-9 sm:pl-10 border-gray-200 bg-gray-50 focus:bg-white rounded-xl text-xs sm:text-sm"
               />
             </div>
             <div className="flex bg-gray-100 rounded-lg p-0.5 shrink-0">
               <button
                 onClick={() => setView("grid")}
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${view === "grid" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500"}`}
+                className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md text-[10px] sm:text-xs font-semibold uppercase transition-all ${view === "grid" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500"}`}
               >
                 Photos
               </button>
               <button
                 onClick={() => setView("albums")}
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${view === "albums" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500"}`}
+                className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md text-[10px] sm:text-xs font-semibold uppercase transition-all ${view === "albums" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500"}`}
               >
                 Albums
               </button>
             </div>
           </div>
           {view === "grid" && (
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-1.5 sm:gap-2 flex-wrap">
               {CATEGORIES.map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all border ${
+                  className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-semibold uppercase transition-all border ${
                     selectedCategory === cat
                       ? cat === "all" ? "bg-gray-900 text-white border-gray-900 shadow-md" : `${CATEGORY_COLORS[cat]} text-white border-transparent shadow-md`
                       : "bg-white text-gray-600 border-gray-200 hover:border-gray-400 hover:text-gray-800"
@@ -157,30 +162,30 @@ const Gallery = () => {
         </div>
 
         {/* Count */}
-        <div className="flex items-center justify-between mb-6 text-sm text-gray-500">
-          <span className="font-semibold text-gray-800">
+        <div className="flex items-center justify-between mb-5 sm:mb-6 text-xs sm:text-sm text-gray-500">
+          <span className="font-semibold text-gray-800 uppercase">
             {view === "albums" ? `${albums.length} album${albums.length !== 1 ? "s" : ""}` : `${filteredItems.length} item${filteredItems.length !== 1 ? "s" : ""}`}
           </span>
-          {loading && <span className="text-blue-500 animate-pulse text-xs font-semibold">Loading...</span>}
+          {loading && <span className="text-[#b15cff] animate-pulse text-[10px] sm:text-xs font-semibold uppercase">Loading...</span>}
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
             {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
           </div>
         ) : filteredItems.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center mx-auto mb-4">
-              <ImageIcon className="w-7 h-7 text-gray-400" />
+          <div className="text-center py-16 sm:py-20">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center mx-auto mb-4">
+              <ImageIcon className="w-6 h-6 sm:w-7 sm:h-7 text-gray-400" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-700 mb-1">Nothing here yet</h3>
-            <p className="text-sm text-gray-400">Try adjusting your search or filter</p>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-700 mb-1 uppercase">Nothing here yet</h3>
+            <p className="text-xs sm:text-sm text-gray-400 uppercase">Try adjusting your search or filter</p>
           </div>
         ) : view === "albums" ? (
-          <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {(filteredItems as any[]).map((album, i) => (
               <motion.div key={album.name} variants={itemVariants}>
-                <Card className="overflow-hidden border border-gray-100/80 shadow-sm hover:shadow-lg transition-all duration-300 rounded-2xl cursor-pointer group" onClick={() => { setSearchTerm(""); setView("grid"); setSelectedCategory(album.category || "all"); }}>
+                <Card className="overflow-hidden border border-white/40 shadow-sm hover:shadow-lg transition-all duration-300 rounded-2xl cursor-pointer group bg-white/60 backdrop-blur-xl" onClick={() => { setSearchTerm(""); setView("grid"); setSelectedCategory(album.category || "all"); }}>
                   <div className="aspect-video bg-gray-100 overflow-hidden relative">
                     {album.items[0] && isVideo(getImageUrl(album.items[0].image)) ? (
                       <img src={`https://img.youtube.com/vi/${getYouTubeId(getImageUrl(album.items[0].image)) || ""}/hqdefault.jpg`} alt={album.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onError={(e) => { e.currentTarget.src = "/placeholder.svg"; }} />
@@ -188,9 +193,9 @@ const Gallery = () => {
                       <img src={getImageUrl(album.items[0]?.image)} alt={album.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onError={(e) => { e.currentTarget.src = "/placeholder.svg"; }} />
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-                    <div className="absolute bottom-3 left-3 text-white">
-                      <h3 className="font-bold text-sm">{album.name}</h3>
-                      <p className="text-[10px] text-white/70">{album.items.length} items</p>
+                    <div className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3 text-white">
+                      <h3 className="font-bold text-xs sm:text-sm uppercase">{album.name}</h3>
+                      <p className="text-[9px] sm:text-[10px] text-white/70 uppercase">{album.items.length} items</p>
                     </div>
                   </div>
                 </Card>
@@ -198,21 +203,21 @@ const Gallery = () => {
             ))}
           </motion.div>
         ) : (
-          <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <motion.div variants={containerVariants} initial="hidden" animate="visible" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
             {filteredItems.map((item, i) => {
               const imgUrl = getImageUrl(item.image);
               const vid = isVideo(imgUrl);
               const vidId = vid ? getYouTubeId(imgUrl) : null;
               return (
                 <motion.div key={item._id} variants={itemVariants}>
-                  <Card className="overflow-hidden border border-gray-100/80 shadow-sm hover:shadow-lg transition-all duration-300 rounded-2xl cursor-pointer group" onClick={() => !vid && setPreview(item)}>
+                  <Card className="overflow-hidden border border-white/40 shadow-sm hover:shadow-lg transition-all duration-300 rounded-2xl cursor-pointer group bg-white/60 backdrop-blur-xl" onClick={() => !vid && setPreview(item)}>
                     <div className="aspect-square bg-gray-100 overflow-hidden relative">
                       {vid && vidId ? (
                         <div className="w-full h-full relative">
                           <img src={`https://img.youtube.com/vi/${vidId}/hqdefault.jpg`} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onError={(e) => { e.currentTarget.src = "/placeholder.svg"; }} />
                           <a href={imgUrl} target="_blank" rel="noopener noreferrer" className="absolute inset-0 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-                            <div className="w-12 h-12 rounded-full bg-red-600/90 flex items-center justify-center hover:bg-red-600 transition-colors shadow-lg">
-                              <Play className="w-5 h-5 text-white ml-0.5" />
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-red-600/90 flex items-center justify-center hover:bg-red-600 transition-colors shadow-lg">
+                              <Play className="w-4 h-4 sm:w-5 sm:h-5 text-white ml-0.5" />
                             </div>
                           </a>
                         </div>
@@ -222,15 +227,15 @@ const Gallery = () => {
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
                         </>
                       )}
-                      <div className="absolute top-2 left-2">
-                        <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold text-white ${CATEGORY_COLORS[item.album?.category] || "bg-gray-500"}`}>
+                      <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2">
+                        <span className={`inline-block px-1.5 sm:px-2 py-0.5 rounded-full text-[8px] sm:text-[9px] font-semibold text-white uppercase ${CATEGORY_COLORS[item.album?.category] || "bg-gray-500"}`}>
                           {item.album?.category || "Gallery"}
                         </span>
                       </div>
                     </div>
-                    <CardContent className="p-3">
-                      <h3 className="font-semibold text-xs text-gray-800 truncate group-hover:text-blue-600 transition-colors">{item.title}</h3>
-                      <p className="text-[10px] text-gray-400 mt-0.5">{new Date(item.uploadDate).toLocaleDateString()}</p>
+                    <CardContent className="p-2 sm:p-3">
+                      <h3 className="font-semibold text-[10px] sm:text-xs text-gray-800 truncate group-hover:text-[#b15cff] transition-colors uppercase">{item.title}</h3>
+                      <p className="text-[8px] sm:text-[10px] text-gray-400 mt-0.5 uppercase">{new Date(item.uploadDate).toLocaleDateString()}</p>
                     </CardContent>
                   </Card>
                 </motion.div>
@@ -244,20 +249,20 @@ const Gallery = () => {
       <AnimatePresence>
         {preview && (
           <motion.div
-            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-2 sm:p-4"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={() => setPreview(null)}
           >
             <motion.div
-              className="relative max-w-5xl w-full max-h-[90vh] rounded-2xl overflow-hidden shadow-2xl"
+              className="relative max-w-5xl w-full max-h-[90vh] rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl"
               initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}
               onClick={(e) => e.stopPropagation()}
             >
               <button
-                className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-all"
+                className="absolute top-2 right-2 sm:top-3 sm:right-3 z-10 w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-all"
                 onClick={() => setPreview(null)}
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
               <img src={getImageUrl(preview.image)} alt={preview.title} className="w-full max-h-[90vh] object-contain bg-black" />
             </motion.div>
