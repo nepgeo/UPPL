@@ -267,9 +267,9 @@ function calculatePlayerOfTheMatch(playerStats, winner) {
     if (p.batPoints > 10 && p.bowlPoints > 10) {
       p.totalPoints += 15;
     }
-    // Winning team bonus: prefer players from the winning team
+    // Winning team bonus: strongly prefer players from the winning team
     if (winner && p.team === winner) {
-      p.totalPoints += 20;
+      p.totalPoints += 50;
     }
     if (p.totalPoints > bestPoints) {
       bestPoints = p.totalPoints;
