@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Trophy } from 'lucide-react';
+import { Trophy, Medal, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
 import LiveScoreDisplay from '@/components/LiveScore/LiveScoreDisplay';
@@ -33,6 +33,17 @@ interface MatchData {
   matchNumber?: number;
   stage?: string;
   playerStats: any;
+  playerOfTheMatch?: {
+    playerName: string;
+    team: string;
+    reason: string;
+    battingRuns: number;
+    battingBalls: number;
+    bowlingWickets: number;
+    bowlingRuns: number;
+    bowlingOvers: string;
+    points: number;
+  };
 }
 
 function getTeamLogo(logo: any): string {
@@ -189,14 +200,77 @@ export default function MatchDetails() {
           return <ScoreHeader match={scoreHeaderMatch} />;
         })()}
 
-        {/* Winner Banner */}
-        {match.result === 'completed' && match.winner && (
-          <div className="mb-6 p-4 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-2xl border border-amber-200 text-center shadow-sm">
-            <Trophy className="h-5 w-5 text-amber-500 inline mr-2" />
-            <span className="font-bold text-base sm:text-lg uppercase tracking-wider text-amber-700">
-              {match.winner === 'teamA' ? teamAName : match.winner === 'teamB' ? teamBName : match.winner} won
-              {match.margin ? ` by ${match.margin}` : ''}
-            </span>
+        {/* Winner Banner + Player of the Match */}
+        {match.result === 'completed' && (
+          <div className="space-y-4 mb-6">
+            {/* Winner */}
+            {match.winner && (
+              <div className="p-5 bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-50 rounded-2xl border border-amber-200 text-center shadow-sm">
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <Trophy className="h-6 w-6 text-amber-500" />
+                  <span className="text-xs sm:text-sm font-bold uppercase tracking-widest text-amber-600">Result</span>
+                  <Trophy className="h-6 w-6 text-amber-500" />
+                </div>
+                <p className="font-black text-xl sm:text-2xl uppercase tracking-wider text-amber-700">
+                  {match.winner === 'teamA' ? teamAName : match.winner === 'teamB' ? teamBName : match.winner} won
+                </p>
+                {match.margin && (
+                  <p className="text-sm sm:text-base font-bold text-amber-600 mt-1">{match.margin}</p>
+                )}
+                {match.teamAResult && match.teamBResult && (
+                  <div className="flex items-center justify-center gap-4 mt-3 text-sm font-bold text-slate-600">
+                    <span>{teamAName}: {match.teamAResult.runs}/{match.teamAResult.wickets} ({match.teamAResult.overs} ov)</span>
+                    <span className="text-slate-300">|</span>
+                    <span>{teamBName}: {match.teamBResult.runs}/{match.teamBResult.wickets} ({match.teamBResult.overs} ov)</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Player of the Match */}
+            {match.playerOfTheMatch && match.playerOfTheMatch.playerName && (
+              <div className="p-5 bg-gradient-to-r from-purple-50 via-indigo-50 to-purple-50 rounded-2xl border border-purple-200 shadow-sm">
+                <div className="flex items-center justify-center gap-2 mb-3">
+                  <Medal className="h-5 w-5 text-purple-500" />
+                  <span className="text-xs sm:text-sm font-bold uppercase tracking-widest text-purple-600">Player of the Match</span>
+                  <Medal className="h-5 w-5 text-purple-500" />
+                </div>
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-2 mb-1">
+                    <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
+                    <p className="font-black text-lg sm:text-xl uppercase tracking-wider text-slate-800">
+                      {match.playerOfTheMatch.playerName}
+                    </p>
+                    <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
+                  </div>
+                  {match.playerOfTheMatch.team && (
+                    <p className="text-xs sm:text-sm font-bold text-purple-500 uppercase tracking-wider mb-2">
+                      {match.playerOfTheMatch.team === 'teamA' ? teamAName : teamBName}
+                    </p>
+                  )}
+                  <div className="flex items-center justify-center gap-3 flex-wrap text-xs sm:text-sm font-semibold text-slate-600">
+                    {match.playerOfTheMatch.battingRuns > 0 && (
+                      <span className="bg-white border border-slate-200 rounded-lg px-3 py-1">
+                        Bat: <strong className="text-slate-800">{match.playerOfTheMatch.battingRuns}</strong> ({match.playerOfTheMatch.battingBalls} ball{match.playerOfTheMatch.battingBalls !== 1 ? 's' : ''})
+                      </span>
+                    )}
+                    {match.playerOfTheMatch.bowlingWickets > 0 && (
+                      <span className="bg-white border border-slate-200 rounded-lg px-3 py-1">
+                        Bowl: <strong className="text-blue-600">{match.playerOfTheMatch.bowlingWickets}</strong>/{match.playerOfTheMatch.bowlingRuns} ({match.playerOfTheMatch.bowlingOvers} ov)
+                      </span>
+                    )}
+                    {match.playerOfTheMatch.points > 0 && (
+                      <span className="bg-purple-100 border border-purple-200 rounded-lg px-3 py-1 text-purple-700">
+                        Points: <strong>{match.playerOfTheMatch.points}</strong>
+                      </span>
+                    )}
+                  </div>
+                  {match.playerOfTheMatch.reason && (
+                    <p className="text-xs sm:text-sm text-slate-500 mt-2 italic">"{match.playerOfTheMatch.reason}"</p>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
