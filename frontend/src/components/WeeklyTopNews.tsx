@@ -1,6 +1,8 @@
 // src/components/WeeklyTopNews.tsx
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import { Newspaper } from "lucide-react";
 import { getProfileImageUrl } from "@/utils/getProfileImageUrl";
 import api from "@/lib/api";
 
@@ -97,14 +99,16 @@ useEffect(() => {
     <section className="py-16 bg-white">
       <div className="container mx-auto px-4">
         {/* Latest News Heading */}
-        <div className="mb-3 text-center">
-          <h2 className="text-3xl font-bold text-center mb-8 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            Latest News
-          </h2>
-          <p className="text-xl font-semibold mb-3 text-center text-muted-foreground">
-            Stay informed with the latest headlines and updates.
-          </p>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="text-center mb-10"
+        >
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-gray-900 uppercase">LATEST NEWS</h2>
+          <div className="w-16 h-1 bg-gradient-to-r from-orange-400 to-purple-500 mx-auto mt-3 rounded-full" />
+        </motion.div>
 
         {/* Featured Section */}
         <div className="grid lg:grid-cols-3 gap-6 mb-12">
@@ -181,15 +185,19 @@ useEffect(() => {
         </div>
 
         {/* Section Title */}
-        <div className="text-center mb-10">
-          <h2 className="text-3xl font-bold text-center mb-8 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            Weekly Top News
-          </h2>
-          <p className="text-gray-600 text-bold max-w-2xl mx-auto">
-            Stay updated with our Weekly Top News, bringing you the latest
-            trends, insights, and developments from around the world.
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="text-center mb-10"
+        >
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-gray-900 uppercase">WEEKLY TOP NEWS</h2>
+          <div className="w-16 h-1 bg-gradient-to-r from-orange-400 to-purple-500 mx-auto mt-3 rounded-full" />
+          <p className="text-sm sm:text-base md:text-lg font-semibold text-gray-500 uppercase max-w-2xl mx-auto mt-4">
+            Stay updated with our weekly top news, bringing you the latest trends, insights, and developments from around the world.
           </p>
-        </div>
+        </motion.div>
 
         {/* Horizontal Carousel */}
         <div className="overflow-hidden">

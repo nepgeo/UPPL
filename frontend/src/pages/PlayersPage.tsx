@@ -83,8 +83,8 @@ const getInitials = (name: string) =>
     .slice(0, 2);
 
 const statCard = (label: string, value: string | number, accent: string) => (
-  <div className={`bg-gradient-to-br ${accent} rounded-xl p-4 text-center text-white`}>
-    <div className="text-2xl sm:text-3xl font-bold">{value ?? "-"}</div>
+  <div className={`bg-gradient-to-br ${accent} rounded-xl p-4 sm:p-5 text-center text-white`}>
+    <div className="text-2xl sm:text-4xl font-bold">{value ?? "-"}</div>
     <div className="text-xs sm:text-sm opacity-80 font-semibold uppercase tracking-wider mt-1">{label}</div>
   </div>
 );
@@ -264,27 +264,27 @@ const PlayersPage = () => {
       <AnimatePresence>
         {selectedPlayer && (
           <Dialog open={!!selectedPlayer} onOpenChange={(v) => { if (!v) setSelectedPlayer(null); }}>
-            <DialogContent hideClose className="max-w-4xl max-h-[90vh] overflow-y-auto p-0 rounded-2xl">
+            <DialogContent hideClose className="max-w-full max-h-full w-full h-full m-0 p-0 rounded-none overflow-y-auto">
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 10 }}
               >
                 {/* Hero Banner */}
-                <div className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-pink-500 px-6 sm:px-8 py-8 sm:py-10 overflow-hidden">
+                <div className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-pink-500 px-6 sm:px-10 py-10 sm:py-14 overflow-hidden">
                   {/* Background decoration */}
                   <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/5" />
                   <div className="absolute -bottom-10 -left-10 w-32 h-32 rounded-full bg-white/5" />
 
                   <button
                     onClick={() => setSelectedPlayer(null)}
-                    className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-black/20 hover:bg-black/40 text-white/70 hover:text-white transition-all"
+                    className="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-black/20 hover:bg-black/40 text-white/70 hover:text-white transition-all"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-5 h-5" />
                   </button>
 
-                  <div className="flex flex-col sm:flex-row items-center sm:items-end gap-5 relative z-[1]">
-                    <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-2xl overflow-hidden ring-4 ring-white/30 shadow-xl flex-shrink-0">
+                  <div className="flex flex-col sm:flex-row items-center sm:items-end gap-6 relative z-[1]">
+                    <div className="w-28 h-28 sm:w-36 sm:h-36 md:w-40 md:h-40 rounded-2xl overflow-hidden ring-4 ring-white/30 shadow-xl flex-shrink-0">
                       {selectedPlayer.profilePicture ? (
                         <img
                           src={getProfileImageUrl(selectedPlayer.profilePicture)}
@@ -293,38 +293,38 @@ const PlayersPage = () => {
                           onError={(e) => { e.currentTarget.src = "/placeholder.svg"; }}
                         />
                       ) : (
-                        <div className="w-full h-full bg-white/20 flex items-center justify-center text-3xl sm:text-4xl font-bold text-white">
+                        <div className="w-full h-full bg-white/20 flex items-center justify-center text-4xl sm:text-5xl font-bold text-white">
                           {getInitials(selectedPlayer.name)}
                         </div>
                       )}
                     </div>
                     <div className="text-center sm:text-left text-white flex-1">
                       <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold uppercase">{selectedPlayer.name}</h2>
+                        <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold uppercase">{selectedPlayer.name}</h2>
                       </div>
                       <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-2">
-                        <span className="text-sm sm:text-base text-white/80 font-mono uppercase">#{selectedPlayer.playerCode}</span>
+                        <span className="text-base sm:text-lg text-white/80 font-mono uppercase">#{selectedPlayer.playerCode}</span>
                         <span className="w-1 h-1 rounded-full bg-white/40" />
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs sm:text-sm font-bold uppercase tracking-wider bg-white/15 text-white/90`}>
-                          <Award className="w-3 h-3 sm:w-4 sm:h-4" />
+                        <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm sm:text-base font-bold uppercase tracking-wider bg-white/15 text-white/90`}>
+                          <Award className="w-4 h-4 sm:w-5 sm:h-5" />
                           {selectedPlayer.position}
                         </span>
                       </div>
-                      <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 mt-3 text-xs sm:text-sm text-white/70">
+                      <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 mt-4 text-sm sm:text-base text-white/70">
                         {selectedPlayer.dateOfBirth && (
-                          <span className="flex items-center gap-1.5 uppercase"><CalendarDays className="w-3.5 h-3.5" /> {calculateAge(selectedPlayer.dateOfBirth)}</span>
+                          <span className="flex items-center gap-1.5 uppercase"><CalendarDays className="w-4 h-4" /> {calculateAge(selectedPlayer.dateOfBirth)}</span>
                         )}
                         {selectedPlayer.phone && (
-                          <span className="flex items-center gap-1.5 uppercase"><Phone className="w-3.5 h-3.5" /> {selectedPlayer.phone}</span>
+                          <span className="flex items-center gap-1.5 uppercase"><Phone className="w-4 h-4" /> {selectedPlayer.phone}</span>
                         )}
-                        <span className="flex items-center gap-1.5 lowercase"><Mail className="w-3.5 h-3.5" /> {selectedPlayer.email}</span>
+                        <span className="flex items-center gap-1.5 lowercase"><Mail className="w-4 h-4" /> {selectedPlayer.email}</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Content */}
-                <div className="p-6 sm:p-8 space-y-6">
+                <div className="p-6 sm:p-10 space-y-6 sm:space-y-8">
                   {/* Quick Stats */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                     {statCard("Matches", selectedPlayer.careerStats?.matches ?? 0, "from-blue-600 to-blue-700")}
@@ -335,29 +335,29 @@ const PlayersPage = () => {
 
                   {/* Playing Style */}
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl border border-blue-100 p-4 sm:p-5 text-center">
+                    <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl border border-blue-100 p-4 sm:p-6 text-center">
                       <div className="flex items-center justify-center gap-2 mb-3">
                         <div className="p-1.5 bg-blue-100 rounded-lg">
-                          <Target className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+                          <Target className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                         </div>
-                        <span className="text-sm sm:text-lg font-bold text-gray-700 uppercase">Batting</span>
+                        <span className="text-base sm:text-xl font-bold text-gray-700 uppercase">Batting</span>
                       </div>
-                      <p className="text-xs sm:text-base font-medium text-gray-900 uppercase">{selectedPlayer.battingStyle}</p>
+                      <p className="text-sm sm:text-lg font-medium text-gray-900 uppercase">{selectedPlayer.battingStyle}</p>
                     </div>
-                    <div className="bg-gradient-to-br from-purple-50 to-white rounded-xl border border-purple-100 p-4 sm:p-5 text-center">
+                    <div className="bg-gradient-to-br from-purple-50 to-white rounded-xl border border-purple-100 p-4 sm:p-6 text-center">
                       <div className="flex items-center justify-center gap-2 mb-3">
                         <div className="p-1.5 bg-purple-100 rounded-lg">
-                          <Cpu className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
+                          <Cpu className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
                         </div>
-                        <span className="text-sm sm:text-lg font-bold text-gray-700 uppercase">Bowling</span>
+                        <span className="text-base sm:text-xl font-bold text-gray-700 uppercase">Bowling</span>
                       </div>
-                      <p className="text-xs sm:text-base font-medium text-gray-900 uppercase">{selectedPlayer.bowlingStyle}</p>
+                      <p className="text-sm sm:text-lg font-medium text-gray-900 uppercase">{selectedPlayer.bowlingStyle}</p>
                     </div>
                   </div>
 
                   {/* Batting Stats */}
                   <div>
-                    <h3 className="text-base sm:text-lg font-bold text-gray-700 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-700 uppercase tracking-wider mb-3 flex items-center gap-2">
                       <span className="w-1 h-5 rounded-full bg-emerald-500" />
                       Batting Career
                     </h3>
@@ -371,7 +371,7 @@ const PlayersPage = () => {
                         { label: "Not Outs", value: selectedPlayer.careerStats?.notOuts },
                       ].map((s) => (
                         <div key={s.label} className="bg-gray-50 rounded-xl p-3 sm:p-4 text-center border border-gray-100">
-                          <div className="text-lg sm:text-xl font-bold text-gray-900">{s.value ?? "-"}</div>
+                          <div className="text-xl sm:text-2xl font-bold text-gray-900">{s.value ?? "-"}</div>
                           <div className="text-[10px] sm:text-xs text-gray-500 font-medium uppercase tracking-wider">{s.label}</div>
                         </div>
                       ))}
@@ -384,7 +384,7 @@ const PlayersPage = () => {
                         { label: "50s/100s", value: `${Math.floor((selectedPlayer.careerStats?.runs || 0) / 100)}/${Math.floor((selectedPlayer.careerStats?.runs || 0) / 50)}`, color: "text-amber-600" },
                       ].map((s) => (
                         <div key={s.label} className="bg-white rounded-xl p-3 sm:p-4 text-center border border-gray-100">
-                          <div className={`text-lg sm:text-xl font-bold ${s.color}`}>{s.value ?? "-"}</div>
+                          <div className={`text-xl sm:text-2xl font-bold ${s.color}`}>{s.value ?? "-"}</div>
                           <div className="text-[10px] sm:text-xs text-gray-500 font-medium uppercase tracking-wider">{s.label}</div>
                         </div>
                       ))}
@@ -393,7 +393,7 @@ const PlayersPage = () => {
 
                   {/* Bowling Stats */}
                   <div>
-                    <h3 className="text-base sm:text-lg font-bold text-gray-700 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-700 uppercase tracking-wider mb-3 flex items-center gap-2">
                       <span className="w-1 h-5 rounded-full bg-purple-500" />
                       Bowling Career
                     </h3>
@@ -405,26 +405,26 @@ const PlayersPage = () => {
                         { label: "Economy", value: selectedPlayer.careerStats?.economy?.toFixed(1) },
                       ].map((s) => (
                         <div key={s.label} className="bg-gray-50 rounded-xl p-3 sm:p-4 text-center border border-gray-100">
-                          <div className="text-lg sm:text-xl font-bold text-gray-900">{s.value ?? "-"}</div>
+                          <div className="text-xl sm:text-2xl font-bold text-gray-900">{s.value ?? "-"}</div>
                           <div className="text-[10px] sm:text-xs text-gray-500 font-medium uppercase tracking-wider">{s.label}</div>
                         </div>
                       ))}
                     </div>
                     <div className="grid grid-cols-2 gap-3 mt-3">
-                      <div className="bg-gradient-to-br from-purple-50 to-white rounded-xl border border-purple-100 p-4 sm:p-5 flex items-center gap-3">
-                        <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
+                      <div className="bg-gradient-to-br from-purple-50 to-white rounded-xl border border-purple-100 p-4 sm:p-6 flex items-center gap-3">
+                        <Trophy className="w-6 h-6 sm:w-7 sm:h-7 text-purple-600" />
                         <div>
                           <div className="text-xs sm:text-sm text-gray-500 uppercase tracking-wider font-semibold">Best Bowling</div>
-                          <div className="text-xl sm:text-2xl font-bold text-gray-900">
+                          <div className="text-2xl sm:text-3xl font-bold text-gray-900">
                             {selectedPlayer.careerStats?.bestBowlingWickets || "-"}/{selectedPlayer.careerStats?.bestBowlingRuns || "-"}
                           </div>
                         </div>
                       </div>
-                      <div className="bg-gradient-to-br from-amber-50 to-white rounded-xl border border-amber-100 p-4 sm:p-5 flex items-center gap-3">
-                        <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600" />
+                      <div className="bg-gradient-to-br from-amber-50 to-white rounded-xl border border-amber-100 p-4 sm:p-6 flex items-center gap-3">
+                        <ShieldCheck className="w-6 h-6 sm:w-7 sm:h-7 text-amber-600" />
                         <div>
                           <div className="text-xs sm:text-sm text-gray-500 uppercase tracking-wider font-semibold">Fielding</div>
-                          <div className="text-xl sm:text-2xl font-bold text-gray-900">
+                          <div className="text-2xl sm:text-3xl font-bold text-gray-900">
                             {selectedPlayer.careerStats?.catches || 0} ct / {selectedPlayer.careerStats?.stumpings || 0} st
                           </div>
                         </div>
@@ -435,7 +435,7 @@ const PlayersPage = () => {
                   {/* Bio */}
                   {selectedPlayer.bio && (
                     <div>
-                      <h3 className="text-base sm:text-lg font-bold text-gray-700 uppercase tracking-wider mb-3 flex items-center gap-2">
+                      <h3 className="text-lg sm:text-xl font-bold text-gray-700 uppercase tracking-wider mb-3 flex items-center gap-2">
                         <span className="w-1 h-5 rounded-full bg-gray-500" />
                         About
                       </h3>

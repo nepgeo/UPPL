@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, TrendingUp, Award, Zap, Target, Mic2, ChevronDown, Crown, Medal, Star } from 'lucide-react';
+import { TrendingUp, Award, Zap, Target, Mic2, ChevronDown, Crown, Medal, Star } from 'lucide-react';
 import api from '@/lib/api';
 import { getProfileImageUrl } from '@/utils/getProfileImageUrl';
 
@@ -197,32 +196,28 @@ const TournamentStats = () => {
       {/* Header */}
       <div className="bg-gradient-to-r from-orange-600 via-purple-600 to-indigo-700 text-white">
         <div className="container mx-auto px-4 py-10 sm:py-12">
-          <Link to="/" className="inline-flex items-center text-white/70 hover:text-white mb-4 transition-colors text-sm">
-            <ArrowLeft className="h-4 w-4 mr-1.5" />
-            Back to Home
-          </Link>
           <div className="text-center">
             <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-1.5 mb-3">
               <Star className="h-4 w-4 text-yellow-300" />
               <span className="text-xs font-bold uppercase tracking-wider">Season {selectedSeason?.seasonNumber || ''}</span>
             </div>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black mb-2">LEADERBOARD</h1>
-            <p className="text-white/70 text-sm md:text-base">Top performers and their stats</p>
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-black mb-2">LEADERBOARD</h1>
+            <p className="text-white/70 text-base md:text-lg uppercase">Top performers and their stats</p>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-6 sm:py-8 max-w-6xl">
+      <div className="container mx-auto px-4 py-6 sm:py-8 max-w-7xl">
         {/* Season + Tab Buttons */}
-        <div className="flex flex-wrap justify-center gap-2 mb-8">
-          <div className="relative">
+        <div className="grid grid-cols-3 gap-1.5 sm:flex sm:flex-wrap sm:justify-center sm:gap-2 mb-8">
+          <div className="relative col-span-3">
             <button
               onClick={() => setSeasonOpen(!seasonOpen)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg bg-white text-gray-600 border border-gray-200 hover:text-gray-900 hover:border-gray-300 transition-all duration-200 shadow-sm"
+              className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg bg-white text-gray-600 border border-gray-200 hover:text-gray-900 hover:border-gray-300 transition-all duration-200 shadow-sm uppercase"
             >
-              <span className="text-base">📅</span>
+              <span className="text-sm sm:text-base">📅</span>
               Season {selectedSeason?.seasonNumber || ''}{selectedSeason?.isCurrent ? ' (Current)' : ''}
-              <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${seasonOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`h-3 w-3 sm:h-3.5 sm:w-3.5 transition-transform duration-200 ${seasonOpen ? 'rotate-180' : ''}`} />
             </button>
             <AnimatePresence>
               {seasonOpen && (
@@ -257,30 +252,24 @@ const TournamentStats = () => {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 ${
+              className={`inline-flex items-center justify-center gap-1 px-1.5 py-1.5 sm:px-4 sm:py-2 text-[9px] sm:text-sm font-semibold rounded-lg transition-all duration-200 ${
                 activeTab === tab.key
                   ? `bg-gradient-to-r ${colorMap[tab.accentColor]} text-white shadow-md`
                   : 'bg-white text-gray-600 border border-gray-200 hover:text-gray-900 hover:border-gray-300'
               }`}
             >
               {tab.icon}
-              <span className="hidden sm:inline">{tab.label}</span>
+              <span className="uppercase">{tab.label}</span>
             </button>
           ))}
         </div>
-
-        {!loading && allPlayers.length > 0 && (
-          <p className="text-center text-xs text-gray-400 -mt-4 mb-6">
-            {allPlayers.length} players • {sortedData.length} shown
-          </p>
-        )}
 
         {/* Content */}
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <div className="text-center">
               <div className="animate-spin w-10 h-10 border-4 border-gray-800 border-t-transparent rounded-full mx-auto mb-4" />
-              <p className="text-gray-500 text-sm">Loading...</p>
+              <p className="text-gray-500 text-sm uppercase">Loading...</p>
             </div>
           </div>
         ) : sortedData.length === 0 ? (
@@ -295,9 +284,9 @@ const TournamentStats = () => {
                 >
                   <TrendingUp className="h-7 w-7 text-gray-500" />
                 </motion.div>
-                <h3 className="text-lg font-bold text-gray-800 mb-2">No Data Available</h3>
+                <h3 className="text-lg font-bold text-gray-800 mb-2 uppercase">No Data Available</h3>
                 <div className="w-10 h-0.5 bg-gradient-to-r from-orange-400 to-purple-500 mx-auto mb-4 rounded-full" />
-                <p className="text-sm text-gray-500 leading-relaxed">
+                <p className="text-sm text-gray-500 leading-relaxed uppercase">
                   {seasonLabel ? `No performance data found for ${seasonLabel}. Stats will appear once matches are played.` : 'Select a season to view player stats.'}
                 </p>
               </div>
@@ -318,38 +307,38 @@ const TournamentStats = () => {
                 transition={{ duration: 0.4, delay: 0.1 }}
                 className="mb-6"
               >
-                <div className={`relative bg-gradient-to-r ${accentBg[activeTabConfig.accentColor]} rounded-2xl p-6 sm:p-8 text-white overflow-hidden shadow-xl`}>
+                <div className={`relative bg-gradient-to-r ${accentBg[activeTabConfig.accentColor]} rounded-2xl p-4 sm:p-8 lg:p-10 text-white overflow-hidden shadow-xl`}>
                   <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/10" />
                   <div className="absolute -bottom-10 -left-10 w-32 h-32 rounded-full bg-white/5" />
-                  <div className="absolute top-4 right-4">
-                    <div className="flex items-center gap-1.5 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1">
-                      <Crown className="h-4 w-4 text-yellow-300" />
-                      <span className="text-xs font-bold">#1</span>
+                  <div className="absolute top-3 right-3 sm:top-4 sm:right-4">
+                    <div className="flex items-center gap-1.5 bg-white/20 backdrop-blur-sm rounded-full px-2.5 py-0.5 sm:px-3 sm:py-1">
+                      <Crown className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-300" />
+                      <span className="text-[10px] sm:text-xs font-bold">#1</span>
                     </div>
                   </div>
-                  <div className="relative flex flex-col sm:flex-row items-center sm:items-end gap-5">
+                  <div className="relative flex flex-col sm:flex-row items-center sm:items-end gap-3 sm:gap-5 lg:gap-8">
                     <motion.div
                       whileHover={{ scale: 1.05 }}
                       transition={{ type: "spring", stiffness: 300 }}
-                      className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden ring-4 ring-white/30 shadow-xl flex-shrink-0"
+                      className="w-16 h-16 sm:w-28 sm:h-28 lg:w-36 lg:h-36 rounded-2xl overflow-hidden ring-4 ring-white/30 shadow-xl flex-shrink-0"
                     >
                       {top1.profilePicture ? (
                         <img src={getProfileImageUrl(top1.profilePicture)} alt="" className="w-full h-full object-cover" />
                       ) : (
-                        <div className="w-full h-full bg-white/20 flex items-center justify-center text-3xl font-black">{top1.name.charAt(0)}</div>
+                        <div className="w-full h-full bg-white/20 flex items-center justify-center text-2xl sm:text-4xl lg:text-5xl font-black">{top1.name.charAt(0)}</div>
                       )}
                     </motion.div>
                     <div className="text-center sm:text-left flex-1">
-                      <p className="text-white/70 text-xs font-semibold uppercase tracking-wider mb-1">{activeTabConfig.label}</p>
-                      <h2 className="text-3xl sm:text-4xl md:text-5xl font-black mb-1 drop-shadow-lg">{top1.name}</h2>
-                      <p className="text-white/60 text-sm font-medium">{top1.position || 'Player'}</p>
-                      <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 sm:gap-5 mt-4">
+                      <p className="text-white/70 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-0.5 sm:mb-1">{activeTabConfig.label}</p>
+                      <h2 className="text-xl sm:text-4xl md:text-5xl lg:text-6xl font-black mb-0.5 sm:mb-1 drop-shadow-lg uppercase">{top1.name}</h2>
+                      <p className="text-white/60 text-[10px] sm:text-base lg:text-lg font-medium uppercase">{top1.position || 'Player'}</p>
+                      <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-6 lg:gap-8 mt-2 sm:mt-4 lg:mt-6">
                         {activeTabConfig.statLabels.map((stat, si) => {
                           const val = getValue(top1, stat.field);
                           return (
                             <div key={stat.key} className="text-center">
-                              <p className={`text-xl sm:text-2xl md:text-3xl font-black ${si === 0 ? 'text-white drop-shadow-md' : 'text-white/90'}`}>{val}</p>
-                              <p className="text-[10px] sm:text-xs text-white/50 uppercase tracking-wider font-medium">{stat.label}</p>
+                              <p className={`text-base sm:text-3xl md:text-4xl lg:text-5xl font-black ${si === 0 ? 'text-white drop-shadow-md' : 'text-white/90'}`}>{val}</p>
+                              <p className="text-[8px] sm:text-xs lg:text-sm text-white/50 uppercase tracking-wider font-medium">{stat.label}</p>
                             </div>
                           );
                         })}
@@ -374,17 +363,17 @@ const TournamentStats = () => {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.25, delay: 0.05 * (i + 1) }}
                         whileHover={{ backgroundColor: 'rgba(249, 250, 251, 0.8)' }}
-                        className="flex items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3.5 sm:py-4 cursor-default"
+                        className={`flex items-center gap-2 sm:gap-4 lg:gap-6 px-3 sm:px-6 lg:px-8 py-2.5 sm:py-4 lg:py-5 cursor-default ${isTop3 ? accentBgSoft[activeTabConfig.accentColor] : ''}`}
                       >
                         {/* Rank */}
-                        <span className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-xs sm:text-sm font-black flex-shrink-0 ${
+                        <span className={`w-6 h-6 sm:w-9 sm:h-9 lg:w-10 lg:h-10 rounded-lg sm:rounded-xl flex items-center justify-center text-[10px] sm:text-base lg:text-lg font-black flex-shrink-0 ${
                           rank === 2 ? 'bg-gray-200 text-gray-600' :
                           rank === 3 ? 'bg-amber-100 text-amber-700' :
                           'bg-gray-50 text-gray-400'
                         }`}>{rank}</span>
 
                         {/* Avatar */}
-                        <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-gray-100 flex-shrink-0 flex items-center justify-center overflow-hidden ring-2 ${accentRing[activeTabConfig.accentColor]} ring-offset-1`}>
+                        <div className={`w-8 h-8 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-lg sm:rounded-xl bg-gray-100 flex-shrink-0 flex items-center justify-center overflow-hidden ring-2 ${accentRing[activeTabConfig.accentColor]} ring-offset-1`}>
                           {p.profilePicture ? (
                             <img src={getProfileImageUrl(p.profilePicture)} alt="" className="w-full h-full object-cover" />
                           ) : (
@@ -394,18 +383,18 @@ const TournamentStats = () => {
 
                         {/* Name + Position */}
                         <div className="min-w-0 flex-1">
-                          <p className={`font-bold text-gray-900 truncate ${isTop3 ? 'text-base sm:text-lg' : 'text-sm sm:text-base'}`}>{p.name}</p>
-                          <p className="text-[10px] sm:text-xs text-gray-400 font-medium">{p.position || 'Player'}</p>
+                          <p className={`font-bold text-gray-900 break-words uppercase ${isTop3 ? 'text-xs sm:text-lg lg:text-xl' : 'text-[11px] sm:text-base lg:text-lg'}`}>{p.name}</p>
+                          <p className="text-[8px] sm:text-xs lg:text-sm text-gray-400 font-medium uppercase">{p.position || 'Player'}</p>
                         </div>
 
                         {/* Stats */}
-                        <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+                        <div className="flex items-center gap-1.5 sm:gap-4 lg:gap-6 flex-shrink-0">
                           {activeTabConfig.statLabels.map((stat, si) => {
                             const val = getValue(p, stat.field);
                             return (
-                              <div key={stat.key} className="text-center min-w-[36px]">
-                                <p className={`font-black ${si === 0 ? `text-lg sm:text-xl ${accentText[activeTabConfig.accentColor]}` : 'text-sm sm:text-base text-gray-700'}`}>{val}</p>
-                                <p className="text-[9px] sm:text-[10px] text-gray-400 uppercase tracking-wider font-medium">{stat.label}</p>
+                              <div key={stat.key} className="text-center min-w-[28px] sm:min-w-[40px] lg:min-w-[56px]">
+                                <p className={`font-black ${si === 0 ? `text-sm sm:text-xl lg:text-2xl ${accentText[activeTabConfig.accentColor]}` : 'text-[11px] sm:text-base lg:text-lg text-gray-700'}`}>{val}</p>
+                                <p className="text-[7px] sm:text-[10px] lg:text-xs text-gray-400 uppercase tracking-wider font-medium">{stat.label}</p>
                               </div>
                             );
                           })}

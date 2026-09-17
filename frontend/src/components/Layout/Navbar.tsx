@@ -381,28 +381,31 @@ useEffect(() => {
             <Button
               variant="ghost"
               size="sm"
-              className="md:hidden h-10 w-10 p-0 shrink-0"
+              className="md:hidden h-12 w-12 p-0 shrink-0"
               onClick={() => setIsOpen(!isOpen)}
             >
-              {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {isOpen ? <X className="h-7 w-7" /> : <Menu className="h-7 w-7" />}
             </Button>
           </div>
         </div>
 
         {/* Second Line - Desktop Nav */}
         </div>
-        <div className="hidden md:flex items-center justify-center h-11 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800">
+        <div className="hidden md:flex items-center justify-center h-12 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800">
           {publicLinks.map((link) => (
             <Link
               key={link.path}
               to={link.path}
-              className={`mx-4 lg:mx-5 text-[13px] font-medium transition-colors hover:text-blue-200 ${
+              className={`relative mx-4 lg:mx-6 text-sm font-bold transition-colors hover:text-white ${
                 isActive(link.path)
-                  ? "text-white font-semibold"
-                  : "text-blue-100"
+                  ? "text-white font-extrabold"
+                  : "text-white/80"
               }`}
             >
                <span className="uppercase">{link.name}</span>
+               {isActive(link.path) && (
+                 <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-yellow-300 rounded-full animate-pulse" />
+               )}
              </Link>
            ))}
          </div>
@@ -427,7 +430,7 @@ useEffect(() => {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-              className="fixed inset-y-0 right-0 z-50 w-[50%] max-w-[220px] 
+              className="fixed inset-y-0 right-0 z-50 w-[55%] max-w-[240px] 
                         bg-gradient-to-br from-blue-700 via-purple-700 to-pink-600 
                         text-white shadow-2xl flex flex-col"
             >

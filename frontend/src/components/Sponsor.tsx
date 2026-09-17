@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { Award } from "lucide-react";
 import api from "@/lib/api";
 import getProfileImageUrl from "@/utils/getProfileImageUrl";
 import { BASE_URL } from "@/config";
@@ -43,7 +45,7 @@ const Sponsors: React.FC<SponsorsProps> = ({ className = "", style }) => {
 
   return (
     <div
-      className={`min-h-screen px-4 py-8 bg-background text-foreground bg-opacity-90 ${className}`}
+      className={`py-12 sm:py-16 bg-gradient-to-b from-amber-50 to-white text-foreground ${className}`}
       style={style}
     >
       <style>{`
@@ -73,16 +75,26 @@ const Sponsors: React.FC<SponsorsProps> = ({ className = "", style }) => {
         }
       `}</style>
 
-      <div className="container mx-auto">
-        <h1 className="text-3xl font-bold text-center mb-8 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-          Our Sponsors
-        </h1>
+      <div className="container mx-auto px-4 max-w-6xl">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="text-center mb-10"
+        >
+          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 text-white text-[10px] font-bold uppercase tracking-widest px-4 py-1.5 rounded-full mb-3 shadow-lg">
+            <Award className="h-3.5 w-3.5" />
+            Partners
+          </div>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-gray-900 uppercase">OUR SPONSORS</h2>
+          <div className="w-16 h-1 bg-gradient-to-r from-amber-400 to-orange-500 mx-auto mt-3 rounded-full" />
+        </motion.div>
 
         {/* Partner Organizations */}
         <section className="mb-12">
-          <h2 className="text-xl sm:text-2xl font-semibold mb-6 text-center text-muted-foreground">
-            Partner Organizations
-          </h2>
+          <h3 className="text-lg sm:text-xl font-bold mb-6 text-center text-gray-700 uppercase">Partner Organizations</h3>
           <div className="relative overflow-hidden rounded-lg px-2 py-4">
             <div className="flex w-max animate-scroll-x gap-6 sm:gap-10 whitespace-nowrap">
               {[...organizationSponsors, ...organizationSponsors].map(
@@ -116,9 +128,7 @@ const Sponsors: React.FC<SponsorsProps> = ({ className = "", style }) => {
 
         {/* Individual Sponsors */}
         <section>
-          <h2 className="text-xl sm:text-2xl font-semibold mb-6 text-center text-muted-foreground">
-            Individual Sponsors
-          </h2>
+          <h3 className="text-lg sm:text-xl font-bold mb-6 text-center text-gray-700 uppercase">Individual Sponsors</h3>
           <div className="relative overflow-hidden rounded-lg px-2 py-4">
             <div className="flex w-max animate-scroll-x-reverse gap-6 sm:gap-10 whitespace-nowrap">
               {[...peopleSponsors, ...peopleSponsors].map((person, i) => (
