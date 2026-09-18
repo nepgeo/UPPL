@@ -1,0 +1,28 @@
+name: Keep-Alive Ping
+
+on:
+  schedule:
+    # Every 10 minutes — prevents Render free tier spin-down
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping backend health endpoint
+        run: |
+          # Replace with your actual Render backend URL
+          BACKEND_URL="${{ secrets.BACKEND_URL }}"
+          if [ -z "$BACKEND_URL" ]; then
+            echo "ERROR: BACKEND_URL secret not set"
+            exit 1
+          fi
+          echo "Pinging $BACKEND_URL ..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$BACKEND_URL/api/health" || true)
+          echo "Response status: $STATUS"
+          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 500 ]; then
+            echo "Backend is alive!"
+          else
+            echo "Backend may be down or still waking up"
+          fi
