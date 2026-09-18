@@ -350,7 +350,7 @@ const NewsArticle = () => {
                           />
                         </div>
                         <CardContent className="p-3">
-                          <Badge className={`${CATEGORY_COLORS[item.category] || "bg-gray-500"} text-white border-0 text-[8px] px-2 py-0.5 mb-1.5`}>
+                          <Badge className={`${CATEGORY_COLORS[item.category] || "bg-gray-500"} text-white border-0 text-[10px] px-2 py-0.5 mb-1.5`}>
                             {item.category}
                           </Badge>
                           <h3 className="font-semibold text-xs text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2">

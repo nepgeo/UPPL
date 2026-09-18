@@ -455,7 +455,7 @@ export default function LiveScoreDisplay({ matchId, initialData, onMatchUpdate, 
                         <div key={i}>
                           {i > 0 && <div className="border-t border-dashed border-slate-200 my-3" />}
                           <div className="flex items-center gap-3 mb-2">
-                            {isCurrent && <span className="text-[9px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">Current</span>}
+                            {isCurrent && <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">Current</span>}
                           </div>
                           {/* Names left/right, Runs | Balls center */}
                           <div className="flex items-center justify-between gap-2 mb-1">
@@ -600,8 +600,8 @@ export default function LiveScoreDisplay({ matchId, initialData, onMatchUpdate, 
                           {w.num}
                         </div>
                         <div className="font-bold text-slate-800 text-[10px] sm:text-sm truncate">{w.batsman}</div>
-                        <div className="text-[9px] sm:text-sm font-semibold text-slate-600 mt-0.5">at {w.score}/{w.num}</div>
-                        <div className="text-[9px] sm:text-sm font-semibold text-slate-500 mt-0.5">Over {w.over}.{w.ball}</div>
+                        <div className="text-[10px] sm:text-sm font-semibold text-slate-600 mt-0.5">at {w.score}/{w.num}</div>
+                        <div className="text-[10px] sm:text-sm font-semibold text-slate-500 mt-0.5">Over {w.over}.{w.ball}</div>
                       </div>
                     );
                   })}
@@ -642,12 +642,12 @@ export default function LiveScoreDisplay({ matchId, initialData, onMatchUpdate, 
                             <div className="flex items-center gap-0.5">
                               <span className="font-bold text-[11px] sm:text-sm md:text-base text-slate-800 uppercase truncate max-w-[70px] sm:max-w-none">{p.playerName}</span>
                               {p.out ? (
-                                <span className="text-red-500 text-[8px] sm:text-[10px] md:text-xs font-bold bg-red-50 px-1 py-0.5 rounded whitespace-nowrap">{p.dismissalType}</span>
+                                <span className="text-red-500 text-[10px] sm:text-[10px] md:text-xs font-bold bg-red-50 px-1 py-0.5 rounded whitespace-nowrap">{p.dismissalType}</span>
                               ) : (
-                                <span className="text-amber-500 text-[9px] sm:text-xs font-bold">*</span>
+                                <span className="text-amber-500 text-[10px] sm:text-xs font-bold">*</span>
                               )}
                             </div>
-                            {p.out && <div className="text-[8px] sm:text-[10px] md:text-xs text-slate-400 mt-0.5">b {p.bowledBy}</div>}
+                            {p.out && <div className="text-[10px] sm:text-[10px] md:text-xs text-slate-400 mt-0.5">b {p.bowledBy}</div>}
                           </td>
                           <td className="px-1.5 py-2.5 text-center text-lg sm:text-2xl md:text-3xl font-black text-slate-900 font-mono">{p.runs}</td>
                           <td className="px-1.5 py-2.5 text-center text-sm sm:text-lg md:text-xl font-bold text-slate-600">{p.balls}</td>
@@ -724,12 +724,12 @@ export default function LiveScoreDisplay({ matchId, initialData, onMatchUpdate, 
                             <div className="flex items-center gap-0.5">
                               <span className="font-bold text-[11px] sm:text-sm md:text-base text-slate-800 uppercase truncate max-w-[70px] sm:max-w-none">{p.playerName}</span>
                               {p.out ? (
-                                <span className="text-red-500 text-[8px] sm:text-[10px] md:text-xs font-bold bg-red-50 px-1 py-0.5 rounded whitespace-nowrap">{p.dismissalType}</span>
+                                <span className="text-red-500 text-[10px] sm:text-[10px] md:text-xs font-bold bg-red-50 px-1 py-0.5 rounded whitespace-nowrap">{p.dismissalType}</span>
                               ) : (
-                                <span className="text-emerald-500 text-[9px] sm:text-xs font-bold">*</span>
+                                <span className="text-emerald-500 text-[10px] sm:text-xs font-bold">*</span>
                               )}
                             </div>
-                            {p.out && <div className="text-[8px] sm:text-[10px] md:text-xs text-slate-400 mt-0.5">b {p.bowledBy}</div>}
+                            {p.out && <div className="text-[10px] sm:text-[10px] md:text-xs text-slate-400 mt-0.5">b {p.bowledBy}</div>}
                           </td>
                           <td className="px-1.5 py-2.5 text-center text-lg sm:text-2xl md:text-3xl font-black text-slate-900 font-mono">{p.runs}</td>
                           <td className="px-1.5 py-2.5 text-center text-sm sm:text-lg md:text-xl font-bold text-slate-600">{p.balls}</td>

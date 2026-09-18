@@ -45,6 +45,7 @@ const Home = () => {
   const [selectedPlayer, setSelectedPlayer] = useState<any | null>(null);
   const [upcomingMatches, setUpcomingMatches] = useState<any[]>([]);
   const [pointsTable, setPointsTable] = useState<any[]>([]);
+  const [pointsGroups, setPointsGroups] = useState<Record<string, any[]>>({});
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -106,15 +107,6 @@ const Home = () => {
       } catch {}
     };
     fetchLive();
-
-    const fetchUpcoming = async () => {
-      try {
-        const res = await api.get("/matches/upcoming", { params: { limit: 4 } });
-        setUpcomingMatches(res.data?.matches || []);
-      } catch {}
-    };
-    fetchUpcoming();
-
   }, []);
 
   useEffect(() => {
@@ -130,14 +122,46 @@ const Home = () => {
           .slice(0, 2);
         if (sorted.length > 0) setLatestResults(sorted);
         else if (matches.length > 0) setLatestResults(matches.slice(0, 2));
-      } catch {}
+      } catch (e) {
+        console.error("Failed to fetch recent results:", e);
+      }
     };
     fetchResult();
+
+    const fetchUpcoming = async () => {
+      try {
+        const res = await api.get("/matches", { params: { seasonNumber: activeSeason._id } });
+        const allMatches = res.data?.matches || [];
+        const upcoming = allMatches
+          .filter((m: any) => m.result === 'upcoming' || (!m.result || m.result === 'pending'))
+          .sort((a: any, b: any) => new Date(a.matchTime).getTime() - new Date(b.matchTime).getTime())
+          .slice(0, 2);
+        setUpcomingMatches(upcoming);
+      } catch (e) {
+        console.error("Failed to fetch upcoming matches:", e);
+      }
+    };
+    fetchUpcoming();
+
+    const fetchPointsTable = async () => {
+      try {
+        const res = await api.get(`/points-table/${activeSeason._id}`);
+        const groups = res.data?.groups || {};
+        const allTeams = res.data?.all || [];
+        setPointsTable(Array.isArray(allTeams) ? allTeams : []);
+        setPointsGroups(groups);
+      } catch (e) {
+        console.error("Failed to fetch points table:", e);
+        setPointsTable([]);
+        setPointsGroups({});
+      }
+    };
+    fetchPointsTable();
 
     api.get(`/player/top-performers?seasonId=${activeSeason._id}`).then(r => {
       setTopBatsmen(r.data.topBatsmen || []);
       setTopBowlers(r.data.topBowlers || []);
-    }).catch(() => {});
+    }).catch((e) => console.error("Failed to fetch top performers:", e));
   }, [activeSeason]);
 
   useEffect(() => {
@@ -170,14 +194,7 @@ const Home = () => {
         return sum + a + b;
       }, 0);
 
-      // ---- Points Table
-      try {
-        const pointsRes = await api.get(`/points-table?seasonId=${seasonId}`, config);
-        const ptsData = pointsRes.data?.pointsTable || pointsRes.data?.all || pointsRes.data || [];
-        setPointsTable(Array.isArray(ptsData) ? ptsData : []);
-      } catch {
-        setPointsTable([]);
-      }
+      // ---- Points Table (already fetched above, skip duplicate)
 
       console.log("Matches array:", matchesArr);
 
@@ -327,184 +344,6 @@ const getInitials = (name: string) => name.split(" ").map((n) => n[0]).join("").
                 </div>
               ))}
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Upcoming Matches */}
-      <section className="py-8 sm:py-12 bg-white">
-        <div className="container mx-auto px-4 max-w-6xl">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="text-center mb-8"
-          >
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-3">
-              <Clock className="h-3 w-3" />
-              Coming Up
-            </div>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-gray-900 uppercase">UPCOMING MATCHES</h2>
-            <div className="w-16 h-1 bg-gradient-to-r from-green-400 to-emerald-500 mx-auto mt-3 rounded-full" />
-          </motion.div>
-          {upcomingMatches.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {upcomingMatches.map((match, i) => (
-                <motion.div
-                  key={match._id || i}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.4, delay: 0.1 * i }}
-                  className="bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-100 p-4 hover:shadow-lg transition-all duration-300"
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-[10px] font-bold text-green-600 uppercase bg-green-50 px-2 py-0.5 rounded-full">
-                      Match {i + 1}
-                    </span>
-                    <span className="text-[9px] text-gray-400 uppercase">{match.matchType || "T20"}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-2 mb-3">
-                    <div className="flex-1 text-center">
-                      <div className="w-10 h-10 mx-auto rounded-full bg-gray-100 flex items-center justify-center overflow-hidden ring-2 ring-gray-200 mb-1.5">
-                        {match.teamA?.teamLogo ? (
-                          <img src={getTeamLogoUrl(match.teamA.teamLogo)} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <span className="text-sm font-bold text-gray-500">{match.teamA?.teamName?.charAt(0)}</span>
-                        )}
-                      </div>
-                      <p className="text-[10px] sm:text-xs font-bold text-gray-800 uppercase truncate">{match.teamA?.teamName || "TBD"}</p>
-                    </div>
-                    <span className="text-xs font-black text-gray-400">VS</span>
-                    <div className="flex-1 text-center">
-                      <div className="w-10 h-10 mx-auto rounded-full bg-gray-100 flex items-center justify-center overflow-hidden ring-2 ring-gray-200 mb-1.5">
-                        {match.teamB?.teamLogo ? (
-                          <img src={getTeamLogoUrl(match.teamB.teamLogo)} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <span className="text-sm font-bold text-gray-500">{match.teamB?.teamName?.charAt(0)}</span>
-                        )}
-                      </div>
-                      <p className="text-[10px] sm:text-xs font-bold text-gray-800 uppercase truncate">{match.teamB?.teamName || "TBD"}</p>
-                    </div>
-                  </div>
-                  <div className="border-t border-dashed border-gray-200 pt-2.5 space-y-1">
-                    <div className="flex items-center gap-1.5 text-[10px] text-gray-500">
-                      <CalendarDays className="h-3 w-3 flex-shrink-0" />
-                      <span className="uppercase">{match.date ? new Date(match.date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : "TBD"}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-[10px] text-gray-500">
-                      <Clock className="h-3 w-3 flex-shrink-0" />
-                      <span className="uppercase">{match.time || "TBD"}</span>
-                    </div>
-                    {match.venue && (
-                      <div className="flex items-center gap-1.5 text-[10px] text-gray-500">
-                        <MapPin className="h-3 w-3 flex-shrink-0" />
-                        <span className="uppercase truncate">{match.venue}</span>
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-12 bg-gradient-to-br from-gray-50 to-white rounded-2xl border border-gray-100">
-              <Clock className="h-10 w-10 text-gray-300 mb-3" />
-              <p className="text-gray-500 font-bold uppercase text-sm">No upcoming matches</p>
-              <p className="text-gray-400 text-xs mt-1 uppercase">Schedule coming soon</p>
-            </div>
-          )}
-          <div className="text-center mt-6">
-            <Link to="/schedule" className="inline-flex items-center gap-2 text-sm font-bold text-green-600 hover:text-green-700 uppercase">
-              View Full Schedule <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Points Table Preview */}
-      <section className="py-8 sm:py-12 bg-gradient-to-b from-gray-50 to-white">
-        <div className="container mx-auto px-4 max-w-4xl">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="text-center mb-8"
-          >
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-3">
-              <Trophy className="h-3 w-3" />
-              Standings
-            </div>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-gray-900 uppercase">POINTS TABLE</h2>
-            <div className="w-16 h-1 bg-gradient-to-r from-blue-400 to-indigo-500 mx-auto mt-3 rounded-full" />
-          </motion.div>
-          {pointsTable.length > 0 ? (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden"
-            >
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
-                      <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider">#</th>
-                      <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider">Team</th>
-                      <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider text-center">P</th>
-                      <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider text-center">W</th>
-                      <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider text-center">L</th>
-                      <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider text-center">D</th>
-                      <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider text-center">Pts</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pointsTable.map((team, i) => (
-                      <tr key={i} className={`border-b border-gray-50 ${i < 3 ? 'bg-blue-50/50' : ''} hover:bg-gray-50 transition-colors`}>
-                        <td className="px-4 py-3">
-                          <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${
-                            i === 0 ? 'bg-yellow-100 text-yellow-700' :
-                            i === 1 ? 'bg-gray-200 text-gray-600' :
-                            i === 2 ? 'bg-amber-100 text-amber-700' :
-                            'bg-gray-50 text-gray-400'
-                          }`}>{i + 1}</span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden ring-1 ring-gray-200 flex-shrink-0">
-                              {team.teamLogo ? (
-                                <img src={getTeamLogoUrl(team.teamLogo)} alt="" className="w-full h-full object-cover" />
-                              ) : (
-                                <span className="text-[9px] font-bold text-gray-500">{team.teamName?.charAt(0)}</span>
-                              )}
-                            </div>
-                            <span className="text-xs sm:text-sm font-bold text-gray-900 uppercase truncate">{team.teamName}</span>
-                          </div>
-                        </td>
-                        <td className="px-3 py-3 text-center text-xs font-semibold text-gray-600">{team.p}</td>
-                        <td className="px-3 py-3 text-center text-xs font-semibold text-green-600">{team.w}</td>
-                        <td className="px-3 py-3 text-center text-xs font-semibold text-red-500">{team.l}</td>
-                        <td className="px-3 py-3 text-center text-xs font-semibold text-gray-500">{team.d}</td>
-                        <td className="px-3 py-3 text-center text-sm font-black text-blue-600">{team.pts}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </motion.div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-12 bg-white rounded-2xl border border-gray-100 shadow-lg">
-              <Trophy className="h-10 w-10 text-gray-300 mb-3" />
-              <p className="text-gray-500 font-bold uppercase text-sm">No standings yet</p>
-              <p className="text-gray-400 text-xs mt-1 uppercase">Points table coming soon</p>
-            </div>
-          )}
-          <div className="text-center mt-6">
-            <Link to="/points-table" className="inline-flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-700 uppercase">
-              View Full Points Table <ArrowRight className="h-4 w-4" />
-            </Link>
           </div>
         </div>
       </section>
@@ -864,6 +703,235 @@ const getInitials = (name: string) => name.split(" ").map((n) => n[0]).join("").
         </div>
       </section>
 
+      {/* Upcoming Matches */}
+      <section className="py-8 sm:py-12 bg-white">
+        <div className="container mx-auto px-4 max-w-6xl">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-8"
+          >
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-3">
+              <Clock className="h-3 w-3" />
+              Coming Up
+            </div>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-gray-900 uppercase">UPCOMING MATCHES</h2>
+            <div className="w-16 h-1 bg-gradient-to-r from-blue-500 to-purple-500 mx-auto mt-3 rounded-full" />
+          </motion.div>
+          {upcomingMatches.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 lg:gap-6">
+              {upcomingMatches.slice(0, 2).map((match, i) => {
+                const matchDate = match.matchTime ? new Date(match.matchTime) : null;
+                const dateStr = matchDate ? matchDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : "TBD";
+                const timeStr = matchDate ? matchDate.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true }) : "TBD";
+                return (
+                <motion.div
+                  key={match._id || i}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: 0.1 * i }}
+                  className="bg-gradient-to-br from-gray-50 to-white rounded-2xl border border-gray-100 p-5 sm:p-6 lg:p-8 hover:shadow-lg transition-all duration-300 flex flex-col"
+                >
+                  <div className="flex items-center justify-between mb-5 lg:mb-6">
+                    <span className="text-[11px] sm:text-xs font-bold text-blue-600 uppercase bg-blue-50 px-2.5 py-1 rounded-full">
+                      Match {match.matchNumber || i + 1}
+                    </span>
+                    <span className="text-[11px] sm:text-xs text-gray-400 uppercase font-medium">{match.stage || match.type || "T20"}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3 sm:gap-4 lg:gap-6 mb-5 lg:mb-6">
+                    <div className="flex-1 flex flex-col items-center text-center min-w-0">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 mx-auto rounded-full bg-gray-100 flex items-center justify-center overflow-hidden ring-2 ring-gray-200 mb-2 lg:mb-3">
+                        {match.teamA?.teamLogo ? (
+                          <img src={getTeamLogoUrl(match.teamA.teamLogo)} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-xl sm:text-2xl font-bold text-gray-500">{match.teamA?.teamName?.charAt(0)}</span>
+                        )}
+                      </div>
+                      <p className="text-xs sm:text-sm lg:text-base font-bold text-gray-800 uppercase w-full">{match.teamA?.teamName || "TBD"}</p>
+                    </div>
+                    <span className="text-xl sm:text-2xl lg:text-3xl font-black text-gray-300 flex-shrink-0">VS</span>
+                    <div className="flex-1 flex flex-col items-center text-center min-w-0">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 mx-auto rounded-full bg-gray-100 flex items-center justify-center overflow-hidden ring-2 ring-gray-200 mb-2 lg:mb-3">
+                        {match.teamB?.teamLogo ? (
+                          <img src={getTeamLogoUrl(match.teamB.teamLogo)} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-xl sm:text-2xl font-bold text-gray-500">{match.teamB?.teamName?.charAt(0)}</span>
+                        )}
+                      </div>
+                      <p className="text-xs sm:text-sm lg:text-base font-bold text-gray-800 uppercase w-full">{match.teamB?.teamName || "TBD"}</p>
+                    </div>
+                  </div>
+                  <div className="mt-auto border-t border-dashed border-gray-200 pt-3 lg:pt-4 space-y-1.5">
+                    <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-gray-600">
+                      <CalendarDays className="h-3.5 w-3.5 lg:h-4 lg:w-4 flex-shrink-0 text-blue-500" />
+                      <span className="font-medium uppercase">{dateStr}</span>
+                      <span className="text-gray-300">|</span>
+                      <Clock className="h-3.5 w-3.5 lg:h-4 lg:w-4 flex-shrink-0 text-purple-500" />
+                      <span className="font-medium uppercase">{timeStr}</span>
+                    </div>
+                    {match.venue && (
+                      <div className="flex items-center justify-center gap-1.5 text-[11px] sm:text-xs text-gray-400">
+                        <MapPin className="h-3 w-3 flex-shrink-0" />
+                        <span className="uppercase truncate">{match.venue}</span>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 bg-gradient-to-br from-gray-50 to-white rounded-2xl border border-gray-100">
+              <Clock className="h-10 w-10 text-gray-300 mb-3" />
+              <p className="text-gray-500 font-bold uppercase text-sm">No upcoming matches</p>
+              <p className="text-gray-400 text-xs mt-1 uppercase">Schedule coming soon</p>
+            </div>
+          )}
+          <div className="text-center mt-6">
+            <Link to="/schedule" className="inline-flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-700 uppercase">
+              View Full Schedule <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Points Table Preview */}
+      <section className="py-8 sm:py-12 bg-gradient-to-b from-gray-50 to-white">
+        <div className="container mx-auto px-4 max-w-6xl">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-8"
+          >
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-3">
+              <Trophy className="h-3 w-3" />
+              Standings
+            </div>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-gray-900 uppercase">POINTS TABLE</h2>
+            <div className="w-16 h-1 bg-gradient-to-r from-blue-400 to-indigo-500 mx-auto mt-3 rounded-full" />
+          </motion.div>
+          {Object.keys(pointsGroups).length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 lg:gap-6">
+              {Object.entries(pointsGroups).map(([groupName, teams], gi) => (
+                <motion.div
+                  key={groupName}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: 0.1 * gi }}
+                  className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden"
+                >
+                  <div className={`px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-3 bg-gradient-to-r ${gi % 2 === 0 ? 'from-blue-500 to-indigo-500' : 'from-purple-500 to-pink-500'} text-white text-center`}>
+                    <h3 className="text-sm sm:text-lg lg:text-lg font-black uppercase tracking-wider">Group {groupName}</h3>
+                  </div>
+                  <div className="px-4 sm:px-6 lg:px-8 py-1.5 lg:py-2 bg-gray-50 border-b border-gray-100 flex items-center justify-end gap-4 sm:gap-6 lg:gap-8 text-[10px] sm:text-xs lg:text-xs font-bold text-gray-400 uppercase tracking-wider">
+                    <span className="w-8 sm:w-10 lg:w-12 text-center">W</span>
+                    <span className="w-8 sm:w-10 lg:w-12 text-center">L</span>
+                    <span className="w-10 sm:w-12 lg:w-14 text-center">Pts</span>
+                  </div>
+                  <div className="divide-y divide-gray-50">
+                    {(Array.isArray(teams) ? teams.slice(0, 6) : []).map((team: any, i: number) => (
+                      <div key={i} className="flex items-center gap-3 sm:gap-5 lg:gap-6 px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3 lg:py-3 hover:bg-gray-50 transition-colors">
+                        <span className={`w-6 h-6 sm:w-8 sm:h-8 lg:w-9 lg:h-9 rounded-full flex items-center justify-center text-[10px] sm:text-xs lg:text-xs font-black flex-shrink-0 ${
+                          i === 0 ? 'bg-yellow-100 text-yellow-700' :
+                          i === 1 ? 'bg-gray-200 text-gray-600' :
+                          i === 2 ? 'bg-amber-100 text-amber-700' :
+                          'bg-gray-50 text-gray-400'
+                        }`}>{i + 1}</span>
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-11 lg:h-11 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden ring-1 ring-gray-200 flex-shrink-0">
+                          {team.teamLogo ? (
+                            <img src={getTeamLogoUrl(team.teamLogo)} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-[10px] sm:text-xs lg:text-xs font-bold text-gray-500">{team.team?.charAt(0)}</span>
+                          )}
+                        </div>
+                        <span className="text-xs sm:text-sm lg:text-sm font-bold text-gray-800 uppercase truncate flex-1 min-w-0">{team.team}</span>
+                        <div className="flex items-center gap-4 sm:gap-6 lg:gap-8 text-[11px] sm:text-sm lg:text-lg font-semibold flex-shrink-0">
+                          <span className="w-8 sm:w-10 lg:w-12 text-center text-green-600">{team.won ?? 0}</span>
+                          <span className="w-8 sm:w-10 lg:w-12 text-center text-red-500">{team.lost ?? 0}</span>
+                          <span className="w-10 sm:w-12 lg:w-14 text-center text-blue-600 font-black">{team.points ?? 0}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          ) : pointsTable.length > 0 ? (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden"
+            >
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+                      <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider">#</th>
+                      <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider">Team</th>
+                      <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider text-center">P</th>
+                      <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider text-center">W</th>
+                      <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider text-center">L</th>
+                      <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider text-center">D</th>
+                      <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider text-center">Pts</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pointsTable.map((team: any, i: number) => (
+                      <tr key={i} className={`border-b border-gray-50 ${i < 3 ? 'bg-blue-50/50' : ''} hover:bg-gray-50 transition-colors`}>
+                        <td className="px-4 py-3">
+                          <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${
+                            i === 0 ? 'bg-yellow-100 text-yellow-700' :
+                            i === 1 ? 'bg-gray-200 text-gray-600' :
+                            i === 2 ? 'bg-amber-100 text-amber-700' :
+                            'bg-gray-50 text-gray-400'
+                          }`}>{i + 1}</span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden ring-1 ring-gray-200 flex-shrink-0">
+                              {team.teamLogo ? (
+                                <img src={getTeamLogoUrl(team.teamLogo)} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <span className="text-[10px] font-bold text-gray-500">{team.teamName?.charAt(0)}</span>
+                              )}
+                            </div>
+                            <span className="text-xs sm:text-sm font-bold text-gray-900 uppercase truncate">{team.teamName}</span>
+                          </div>
+                        </td>
+                        <td className="px-3 py-3 text-center text-xs font-semibold text-gray-600">{team.p ?? team.matches ?? 0}</td>
+                        <td className="px-3 py-3 text-center text-xs font-semibold text-green-600">{team.w ?? team.won ?? 0}</td>
+                        <td className="px-3 py-3 text-center text-xs font-semibold text-red-500">{team.l ?? team.lost ?? 0}</td>
+                        <td className="px-3 py-3 text-center text-xs font-semibold text-gray-500">{team.d ?? team.tied ?? 0}</td>
+                        <td className="px-3 py-3 text-center text-sm font-black text-blue-600">{team.pts ?? team.points ?? 0}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </motion.div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 bg-white rounded-2xl border border-gray-100 shadow-lg">
+              <Trophy className="h-10 w-10 text-gray-300 mb-3" />
+              <p className="text-gray-500 font-bold uppercase text-sm">No standings yet</p>
+              <p className="text-gray-400 text-xs mt-1 uppercase">Points table coming soon</p>
+            </div>
+          )}
+          <div className="text-center mt-6">
+            <Link to="/points-table" className="inline-flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-700 uppercase">
+              View Full Points Table <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* Featured News */}
       <WeeklyTopNews featuredNews={featuredNews} />
 
@@ -878,25 +946,25 @@ const getInitials = (name: string) => name.split(" ").map((n) => n[0]).join("").
 
 
       {/* Quick Actions */}
-      <section className="pt-4 md:pt-8 pb-8">
-        <div className="container mx-auto px-4">
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-5 sm:p-8 text-white">
-            <div className="grid md:grid-cols-2 gap-6 sm:gap-10 items-center">
+      <section className="pt-3 sm:pt-4 md:pt-8 pb-5 sm:pb-8">
+        <div className="container mx-auto px-3 sm:px-4">
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 text-white">
+            <div className="grid md:grid-cols-2 gap-4 sm:gap-6 md:gap-10 items-center">
               
               {/* Left: Join the Community */}
               <div className="text-center md:text-left">
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3">Join the UPPL T20 Community</h2>
-                <p className="text-base sm:text-lg md:text-xl mb-6 opacity-90">
+                <h2 className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold mb-2 sm:mb-3">Join the UPPL T20 Community</h2>
+                <p className="text-sm sm:text-base md:text-lg mb-4 sm:mb-6 opacity-90">
                   Get exclusive updates, player insights, and behind-the-scenes content.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-3 md:justify-start justify-center">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 md:justify-start justify-center">
                   <Link to="/register">
-                    <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100">
+                    <Button size="sm" className="sm:size-lg bg-white text-blue-600 hover:bg-gray-100">
                       Register as Fan
                     </Button>
                   </Link>
                   <Link to="/register?type=player">
-                    <Button size="lg" variant="outline" className="bg-white text-blue-600 hover:bg-gray-100">
+                    <Button size="sm" variant="outline" className="sm:size-lg bg-white text-blue-600 hover:bg-gray-100">
                       Register as Player
                     </Button>
                   </Link>
@@ -904,14 +972,14 @@ const getInitials = (name: string) => name.split(" ").map((n) => n[0]).join("").
               </div>
 
               {/* Right: Become a Sponsor */}
-              <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 sm:p-6 text-center">
-                <h3 className="text-xl sm:text-2xl md:text-3xl font-semibold mb-2">Become a Sponsor</h3>
-                <p className="mb-4 sm:mb-6 text-white/90 text-sm sm:text-base">
+              <div className="bg-white/10 backdrop-blur-md rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 text-center">
+                <h3 className="text-base sm:text-xl md:text-2xl lg:text-3xl font-semibold mb-1.5 sm:mb-2">Become a Sponsor</h3>
+                <p className="mb-3 sm:mb-4 md:mb-6 text-white/90 text-xs sm:text-sm md:text-base">
                   Join our amazing community of sponsors and help us continue building incredible experiences.
                   Your support makes all the difference.
                 </p>
                 <Link to="/sponsors">
-                  <button className="bg-white text-blue-600 px-6 py-2 rounded-md font-medium hover:bg-gray-100 transition-colors duration-300 shadow-md hover:shadow-lg text-sm">
+                  <button className="bg-white text-blue-600 px-4 sm:px-6 py-1.5 sm:py-2 rounded-md font-medium hover:bg-gray-100 transition-colors duration-300 shadow-md hover:shadow-lg text-xs sm:text-sm">
                     Contact Us
                   </button>
                 </Link>

@@ -198,7 +198,7 @@ const CreateSeasonModal = ({ open, onClose, onSubmit, newSeason, setNewSeason }:
                 <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5 block">Day</label>
                 <div className="grid grid-cols-7 gap-1">
                   {['S','M','T','W','T','F','S'].map((d, i) => (
-                    <div key={i} className="text-center text-[9px] font-semibold text-gray-400 pb-0.5">{d}</div>
+                    <div key={i} className="text-center text-[10px] font-semibold text-gray-400 pb-0.5">{d}</div>
                   ))}
                   {Array.from({ length: new Date(selectedYear, selectedMonth, 1).getDay() }, (_, i) => (
                     <div key={`empty-${i}`} />
@@ -263,7 +263,7 @@ const CreateSeasonModal = ({ open, onClose, onSubmit, newSeason, setNewSeason }:
                 </div>
                 {selectedDay && (
                   <div className="bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 text-center shrink-0">
-                    <p className="text-[9px] text-blue-500 font-medium uppercase">Deadline</p>
+                    <p className="text-[10px] text-blue-500 font-medium uppercase">Deadline</p>
                     <p className="text-xs font-bold text-blue-700">{selectedDateStr}</p>
                   </div>
                 )}

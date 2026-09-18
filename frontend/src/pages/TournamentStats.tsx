@@ -252,7 +252,7 @@ const TournamentStats = () => {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`inline-flex items-center justify-center gap-1 px-1.5 py-1.5 sm:px-4 sm:py-2 text-[9px] sm:text-sm font-semibold rounded-lg transition-all duration-200 ${
+              className={`inline-flex items-center justify-center gap-1 px-1.5 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-sm font-semibold rounded-lg transition-all duration-200 ${
                 activeTab === tab.key
                   ? `bg-gradient-to-r ${colorMap[tab.accentColor]} text-white shadow-md`
                   : 'bg-white text-gray-600 border border-gray-200 hover:text-gray-900 hover:border-gray-300'
@@ -338,7 +338,7 @@ const TournamentStats = () => {
                           return (
                             <div key={stat.key} className="text-center">
                               <p className={`text-base sm:text-3xl md:text-4xl lg:text-5xl font-black ${si === 0 ? 'text-white drop-shadow-md' : 'text-white/90'}`}>{val}</p>
-                              <p className="text-[8px] sm:text-xs lg:text-sm text-white/50 uppercase tracking-wider font-medium">{stat.label}</p>
+                              <p className="text-[10px] sm:text-xs lg:text-sm text-white/50 uppercase tracking-wider font-medium">{stat.label}</p>
                             </div>
                           );
                         })}
@@ -384,7 +384,7 @@ const TournamentStats = () => {
                         {/* Name + Position */}
                         <div className="min-w-0 flex-1">
                           <p className={`font-bold text-gray-900 break-words uppercase ${isTop3 ? 'text-xs sm:text-lg lg:text-xl' : 'text-[11px] sm:text-base lg:text-lg'}`}>{p.name}</p>
-                          <p className="text-[8px] sm:text-xs lg:text-sm text-gray-400 font-medium uppercase">{p.position || 'Player'}</p>
+                          <p className="text-[10px] sm:text-xs lg:text-sm text-gray-400 font-medium uppercase">{p.position || 'Player'}</p>
                         </div>
 
                         {/* Stats */}

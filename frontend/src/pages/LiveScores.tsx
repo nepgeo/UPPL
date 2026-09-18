@@ -198,7 +198,7 @@ export default function LiveScores() {
               )}
             </div>
 
-            <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-3 tracking-tight">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-3 tracking-tight">
               {liveMatches.length > 0 ? 'Live Scores' : 'UPPL Scores'}
             </h1>
             <p className="text-gray-300 text-lg max-w-xl mx-auto">
@@ -344,7 +344,7 @@ export default function LiveScores() {
                                 {match.currentOver.map((ev: BallEvent, i: number) => (
                                   <span
                                     key={i}
-                                    className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-[10px] sm:text-xs font-bold
+                                    className={`w-8 h-8 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-[10px] sm:text-xs font-bold
                                       ${ev.wicket ? 'bg-red-500/80 text-white shadow-[0_0_8px_rgba(239,68,68,0.4)]' :
                                         ev.isSix ? 'bg-purple-500/80 text-white shadow-[0_0_8px_rgba(168,85,247,0.4)]' :
                                         ev.isFour ? 'bg-emerald-500/80 text-white shadow-[0_0_8px_rgba(16,185,129,0.4)]' :

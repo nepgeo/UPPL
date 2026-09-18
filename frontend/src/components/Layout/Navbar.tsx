@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, LogIn, Eye, EyeOff, Camera, Loader2, ExternalLink } from "lucide-react";
+import { Menu, X, LogIn, Eye, EyeOff, Camera, Loader2, ExternalLink, Home, Calendar, Users, User, Zap, Trophy, Play, Newspaper, Image, BadgeCheck, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { API_BASE, BASE_URL } from '@/config';
@@ -50,6 +50,34 @@ const Navbar = () => {
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Swipe-to-close
+  const touchStartX = useRef(0);
+  const touchCurrentX = useRef(0);
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const [isSwiping, setIsSwiping] = useState(false);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    setIsSwiping(true);
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!isSwiping) return;
+    touchCurrentX.current = e.touches[0].clientX;
+    const diff = touchCurrentX.current - touchStartX.current;
+    if (diff > 0) {
+      setSwipeOffset(diff);
+    }
+  }, [isSwiping]);
+
+  const handleTouchEnd = useCallback(() => {
+    setIsSwiping(false);
+    if (swipeOffset > 80) {
+      setIsOpen(false);
+    }
+    setSwipeOffset(0);
+  }, [swipeOffset]);
 
 
   // ✅ Normalize role to lowercase
@@ -122,15 +150,15 @@ useEffect(() => {
   // }, [user]);
 
   const publicLinks = [
-    { name: "Home", path: "/" },
-    { name: "Schedule", path: "/schedule" },
-    { name: "Teams", path: "/teams" },
-    { name: "Players", path: "/players" },
-    { name: "Live Scores", path: "/live-scores" },
-    { name: "Points Table", path: "/points-table" },
-    { name: "Watch Live", path: "/watch-live" },
-    { name: "News", path: "/news" },
-    { name: "Gallery", path: "/gallery" },
+    { name: "Home", path: "/", icon: Home },
+    { name: "Schedule", path: "/schedule", icon: Calendar },
+    { name: "Teams", path: "/teams", icon: Users },
+    { name: "Players", path: "/players", icon: User },
+    { name: "Live Scores", path: "/live-scores", icon: Zap },
+    { name: "Points Table", path: "/points-table", icon: Trophy },
+    { name: "Watch Live", path: "/watch-live", icon: Play },
+    { name: "News", path: "/news", icon: Newspaper },
+    { name: "Gallery", path: "/gallery", icon: Image },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -320,7 +348,7 @@ useEffect(() => {
                 >
                   <Avatar className="h-6 w-6 sm:h-8 sm:w-8 ring-2 ring-gray-100">
                     <AvatarImage src={getProfileImageUrl(user?.profileImage)} alt={user?.name} />
-                    <AvatarFallback className="text-[9px] sm:text-xs font-bold bg-primary/10 text-primary">
+                    <AvatarFallback className="text-[10px] sm:text-xs font-bold bg-primary/10 text-primary">
                       {user?.name?.charAt(0)?.toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
@@ -417,101 +445,122 @@ useEffect(() => {
             {/* Overlay */}
             <motion.div
               initial={{ opacity: 0 }}
-              animate={{ opacity: 0.5 }}
+              animate={{ opacity: 0.4 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
               className="fixed inset-0 bg-black z-40"
               onClick={() => setIsOpen(false)}
             />
 
-            {/* Sidebar Drawer */}
+            {/* Sidebar Drawer — centered */}
             <motion.div
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-              className="fixed inset-y-0 right-0 z-50 w-[55%] max-w-[240px] 
+              initial={{ opacity: 0, scale: 0.92, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 20 }}
+              transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+              style={{ transform: isSwiping ? `translateX(${swipeOffset}px)` : undefined }}
+              className="fixed inset-y-0 left-1/2 -translate-x-1/2 z-50 w-[80%] max-w-[280px] 
                         bg-gradient-to-br from-blue-700 via-purple-700 to-pink-600 
-                        text-white shadow-2xl flex flex-col"
+                        text-white shadow-2xl flex flex-col rounded-b-2xl"
             >
               {/* Header */}
-              <div className="flex items-center justify-between p-3 border-b border-white/20 shrink-0">
-                <h2 className="text-sm font-bold tracking-wide uppercase">Menu</h2>
+              <div className="flex items-center justify-between p-4 border-b border-white/20 shrink-0">
+                <h2 className="text-base font-bold tracking-wide uppercase">Menu</h2>
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-white/20 transition-colors"
+                  className="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-white/20 transition-colors"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-5 w-5" />
                 </button>
               </div>
 
-              {/* Links */}
-              <div className="flex-1 overflow-y-auto px-2 py-3">
-                <nav className="space-y-0.5">
-                  {publicLinks.map((link) => (
+              {/* Links — everything scrolls together */}
+              <div className="flex-1 overflow-y-auto px-3 py-4">
+                <nav className="space-y-1">
+                  {publicLinks.map((link) => {
+                    const Icon = link.icon;
+                    return (
                     <Link
                       key={link.path}
                       to={link.path}
                       onClick={() => setIsOpen(false)}
-                      className={`block px-2.5 py-2 rounded-lg text-xs font-medium transition-all duration-200 uppercase ${
+                      className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 uppercase ${
                         isActive(link.path)
-                          ? "bg-white text-blue-700 shadow-md font-bold"
-                          : "hover:bg-white/15 active:bg-white/25"
+                          ? "bg-white text-blue-700 shadow-md font-bold border-l-4 border-yellow-300"
+                          : "hover:bg-white/15 active:bg-white/25 border-l-4 border-transparent"
                       }`}
                     >
+                      {Icon && <Icon className="h-4 w-4 flex-shrink-0" />}
                       {link.name}
                     </Link>
-                  ))}
+                    );
+                  })}
                 </nav>
 
                 {(role === "admin" || role === "super-admin") && (
-                  <div className="mt-3 bg-white/10 rounded-xl p-2.5">
-                    <p className="text-[10px] font-bold uppercase text-yellow-300 mb-1.5 tracking-widest">
+                  <div className="mt-4 bg-white/10 rounded-xl p-3">
+                    <p className="text-[11px] font-bold uppercase text-yellow-300 mb-2 tracking-widest">
                       Admin Panel
                     </p>
                     <div className="space-y-0.5">
                       {[
-                        { label: "Overview", tab: "overview" },
-                        { label: "Users", tab: "users" },
-                        { label: "Verifications", tab: "players" },
-                        { label: "Season", tab: "teams" },
-                        { label: "Team Management", tab: "team-management" },
-                        { label: "Schedule", tab: "matches" },
-                        { label: "Gallery", tab: "gallery" },
-                        { label: "News", tab: "news" },
-                        { label: "Sponsor", tab: "sponsor" },
-                        { label: "Videos", tab: "videos" },
-                      ].map((item) => (
+                        { label: "Overview", tab: "overview", icon: Eye },
+                        { label: "Users", tab: "users", icon: Users },
+                        { label: "Verifications", tab: "players", icon: BadgeCheck },
+                        { label: "Season", tab: "teams", icon: Trophy },
+                        { label: "Team Management", tab: "team-management", icon: Users },
+                        { label: "Schedule", tab: "matches", icon: Calendar },
+                        { label: "Gallery", tab: "gallery", icon: Image },
+                        { label: "News", tab: "news", icon: Newspaper },
+                        { label: "Sponsor", tab: "sponsor", icon: Award },
+                        { label: "Videos", tab: "videos", icon: Play },
+                      ].map((item) => {
+                        const AdminIcon = item.icon;
+                        return (
                         <Link
                           key={item.tab}
                           to={`/admin?tab=${item.tab}`}
                           onClick={() => setIsOpen(false)}
-                          className="block px-2.5 py-2 rounded-lg text-xs font-medium hover:bg-white/20 transition-colors uppercase"
+                          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium hover:bg-white/20 transition-colors uppercase"
                         >
+                          <AdminIcon className="h-3.5 w-3.5 flex-shrink-0 opacity-70" />
                           {item.label}
                         </Link>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
-              </div>
 
-              {/* Footer with user/logout */}
-              {user && (
-                <div className="border-t border-white/20 p-2.5 shrink-0">
-                  <p className="text-[10px] font-medium mb-1.5 truncate">
-                    Signed in as <span className="font-bold">{user?.name}</span>
-                  </p>
-                  <Button
-                    onClick={logout}
-                    variant="outline"
-                    size="sm"
-                    className="w-full bg-white/10 text-white border-white/30 font-semibold rounded-lg hover:bg-red-500 hover:text-white hover:border-red-500 transition-all text-[10px] py-1"
-                  >
-                    Logout
-                  </Button>
-                </div>
-              )}
+                {/* User profile + logout — scrolls with content */}
+                {user && (
+                  <div className="mt-4 border-t border-white/20 pt-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/20 flex items-center justify-center overflow-hidden ring-1 ring-white/30 flex-shrink-0">
+                        {user.profileImage ? (
+                          <img src={getProfileImageUrl(user.profileImage)} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-[10px] font-bold">{user?.name?.charAt(0)}</span>
+                        )}
+                      </div>
+                      <p className="text-[11px] sm:text-xs font-medium truncate">
+                        <span className="font-bold">{user?.name}</span>
+                      </p>
+                    </div>
+                    <Button
+                      onClick={logout}
+                      variant="outline"
+                      size="sm"
+                      className="w-full bg-white/10 text-white border-white/30 font-semibold rounded-lg hover:bg-red-500 hover:text-white hover:border-red-500 transition-all text-[11px] sm:text-xs py-1 sm:py-1.5"
+                    >
+                      Logout
+                    </Button>
+                  </div>
+                )}
+              </div>
             </motion.div>
           </>
         )}

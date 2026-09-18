@@ -149,7 +149,7 @@ const News = () => {
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-semibold uppercase transition-all border ${
+                className={`px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-[10px] sm:text-xs font-semibold uppercase transition-all border ${
                   selectedCategory === cat
                     ? cat === "all"
                       ? "bg-gray-900 text-white border-gray-900 shadow-md"
@@ -210,7 +210,7 @@ const News = () => {
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
                             <div className="absolute top-2 left-2 sm:top-3 sm:left-3">
-                              <Badge className={`${CATEGORY_COLORS[article.category] || "bg-gray-500"} text-white border-0 text-[9px] sm:text-[10px] px-2 sm:px-2.5 py-0.5 uppercase font-bold`}>
+                              <Badge className={`${CATEGORY_COLORS[article.category] || "bg-gray-500"} text-white border-0 text-[10px] sm:text-[10px] px-2 sm:px-2.5 py-0.5 uppercase font-bold`}>
                                 {article.category}
                               </Badge>
                             </div>
@@ -270,10 +270,10 @@ const News = () => {
                         </div>
                         <CardContent className="p-3 sm:p-4">
                           <div className="flex items-center justify-between mb-1.5 sm:mb-2">
-                            <Badge className={`${CATEGORY_COLORS[article.category] || "bg-gray-500"} text-white border-0 text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 uppercase font-bold`}>
+                            <Badge className={`${CATEGORY_COLORS[article.category] || "bg-gray-500"} text-white border-0 text-[10px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 uppercase font-bold`}>
                               {article.category}
                             </Badge>
-                            <span className="text-[9px] sm:text-[10px] text-gray-400 uppercase">{getTimeAgo(article.createdAt)}</span>
+                            <span className="text-[10px] sm:text-[10px] text-gray-400 uppercase">{getTimeAgo(article.createdAt)}</span>
                           </div>
                           <h3 className="font-semibold text-xs sm:text-sm text-gray-900 group-hover:text-[#b15cff] transition-colors line-clamp-2 mb-1 sm:mb-1.5 uppercase">
                             {article.title}

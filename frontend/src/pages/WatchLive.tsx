@@ -139,7 +139,7 @@ export default function WatchLive() {
                         <p className="text-xs sm:text-sm md:text-base text-gray-400 mt-1.5 line-clamp-2 uppercase">{video.description}</p>
                       )}
                       {video.createdAt && (
-                        <div className="flex items-center gap-1 text-[9px] sm:text-xs text-gray-500 mt-2 uppercase">
+                        <div className="flex items-center gap-1 text-[10px] sm:text-xs text-gray-500 mt-2 uppercase">
                           <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                           {new Date(video.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </div>
@@ -210,7 +210,7 @@ export default function WatchLive() {
                   />
                 )}
                 <a href={selectedVideo.url} target="_blank" rel="noopener noreferrer"
-                  className="absolute bottom-2 right-2 sm:bottom-3 sm:right-3 bg-black/70 text-white text-[9px] sm:text-xs px-2 sm:px-3 py-1 sm:py-1.5 rounded-full hover:bg-black/90 transition-colors z-10 inline-flex items-center gap-1 uppercase">
+                  className="absolute bottom-2 right-2 sm:bottom-3 sm:right-3 bg-black/70 text-white text-[10px] sm:text-xs px-2 sm:px-3 py-1 sm:py-1.5 rounded-full hover:bg-black/90 transition-colors z-10 inline-flex items-center gap-1 uppercase">
                   OPEN IN NEW TAB <ExternalLink className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                 </a>
               </div>

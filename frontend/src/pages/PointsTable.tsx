@@ -259,7 +259,7 @@ const PointsTable = () => {
       r === "L" ? "bg-red-500 text-white shadow-sm shadow-red-200" :
       "bg-gray-300 text-white";
     return (
-      <span className={`inline-flex items-center justify-center w-4 h-4 sm:w-7 sm:h-7 md:w-9 md:h-9 rounded sm:rounded-md md:rounded-lg text-[7px] sm:text-xs md:text-base font-bold ${styles}`}>
+      <span className={`inline-flex items-center justify-center w-7 h-7 sm:w-7 sm:h-7 md:w-9 md:h-9 rounded sm:rounded-md md:rounded-lg text-[10px] sm:text-xs md:text-base font-bold ${styles}`}>
         {r}
       </span>
     );
@@ -393,20 +393,20 @@ const PointsTable = () => {
                     </div>
 
                     <CardContent className="p-0">
-                      <div className="">
+                      <div className="overflow-x-auto">
                         <table className="w-full text-xs sm:text-lg md:text-xl">
                           <thead>
                             <tr className="border-b border-white/30 bg-white/40">
-                              <th className="text-left py-2 sm:py-4 px-1 sm:px-4 text-[8px] sm:text-sm md:text-base font-bold text-gray-400 uppercase tracking-widest w-6 sm:w-12">#</th>
-                              <th className="text-left py-2 sm:py-4 px-1 sm:px-2 text-[8px] sm:text-sm md:text-base font-bold text-gray-400 uppercase tracking-widest">Team</th>
-                              <th className="text-center py-2 sm:py-4 px-0.5 sm:px-2 text-[8px] sm:text-sm md:text-base font-bold text-gray-400 uppercase tracking-widest w-6 sm:w-12">M</th>
-                              <th className="text-center py-2 sm:py-4 px-0.5 sm:px-2 text-[8px] sm:text-sm md:text-base font-bold text-gray-400 uppercase tracking-widest w-6 sm:w-12">W</th>
-                              <th className="text-center py-2 sm:py-4 px-0.5 sm:px-2 text-[8px] sm:text-sm md:text-base font-bold text-gray-400 uppercase tracking-widest w-6 sm:w-12">L</th>
-                              <th className="text-center py-2 sm:py-4 px-0.5 sm:px-2 text-[8px] sm:text-sm md:text-base font-bold text-gray-400 uppercase tracking-widest w-6 sm:w-12">T</th>
-                              <th className="text-center py-2 sm:py-4 px-0.5 sm:px-2 text-[8px] sm:text-sm md:text-base font-bold text-gray-400 uppercase tracking-widest w-12 sm:w-24">NRR</th>
-                              <th className="text-center py-2 sm:py-4 px-0.5 sm:px-3 text-[8px] sm:text-sm md:text-base font-bold text-gray-400 uppercase tracking-widest w-8 sm:w-16">Pts</th>
+                              <th className="text-left py-2 sm:py-4 px-1 sm:px-4 text-[10px] sm:text-sm md:text-base font-bold text-gray-400 uppercase tracking-widest w-6 sm:w-12">#</th>
+                              <th className="text-left py-2 sm:py-4 px-1 sm:px-2 text-[10px] sm:text-sm md:text-base font-bold text-gray-400 uppercase tracking-widest">Team</th>
+                              <th className="text-center py-2 sm:py-4 px-0.5 sm:px-2 text-[10px] sm:text-sm md:text-base font-bold text-gray-400 uppercase tracking-widest w-6 sm:w-12">M</th>
+                              <th className="text-center py-2 sm:py-4 px-0.5 sm:px-2 text-[10px] sm:text-sm md:text-base font-bold text-gray-400 uppercase tracking-widest w-6 sm:w-12">W</th>
+                              <th className="text-center py-2 sm:py-4 px-0.5 sm:px-2 text-[10px] sm:text-sm md:text-base font-bold text-gray-400 uppercase tracking-widest w-6 sm:w-12">L</th>
+                              <th className="text-center py-2 sm:py-4 px-0.5 sm:px-2 text-[10px] sm:text-sm md:text-base font-bold text-gray-400 uppercase tracking-widest w-6 sm:w-12">T</th>
+                              <th className="text-center py-2 sm:py-4 px-0.5 sm:px-2 text-[10px] sm:text-sm md:text-base font-bold text-gray-400 uppercase tracking-widest w-12 sm:w-24">NRR</th>
+                              <th className="text-center py-2 sm:py-4 px-0.5 sm:px-3 text-[10px] sm:text-sm md:text-base font-bold text-gray-400 uppercase tracking-widest w-8 sm:w-16">Pts</th>
                               {viewType === "form" && (
-                                <th className="text-center py-2 sm:py-4 px-0.5 sm:px-2 text-[8px] sm:text-sm md:text-base font-bold text-gray-400 uppercase tracking-widest w-20 sm:w-36">Form</th>
+                                <th className="text-center py-2 sm:py-4 px-0.5 sm:px-2 text-[10px] sm:text-sm md:text-base font-bold text-gray-400 uppercase tracking-widest w-20 sm:w-36">Form</th>
                               )}
                             </tr>
                           </thead>
@@ -482,7 +482,7 @@ const PointsTable = () => {
                                             <span key={fi}>{getFormBadge(r)}</span>
                                           ))
                                         ) : (
-                                          <span className="text-[8px] sm:text-sm text-gray-300">—</span>
+                                          <span className="text-[10px] sm:text-sm text-gray-300">—</span>
                                         )}
                                       </div>
                                     </td>

@@ -45,7 +45,7 @@ const Sponsors: React.FC<SponsorsProps> = ({ className = "", style }) => {
 
   return (
     <div
-      className={`py-12 sm:py-16 bg-gradient-to-b from-amber-50 to-white text-foreground ${className}`}
+      className={`py-6 sm:py-10 lg:py-16 bg-gradient-to-b from-amber-50 to-white text-foreground ${className}`}
       style={style}
     >
       <style>{`
@@ -82,7 +82,7 @@ const Sponsors: React.FC<SponsorsProps> = ({ className = "", style }) => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="text-center mb-10"
+          className="text-center mb-6 sm:mb-8 lg:mb-10"
         >
           <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 text-white text-[10px] font-bold uppercase tracking-widest px-4 py-1.5 rounded-full mb-3 shadow-lg">
             <Award className="h-3.5 w-3.5" />
@@ -93,16 +93,16 @@ const Sponsors: React.FC<SponsorsProps> = ({ className = "", style }) => {
         </motion.div>
 
         {/* Partner Organizations */}
-        <section className="mb-12">
-          <h3 className="text-lg sm:text-xl font-bold mb-6 text-center text-gray-700 uppercase">Partner Organizations</h3>
-          <div className="relative overflow-hidden rounded-lg px-2 py-4">
-            <div className="flex w-max animate-scroll-x gap-6 sm:gap-10 whitespace-nowrap">
+        <section className="mb-6 sm:mb-8 lg:mb-12">
+          <h3 className="text-base sm:text-lg lg:text-xl font-bold mb-4 sm:mb-6 text-center text-gray-700 uppercase">Partner Organizations</h3>
+          <div className="relative overflow-hidden rounded-lg px-2 py-3 sm:py-4">
+            <div className="flex w-max animate-scroll-x gap-4 sm:gap-6 lg:gap-10 whitespace-nowrap">
               {[...organizationSponsors, ...organizationSponsors].map(
                 (sponsor, i) => (
                   <div
                     key={`${sponsor._id}-${i}`}
                     className={`sponsor-card flex-shrink-0 cursor-pointer 
-                      min-w-[100px] sm:min-w-[140px] rounded-lg bg-white dark:bg-gray-800 p-3 sm:p-4 
+                      min-w-[80px] sm:min-w-[110px] lg:min-w-[140px] rounded-lg bg-white dark:bg-gray-800 p-2 sm:p-3 lg:p-4 
                       flex flex-col justify-between items-center transition-transform duration-300 
                       ${shadowClasses[i % shadowClasses.length]} 
                       ${zoomedId === sponsor._id ? "zoomed" : ""}`}
@@ -111,12 +111,12 @@ const Sponsors: React.FC<SponsorsProps> = ({ className = "", style }) => {
                     <img
                       src={getProfileImageUrl(sponsor.logo)}
                       alt={sponsor.name}
-                      className="h-[80px] sm:h-[100px] w-auto object-contain mx-auto transition-all duration-300"
+                      className="h-[50px] sm:h-[70px] lg:h-[100px] w-auto object-contain mx-auto transition-all duration-300"
                       onError={(e) => {
                         e.currentTarget.src = `https://via.placeholder.com/120x80/e5e7eb/374151?text=${sponsor.name}`;
                       }}
                     />
-                    <p className="text-[11px] sm:text-xs text-center mt-2 text-gray-700 truncate">
+                    <p className="text-[9px] sm:text-[11px] lg:text-xs text-center mt-1.5 sm:mt-2 text-gray-700 truncate">
                       {sponsor.name}
                     </p>
                   </div>
@@ -128,14 +128,14 @@ const Sponsors: React.FC<SponsorsProps> = ({ className = "", style }) => {
 
         {/* Individual Sponsors */}
         <section>
-          <h3 className="text-lg sm:text-xl font-bold mb-6 text-center text-gray-700 uppercase">Individual Sponsors</h3>
-          <div className="relative overflow-hidden rounded-lg px-2 py-4">
-            <div className="flex w-max animate-scroll-x-reverse gap-6 sm:gap-10 whitespace-nowrap">
+          <h3 className="text-base sm:text-lg lg:text-xl font-bold mb-4 sm:mb-6 text-center text-gray-700 uppercase">Individual Sponsors</h3>
+          <div className="relative overflow-hidden rounded-lg px-2 py-3 sm:py-4">
+            <div className="flex w-max animate-scroll-x-reverse gap-4 sm:gap-6 lg:gap-10 whitespace-nowrap">
               {[...peopleSponsors, ...peopleSponsors].map((person, i) => (
                 <div
                   key={`${person._id}-${i}`}
                   className={`sponsor-card flex-shrink-0 cursor-pointer 
-                    min-w-[100px] sm:min-w-[140px] rounded-lg bg-white dark:bg-gray-800 p-3 sm:p-4 
+                    min-w-[80px] sm:min-w-[110px] lg:min-w-[140px] rounded-lg bg-white dark:bg-gray-800 p-2 sm:p-3 lg:p-4 
                     flex flex-col justify-between items-center transition-transform duration-300 
                     ${shadowClasses[i % shadowClasses.length]} 
                     ${zoomedId === person._id ? "zoomed" : ""}`}
@@ -143,7 +143,7 @@ const Sponsors: React.FC<SponsorsProps> = ({ className = "", style }) => {
                 >
                   <img
                     src={getProfileImageUrl(person.avatar)}
-                    className="w-[70px] h-[70px] sm:w-[90px] sm:h-[90px] rounded-full mx-auto object-cover transition-transform duration-300"
+                    className="w-[50px] h-[50px] sm:w-[65px] sm:h-[65px] lg:w-[90px] lg:h-[90px] rounded-full mx-auto object-cover transition-transform duration-300"
                     alt={person.name}
                     onError={(e) => {
                       e.currentTarget.src = `https://via.placeholder.com/70x70/8b5cf6/ffffff?text=${person.name
@@ -152,7 +152,7 @@ const Sponsors: React.FC<SponsorsProps> = ({ className = "", style }) => {
                         .join("")}`;
                     }}
                   />
-                  <p className="text-[11px] sm:text-xs font-semibold truncate mt-2">
+                  <p className="text-[9px] sm:text-[11px] lg:text-xs font-semibold truncate mt-1.5 sm:mt-2">
                     {person.name}
                   </p>
                 </div>

@@ -195,7 +195,7 @@ const Gallery = () => {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
                     <div className="absolute bottom-2 sm:bottom-3 left-2 sm:left-3 text-white">
                       <h3 className="font-bold text-xs sm:text-sm uppercase">{album.name}</h3>
-                      <p className="text-[9px] sm:text-[10px] text-white/70 uppercase">{album.items.length} items</p>
+                      <p className="text-[10px] sm:text-[10px] text-white/70 uppercase">{album.items.length} items</p>
                     </div>
                   </div>
                 </Card>
@@ -228,14 +228,14 @@ const Gallery = () => {
                         </>
                       )}
                       <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2">
-                        <span className={`inline-block px-1.5 sm:px-2 py-0.5 rounded-full text-[8px] sm:text-[9px] font-semibold text-white uppercase ${CATEGORY_COLORS[item.album?.category] || "bg-gray-500"}`}>
+                        <span className={`inline-block px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-[10px] font-semibold text-white uppercase ${CATEGORY_COLORS[item.album?.category] || "bg-gray-500"}`}>
                           {item.album?.category || "Gallery"}
                         </span>
                       </div>
                     </div>
                     <CardContent className="p-2 sm:p-3">
                       <h3 className="font-semibold text-[10px] sm:text-xs text-gray-800 truncate group-hover:text-[#b15cff] transition-colors uppercase">{item.title}</h3>
-                      <p className="text-[8px] sm:text-[10px] text-gray-400 mt-0.5 uppercase">{new Date(item.uploadDate).toLocaleDateString()}</p>
+                      <p className="text-[10px] sm:text-[10px] text-gray-400 mt-0.5 uppercase">{new Date(item.uploadDate).toLocaleDateString()}</p>
                     </CardContent>
                   </Card>
                 </motion.div>

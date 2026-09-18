@@ -498,7 +498,7 @@ const GroupManagement = () => {
                   {getUnassignedTeams().map(team => (
                     <SelectItem key={team._id} value={team._id}>
                       <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center text-white text-[9px] font-bold overflow-hidden">
+                        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center text-white text-[10px] font-bold overflow-hidden">
                           {team.teamLogo?.url ? (
                             <img src={team.teamLogo.url} alt="" className="w-full h-full object-cover" />
                           ) : (

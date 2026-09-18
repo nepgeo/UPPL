@@ -226,7 +226,7 @@ export default function ScoreHeader({ match }: Props) {
                 { label: 'Overs', value: currentBowlerStats ? `${Math.floor(currentBowlerStats.balls / 6)}.${currentBowlerStats.balls % 6}` : '0.0', cls: 'text-sm sm:text-base text-slate-900' },
               ].map(s => (
                 <div key={s.label} className="flex flex-col items-center">
-                  <span className="text-[8px] sm:text-[10px] uppercase tracking-wider font-bold text-slate-400">{s.label}</span>
+                  <span className="text-[10px] sm:text-[10px] uppercase tracking-wider font-bold text-slate-400">{s.label}</span>
                   <span className={`text-xl sm:text-2xl font-black leading-none ${s.cls}`}>{s.value}</span>
                 </div>
               ))}
@@ -239,7 +239,7 @@ export default function ScoreHeader({ match }: Props) {
               <div className="flex items-center gap-1 px-2 pb-2 pt-1 justify-center flex-wrap">
                 {match.currentOver!.map((ev: any, i: number) => {
                   const count = match.currentOver!.length;
-                  const size = count > 4 ? 'w-5 h-5 text-[8px] sm:w-6 sm:h-6 sm:text-[9px]' : count > 2 ? 'w-6 h-6 text-[9px] sm:w-7 sm:h-7 sm:text-[10px]' : 'w-7 h-7 text-[10px] sm:w-8 sm:h-8 sm:text-[11px]';
+                  const size = count > 4 ? 'w-5 h-5 text-[10px] sm:w-6 sm:h-6 sm:text-[10px]' : count > 2 ? 'w-6 h-6 text-[10px] sm:w-7 sm:h-7 sm:text-[10px]' : 'w-7 h-7 text-[10px] sm:w-8 sm:h-8 sm:text-[11px]';
                   return (
                     <span key={i}
                       className={`${size} rounded-md flex items-center justify-center font-bold border-2 shadow-sm ${getBallColor(ev)}`}

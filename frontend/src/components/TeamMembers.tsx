@@ -31,7 +31,7 @@ const TeamMembers: React.FC = () => {
   const teamWithFixed = [...team, fixedMember];
 
   return (
-    <section className="bg-gray-50 py-10 relative">
+    <section className="bg-gray-50 py-6 sm:py-8 lg:py-10 relative">
       <style>{`
         @keyframes scroll-x {
           0% { transform: translateX(0); }
@@ -42,31 +42,31 @@ const TeamMembers: React.FC = () => {
         }
       `}</style>
 
-      <h2 className="text-3xl font-bold text-center mb-8 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+      <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-center mb-5 sm:mb-6 lg:mb-8 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
         Meet Our Team
       </h2>
 
       {teamWithFixed.length === 0 ? (
         <p className="text-center text-gray-500">No team members found.</p>
       ) : (
-        <div className="relative overflow-hidden rounded-lg px-10 py-4">
-          <div className="flex w-max animate-scroll-x gap-8 whitespace-nowrap">
+        <div className="relative overflow-hidden rounded-lg px-5 sm:px-8 lg:px-10 py-3 sm:py-4">
+          <div className="flex w-max animate-scroll-x gap-5 sm:gap-6 lg:gap-8 whitespace-nowrap">
             {[...teamWithFixed, ...teamWithFixed, ...teamWithFixed].map(
               (member, i) => (
                 <div
                   key={`${member._id || "dup"}-${i}`}
-                  className="flex-shrink-0 flex flex-col items-center text-center min-w-[110px] group"
+                  className="flex-shrink-0 flex flex-col items-center text-center min-w-[80px] sm:min-w-[90px] lg:min-w-[110px] group"
                 >
                   <img
                     src={getProfileImageUrl(member.avatar)}
                     alt={member.name}
-                    className="w-20 h-20 rounded-full object-cover border transition-transform duration-300 group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-blue-400/40"
+                    className="w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-full object-cover border transition-transform duration-300 group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-blue-400/40"
                     onError={(e) => { e.currentTarget.src = "/placeholder.svg"; }}
                   />
-                  <p className="text-sm font-semibold mt-2 truncate w-full">
+                  <p className="text-[11px] sm:text-xs lg:text-sm font-semibold mt-1.5 sm:mt-2 truncate w-full">
                     {member.name}
                   </p>
-                  <p className="text-xs text-gray-500">{member.position}</p>
+                  <p className="text-[10px] sm:text-[11px] lg:text-xs text-gray-500">{member.position}</p>
                 </div>
               )
             )}
