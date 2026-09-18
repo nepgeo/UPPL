@@ -440,7 +440,7 @@ const PlayerVerification = () => {
       {/* Player Detail Dialog — Tabbed */}
       {selectedPlayer && (
         <Dialog open={!!expandedPlayerId} onOpenChange={() => setExpandedPlayerId(null)}>
-          <DialogContent className="max-w-2xl bg-white rounded-2xl shadow-2xl p-0 overflow-hidden max-h-[90vh] flex flex-col">
+          <DialogContent className="max-w-full sm:max-w-2xl h-full sm:h-auto sm:max-h-[90vh] bg-white sm:rounded-2xl rounded-none shadow-2xl p-0 overflow-hidden flex flex-col m-0 sm:m-auto">
             {/* Hero Header */}
             <div className="relative bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 px-5 sm:px-6 py-6 sm:py-8 shrink-0">
               <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iLjA1Ij48cGF0aCBkPSJNMzYgMzRoMnYyaC0yem0wLThoMnYyaC0yek0yMCAzNGgydjJoLTJ6bTAtOGgydjJoLTJ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
