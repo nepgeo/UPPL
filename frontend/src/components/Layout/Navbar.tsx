@@ -323,7 +323,7 @@ useEffect(() => {
               <img
                 src={Logo}
                 alt="UPPL Logo"
-                className="h-12 sm:h-12 md:h-16 w-auto object-contain"
+                className="h-14 sm:h-12 md:h-16 w-auto object-contain"
               />
             </Link>
           </div>
@@ -357,7 +357,7 @@ useEffect(() => {
                   className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
                   onClick={() => setIsProfileOpen(true)}
                 >
-                  <Avatar className="h-6 w-6 sm:h-8 sm:w-8 ring-2 ring-gray-100">
+                  <Avatar className="h-8 w-8 sm:h-10 sm:w-10 ring-2 ring-gray-100">
                     <AvatarImage src={getProfileImageUrl(user?.profileImage)} alt={user?.name} />
                     <AvatarFallback className="text-[10px] sm:text-xs font-bold bg-primary/10 text-primary">
                       {user?.name?.charAt(0)?.toUpperCase() || "U"}
@@ -466,7 +466,8 @@ useEffect(() => {
               onTouchEnd={handleTouchEnd}
               style={{ transform: isSwiping ? `translateX(${swipeOffset}px)` : undefined }}
               className="pointer-events-auto w-[60%] max-w-[240px] h-full absolute left-0 top-0
-                        bg-gradient-to-br from-blue-700 via-purple-700 to-pink-600 
+                        bg-gradient-to-br from-blue-600/70 via-purple-600/70 to-pink-500/70 backdrop-blur-md
+                        sm:from-blue-700 sm:via-purple-700 sm:to-pink-600 sm:backdrop-blur-none
                         text-white shadow-2xl flex flex-col rounded-r-2xl overflow-hidden"
             >
               {/* Header */}
@@ -490,9 +491,9 @@ useEffect(() => {
                       key={link.path}
                       to={link.path}
                       onClick={() => setIsOpen(false)}
-                      className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-200 uppercase overflow-hidden ${
+                      className={`flex items-center gap-2.5 px-3 py-2.5 rounded-full text-[13px] font-medium transition-all duration-200 uppercase overflow-hidden ${
                         isActive(link.path)
-                          ? "bg-white text-blue-700 shadow-md font-bold"
+                          ? "bg-white text-blue-700 shadow-lg font-bold"
                           : "hover:bg-white/15 active:bg-white/25"
                       }`}
                     >

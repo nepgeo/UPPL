@@ -144,7 +144,7 @@ const TournamentRegistration = () => {
                 Tournament Season 5
               </h1>
               <p className="text-xl text-blue-100 mb-6">
-                Join the ultimate cricket experience with PPLT20's most exciting season yet
+                Join the ultimate cricket experience with UPPL-T20's most exciting season yet
               </p>
               
               {/* Tournament Details */}

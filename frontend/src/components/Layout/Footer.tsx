@@ -131,7 +131,7 @@ const Footer = () => {
         {/* Divider and Copyright */}
         <div className="border-t border-gray-800 mt-8 sm:mt-12 lg:mt-16 pt-5 sm:pt-8 text-center">
           <p className="text-gray-500 text-xs sm:text-sm">
-            © {new Date().getFullYear()} PPLT20 - Udaydev Patan Premiere League
+            © {new Date().getFullYear()} UPPL-T20 - Udaydev Patan Premiere League
             T20. All rights reserved.
           </p>
         </div>

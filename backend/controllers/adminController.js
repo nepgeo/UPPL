@@ -156,6 +156,9 @@ exports.getAllUsers = async (req, res) => {
 // ✅ Dashboard stats
 exports.getAdminDashboardStats = async (req, res) => {
   try {
+    const { seasonNumber } = req.query;
+    const matchQuery = seasonNumber ? { seasonNumber } : {};
+
     const totalUsers = await User.countDocuments();
     const verifiedPlayers = await User.countDocuments({ role: 'player', verified: true });
     const pendingPlayers = await User.countDocuments({
@@ -169,10 +172,10 @@ exports.getAdminDashboardStats = async (req, res) => {
     });
 
     const totalTeams = await Team.countDocuments();
-    const totalMatches = await Match.countDocuments();
-    const completedMatches = await Match.countDocuments({ result: 'completed' });
-    const upcomingMatches = await Match.countDocuments({ result: 'upcoming' });
-    const activeMatches = await Match.countDocuments({ result: 'live' }) || 0;
+    const totalMatches = await Match.countDocuments(matchQuery);
+    const completedMatches = await Match.countDocuments({ ...matchQuery, result: 'completed' });
+    const upcomingMatches = await Match.countDocuments({ ...matchQuery, result: 'upcoming' });
+    const activeMatches = await Match.countDocuments({ ...matchQuery, result: 'live' }) || 0;
 
     // Content stats
     const totalNews = await News.countDocuments();
@@ -182,7 +185,7 @@ exports.getAdminDashboardStats = async (req, res) => {
     const totalSponsors = await OrganizationSponsor.countDocuments() + await IndividualSponsor.countDocuments();
     const totalVideos = await Video.countDocuments();
 
-    // Player role distribution
+    // Player role distribution (all players, not season-filtered)
     const batsmen = await User.countDocuments({ role: 'player', position: 'batsman' });
     const bowlers = await User.countDocuments({ role: 'player', position: 'bowler' });
     const allRounders = await User.countDocuments({ role: 'player', position: 'all-rounder' });

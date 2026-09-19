@@ -112,16 +112,23 @@ const Home = () => {
   useEffect(() => {
     if (!activeSeason?._id) return;
 
+    setLatestResults([]);
+    setUpcomingMatches([]);
+    setPointsTable([]);
+    setPointsGroups({});
+
     const fetchResult = async () => {
       try {
-        const res = await api.get("/matches/recent/completed", { params: { limit: 2, seasonId: activeSeason._id } });
+        const res = await api.get("/matches/recent/completed", { params: { limit: 2, seasonNumber: activeSeason._id } });
         const matches = res.data?.matches || [];
         const sorted = matches
-          .filter((m: any) => m.seasonId === activeSeason._id || m.season?._id === activeSeason._id || !m.seasonId)
-          .sort((a: any, b: any) => new Date(b.updatedAt || b.date || 0).getTime() - new Date(a.updatedAt || a.date || 0).getTime())
+          .filter((m: any) => {
+            const matchSeasonId = m.seasonNumber?._id || m.seasonNumber || m.seasonId?._id || m.seasonId;
+            return String(matchSeasonId) === String(activeSeason._id);
+          })
+          .sort((a: any, b: any) => new Date(b.matchTime || b.updatedAt || 0).getTime() - new Date(a.matchTime || a.updatedAt || 0).getTime())
           .slice(0, 2);
-        if (sorted.length > 0) setLatestResults(sorted);
-        else if (matches.length > 0) setLatestResults(matches.slice(0, 2));
+        setLatestResults(sorted);
       } catch (e) {
         console.error("Failed to fetch recent results:", e);
       }
@@ -591,7 +598,7 @@ const getInitials = (name: string) => name.split(" ").map((n) => n[0]).join("").
             >
               <Link
                 to="/tournament-stats"
-                className="group inline-flex items-center gap-2 px-7 py-3 bg-gradient-to-r from-orange-500 to-purple-600 text-white text-sm font-bold rounded-xl shadow-lg hover:shadow-xl hover:from-orange-600 hover:to-purple-700 transition-all duration-300 hover:scale-105"
+                className="group inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-7 py-2 sm:py-3 bg-gradient-to-r from-orange-500 to-purple-600 text-white text-xs sm:text-sm font-bold rounded-xl shadow-lg hover:shadow-xl hover:from-orange-600 hover:to-purple-700 transition-all duration-300 hover:scale-105"
               >
                 <Star className="h-4 w-4" />
                 View Full Leaderboard
@@ -675,7 +682,7 @@ const getInitials = (name: string) => name.split(" ").map((n) => n[0]).join("").
 
                       {/* Winner line */}
                       <div className="mt-5 pt-4 border-t border-dashed border-blue-200 text-center">
-                        <p className="text-sm sm:text-base font-bold text-green-600 uppercase">
+                        <p className="text-sm sm:text-base font-bold text-yellow-500 uppercase">
                           {result.winner === 'teamA' ? result.teamA?.teamName : result.teamB?.teamName} won
                           {result.margin ? ` by ${result.margin}` : ''}
                         </p>
@@ -687,7 +694,7 @@ const getInitials = (name: string) => name.split(" ").map((n) => n[0]).join("").
 
               {/* View All Button */}
               <div className="text-center mt-8">
-                <Link to="/live-scores?tab=recent" className="inline-flex items-center gap-2 px-7 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-bold rounded-xl shadow-lg hover:shadow-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 hover:scale-105 uppercase">
+                <Link to="/live-scores?tab=recent" className="inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-7 py-2 sm:py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs sm:text-sm font-bold rounded-xl shadow-lg hover:shadow-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 hover:scale-105 uppercase">
                   View All Matches
                   <ArrowRight className="h-4 w-4" />
                 </Link>
@@ -733,15 +740,19 @@ const getInitials = (name: string) => name.split(" ").map((n) => n[0]).join("").
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.4, delay: 0.1 * i }}
-                  className="bg-gradient-to-br from-gray-50 to-white rounded-2xl border border-gray-100 p-5 sm:p-6 lg:p-8 hover:shadow-lg transition-all duration-300 flex flex-col"
+                  className="bg-gradient-to-br from-gray-50 to-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col"
                 >
-                  <div className="flex items-center justify-between mb-5 lg:mb-6">
-                    <span className="text-[11px] sm:text-xs font-bold text-blue-600 uppercase bg-blue-50 px-2.5 py-1 rounded-full">
-                      Match {match.matchNumber || i + 1}
-                    </span>
-                    <span className="text-[11px] sm:text-xs text-gray-400 uppercase font-medium">{match.stage || match.type || "T20"}</span>
+                  {/* Card Header */}
+                  <div className="px-5 sm:px-6 py-3 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 text-center">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm sm:text-base font-black text-white uppercase tracking-wider">Match {match.matchNumber || i + 1}</span>
+                      <span className="text-xs sm:text-sm font-bold text-white/70 uppercase">{match.stage || match.type || "T20"}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between gap-3 sm:gap-4 lg:gap-6 mb-5 lg:mb-6">
+
+                  {/* Card Body */}
+                  <div className="p-5 sm:p-6 lg:p-8 flex flex-col flex-1">
+                    <div className="flex items-center justify-center gap-4 sm:gap-6 mb-5 lg:mb-6">
                     <div className="flex-1 flex flex-col items-center text-center min-w-0">
                       <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 mx-auto rounded-full bg-gray-100 flex items-center justify-center overflow-hidden ring-2 ring-gray-200 mb-2 lg:mb-3">
                         {match.teamA?.teamLogo ? (
@@ -779,6 +790,7 @@ const getInitials = (name: string) => name.split(" ").map((n) => n[0]).join("").
                       </div>
                     )}
                   </div>
+                </div>
                 </motion.div>
                 );
               })}
@@ -791,8 +803,9 @@ const getInitials = (name: string) => name.split(" ").map((n) => n[0]).join("").
             </div>
           )}
           <div className="text-center mt-6">
-            <Link to="/schedule" className="inline-flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-700 uppercase">
-              View Full Schedule <ArrowRight className="h-4 w-4" />
+            <Link to="/schedule" className="group inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-7 py-2 sm:py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs sm:text-sm font-bold rounded-xl shadow-lg hover:shadow-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 hover:scale-105 uppercase">
+              View Full Schedule
+              <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
         </div>
@@ -816,7 +829,7 @@ const getInitials = (name: string) => name.split(" ").map((n) => n[0]).join("").
             <div className="w-16 h-1 bg-gradient-to-r from-blue-400 to-indigo-500 mx-auto mt-3 rounded-full" />
           </motion.div>
           {Object.keys(pointsGroups).length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 lg:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-5 lg:gap-6">
               {Object.entries(pointsGroups).map(([groupName, teams], gi) => (
                 <motion.div
                   key={groupName}
@@ -826,35 +839,35 @@ const getInitials = (name: string) => name.split(" ").map((n) => n[0]).join("").
                   transition={{ duration: 0.4, delay: 0.1 * gi }}
                   className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden"
                 >
-                  <div className={`px-4 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-3 bg-gradient-to-r ${gi % 2 === 0 ? 'from-blue-500 to-indigo-500' : 'from-purple-500 to-pink-500'} text-white text-center`}>
-                    <h3 className="text-sm sm:text-lg lg:text-lg font-black uppercase tracking-wider">Group {groupName}</h3>
+                  <div className={`px-3 sm:px-6 lg:px-8 py-2 bg-gradient-to-r ${gi % 2 === 0 ? 'from-blue-500 to-indigo-500' : 'from-purple-500 to-pink-500'} text-white text-center`}>
+                    <h3 className="text-xs sm:text-lg lg:text-lg font-black uppercase tracking-wider">Group {groupName}</h3>
                   </div>
-                  <div className="px-4 sm:px-6 lg:px-8 py-1.5 lg:py-2 bg-gray-50 border-b border-gray-100 flex items-center justify-end gap-4 sm:gap-6 lg:gap-8 text-[10px] sm:text-xs lg:text-xs font-bold text-gray-400 uppercase tracking-wider">
-                    <span className="w-8 sm:w-10 lg:w-12 text-center">W</span>
-                    <span className="w-8 sm:w-10 lg:w-12 text-center">L</span>
-                    <span className="w-10 sm:w-12 lg:w-14 text-center">Pts</span>
+                  <div className="px-3 sm:px-6 lg:px-8 py-1.5 bg-gray-50 border-b border-gray-100 flex items-center justify-end gap-2 sm:gap-6 lg:gap-8 text-[9px] sm:text-xs lg:text-xs font-bold text-gray-400 uppercase tracking-wider">
+                    <span className="w-6 sm:w-10 lg:w-12 text-center">W</span>
+                    <span className="w-6 sm:w-10 lg:w-12 text-center">L</span>
+                    <span className="w-8 sm:w-12 lg:w-14 text-center">Pts</span>
                   </div>
                   <div className="divide-y divide-gray-50">
                     {(Array.isArray(teams) ? teams.slice(0, 6) : []).map((team: any, i: number) => (
-                      <div key={i} className="flex items-center gap-3 sm:gap-5 lg:gap-6 px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3 lg:py-3 hover:bg-gray-50 transition-colors">
-                        <span className={`w-6 h-6 sm:w-8 sm:h-8 lg:w-9 lg:h-9 rounded-full flex items-center justify-center text-[10px] sm:text-xs lg:text-xs font-black flex-shrink-0 ${
+                      <div key={i} className="flex items-center gap-1.5 sm:gap-5 lg:gap-6 px-3 sm:px-6 lg:px-8 py-2 sm:py-3 lg:py-3 hover:bg-gray-50 transition-colors">
+                        <span className={`w-4 h-4 sm:w-8 sm:h-8 lg:w-9 lg:h-9 rounded-full flex items-center justify-center text-[8px] sm:text-xs lg:text-xs font-black flex-shrink-0 ${
                           i === 0 ? 'bg-yellow-100 text-yellow-700' :
                           i === 1 ? 'bg-gray-200 text-gray-600' :
                           i === 2 ? 'bg-amber-100 text-amber-700' :
                           'bg-gray-50 text-gray-400'
                         }`}>{i + 1}</span>
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-11 lg:h-11 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden ring-1 ring-gray-200 flex-shrink-0">
+                        <div className="w-4 h-4 sm:w-10 sm:h-10 lg:w-11 lg:h-11 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden ring-1 ring-gray-200 flex-shrink-0">
                           {team.teamLogo ? (
                             <img src={getTeamLogoUrl(team.teamLogo)} alt="" className="w-full h-full object-cover" />
                           ) : (
-                            <span className="text-[10px] sm:text-xs lg:text-xs font-bold text-gray-500">{team.team?.charAt(0)}</span>
+                            <span className="text-[8px] sm:text-xs lg:text-xs font-bold text-gray-500">{team.team?.charAt(0)}</span>
                           )}
                         </div>
-                        <span className="text-xs sm:text-sm lg:text-sm font-bold text-gray-800 uppercase truncate flex-1 min-w-0">{team.team}</span>
-                        <div className="flex items-center gap-4 sm:gap-6 lg:gap-8 text-[11px] sm:text-sm lg:text-lg font-semibold flex-shrink-0">
-                          <span className="w-8 sm:w-10 lg:w-12 text-center text-green-600">{team.won ?? 0}</span>
-                          <span className="w-8 sm:w-10 lg:w-12 text-center text-red-500">{team.lost ?? 0}</span>
-                          <span className="w-10 sm:w-12 lg:w-14 text-center text-blue-600 font-black">{team.points ?? 0}</span>
+                        <span className="text-[10px] sm:text-sm lg:text-sm font-bold text-gray-800 uppercase truncate flex-1 min-w-0">{team.team}</span>
+                        <div className="flex items-center gap-1.5 sm:gap-6 lg:gap-8 text-[10px] sm:text-sm lg:text-lg font-semibold flex-shrink-0">
+                          <span className="w-6 sm:w-10 lg:w-12 text-center text-green-600">{team.won ?? 0}</span>
+                          <span className="w-6 sm:w-10 lg:w-12 text-center text-red-500">{team.lost ?? 0}</span>
+                          <span className="w-8 sm:w-12 lg:w-14 text-center text-blue-600 font-black">{team.points ?? 0}</span>
                         </div>
                       </div>
                     ))}
@@ -871,46 +884,46 @@ const getInitials = (name: string) => name.split(" ").map((n) => n[0]).join("").
               className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden"
             >
               <div className="overflow-x-auto">
-                <table className="w-full text-left">
+                <table className="w-full text-left table-auto">
                   <thead>
                     <tr className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
-                      <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider">#</th>
-                      <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider">Team</th>
-                      <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider text-center">P</th>
-                      <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider text-center">W</th>
-                      <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider text-center">L</th>
-                      <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider text-center">D</th>
-                      <th className="px-3 py-3 text-[10px] font-bold uppercase tracking-wider text-center">Pts</th>
+                      <th className="px-1.5 sm:px-3 py-3 text-[10px] font-bold uppercase tracking-wider w-8">#</th>
+                      <th className="px-1.5 sm:px-3 py-3 text-[10px] font-bold uppercase tracking-wider">Team</th>
+                      <th className="px-0.5 sm:px-1.5 py-3 text-[10px] font-bold uppercase tracking-wider text-center">P</th>
+                      <th className="px-0.5 sm:px-1.5 py-3 text-[10px] font-bold uppercase tracking-wider text-center">W</th>
+                      <th className="px-0.5 sm:px-1.5 py-3 text-[10px] font-bold uppercase tracking-wider text-center">L</th>
+                      <th className="px-0.5 sm:px-1.5 py-3 text-[10px] font-bold uppercase tracking-wider text-center">D</th>
+                      <th className="px-0.5 sm:px-1.5 py-3 text-[10px] font-bold uppercase tracking-wider text-center">Pts</th>
                     </tr>
                   </thead>
                   <tbody>
                     {pointsTable.map((team: any, i: number) => (
                       <tr key={i} className={`border-b border-gray-50 ${i < 3 ? 'bg-blue-50/50' : ''} hover:bg-gray-50 transition-colors`}>
-                        <td className="px-4 py-3">
-                          <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${
+                        <td className="px-1.5 sm:px-3 py-2.5">
+                          <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black ${
                             i === 0 ? 'bg-yellow-100 text-yellow-700' :
                             i === 1 ? 'bg-gray-200 text-gray-600' :
                             i === 2 ? 'bg-amber-100 text-amber-700' :
                             'bg-gray-50 text-gray-400'
                           }`}>{i + 1}</span>
                         </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden ring-1 ring-gray-200 flex-shrink-0">
+                        <td className="px-1.5 sm:px-3 py-2.5">
+                          <div className="flex items-center gap-1 sm:gap-1.5">
+                            <div className="w-4 h-4 sm:w-6 sm:h-6 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden ring-1 ring-gray-200 flex-shrink-0">
                               {team.teamLogo ? (
                                 <img src={getTeamLogoUrl(team.teamLogo)} alt="" className="w-full h-full object-cover" />
                               ) : (
-                                <span className="text-[10px] font-bold text-gray-500">{team.teamName?.charAt(0)}</span>
+                                <span className="text-[9px] font-bold text-gray-500">{team.teamName?.charAt(0)}</span>
                               )}
                             </div>
-                            <span className="text-xs sm:text-sm font-bold text-gray-900 uppercase truncate">{team.teamName}</span>
+                            <span className="text-[10px] sm:text-xs font-bold text-gray-900 uppercase">{team.teamName}</span>
                           </div>
                         </td>
-                        <td className="px-3 py-3 text-center text-xs font-semibold text-gray-600">{team.p ?? team.matches ?? 0}</td>
-                        <td className="px-3 py-3 text-center text-xs font-semibold text-green-600">{team.w ?? team.won ?? 0}</td>
-                        <td className="px-3 py-3 text-center text-xs font-semibold text-red-500">{team.l ?? team.lost ?? 0}</td>
-                        <td className="px-3 py-3 text-center text-xs font-semibold text-gray-500">{team.d ?? team.tied ?? 0}</td>
-                        <td className="px-3 py-3 text-center text-sm font-black text-blue-600">{team.pts ?? team.points ?? 0}</td>
+                        <td className="px-0.5 sm:px-1.5 py-2.5 text-center text-[10px] sm:text-[11px] font-semibold text-gray-600">{team.p ?? team.matches ?? 0}</td>
+                        <td className="px-0.5 sm:px-1.5 py-2.5 text-center text-[10px] sm:text-[11px] font-semibold text-green-600">{team.w ?? team.won ?? 0}</td>
+                        <td className="px-0.5 sm:px-1.5 py-2.5 text-center text-[10px] sm:text-[11px] font-semibold text-red-500">{team.l ?? team.lost ?? 0}</td>
+                        <td className="px-0.5 sm:px-1.5 py-2.5 text-center text-[10px] sm:text-[11px] font-semibold text-gray-500">{team.d ?? team.tied ?? 0}</td>
+                        <td className="px-0.5 sm:px-1.5 py-2.5 text-center text-[11px] sm:text-xs font-black text-blue-600">{team.pts ?? team.points ?? 0}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -925,8 +938,9 @@ const getInitials = (name: string) => name.split(" ").map((n) => n[0]).join("").
             </div>
           )}
           <div className="text-center mt-6">
-            <Link to="/points-table" className="inline-flex items-center gap-2 text-sm font-bold text-blue-600 hover:text-blue-700 uppercase">
-              View Full Points Table <ArrowRight className="h-4 w-4" />
+            <Link to="/points-table" className="group inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-7 py-2 sm:py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs sm:text-sm font-bold rounded-xl shadow-lg hover:shadow-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 hover:scale-105 uppercase">
+              View Full Points Table
+              <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
         </div>
@@ -1350,7 +1364,7 @@ function GalleryCard() {
 
         {/* View All Button */}
         <div className="text-center mt-8">
-          <Link to="/gallery" className="inline-flex items-center gap-2 px-7 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-sm font-bold rounded-xl shadow-lg hover:shadow-xl hover:from-indigo-600 hover:to-purple-700 transition-all duration-300 hover:scale-105 uppercase">
+          <Link to="/gallery" className="inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-7 py-2 sm:py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-xs sm:text-sm font-bold rounded-xl shadow-lg hover:shadow-xl hover:from-indigo-600 hover:to-purple-700 transition-all duration-300 hover:scale-105 uppercase">
             View Full Gallery
             <ArrowRight className="h-4 w-4" />
           </Link>

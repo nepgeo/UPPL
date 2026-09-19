@@ -19,7 +19,7 @@ const ConfirmTeam = () => {
 
   const handleProceedToPay = () => {
     // ❗️Set payment amount + redirect to eSewa (you can customize pid/amt)
-    const pid = 'PPLT20_TEAM_' + Date.now();
+    const pid = 'UPPL-T20_TEAM_' + Date.now();
     const amt = 100;
     const successUrl = `${BASE_URL}/payment-success?pid=${pid}&amt=${amt}`;
     const failureUrl = `${BASE_URL}/payment-failed`;
